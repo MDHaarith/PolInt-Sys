@@ -1,4 +1,4 @@
-import { policyImpactRecords } from "./policyImpactDatabase";
+import { policyImpactRecords } from "./policyImpactDatabase.js";
 
 // Tamil Nadu Political Database structured for Politician Spaces and Event Time Fabric
 const scrapedIntel = { news: [], evidence: [] };
