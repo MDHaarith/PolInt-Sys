@@ -114,3 +114,29 @@ class ArticleExtractor:
             language=getattr(article, "meta_lang", None),
         )
 
+
+class WebArticleCollector:
+    name = "scrapy_newspaper"
+
+    def __init__(self, discovery, extractor, max_articles=25):
+        self.discovery = discovery
+        self.extractor = extractor
+        self.max_articles = max_articles
+        self.health = {
+            "status": "ready",
+            "discovery": "scrapy",
+            "extraction": "newspaper",
+        }
+
+    def collect(self):
+        failures = 0
+        for index, url in enumerate(self.discovery.discover()):
+            if index >= self.max_articles:
+                break
+            try:
+                yield self.extractor.extract(url)
+            except Exception:
+                failures += 1
+        if failures:
+            self.health["article_failures"] = failures
+

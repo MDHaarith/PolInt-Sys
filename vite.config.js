@@ -49,10 +49,10 @@ const launchScraper = (reason = 'scheduled') => {
   if (scraperStatus === "crawling") return false;
 
   scraperStatus = "crawling";
-  const scriptPath = path.join(__dirname, 'scripts/scrape_political_intel.py');
-  console.log(`[Vite Middleware] Launching ${reason} scraper: python3 ${scriptPath}`);
+  const scriptPath = path.join(__dirname, 'scripts/run_intelligence_pipeline.py');
+  console.log(`[Vite Middleware] Launching ${reason} pipeline: python3 ${scriptPath}`);
 
-  exec(`python3 "${scriptPath}"`, (error, stdout, stderr) => {
+  exec(`python3 "${scriptPath}" --all --extended-public`, (error, stdout, stderr) => {
     scraperStatus = "idle";
     lastCompleted = new Date().toISOString();
 
