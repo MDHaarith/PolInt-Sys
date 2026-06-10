@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
-  User, ShieldAlert, GitCommit, Award, AlertTriangle, DollarSign,
-  Calendar, Landmark, Info, Search, Filter, Newspaper, MessageSquare,
-  Scale, Vote, TrendingUp, ExternalLink, ChevronDown, BarChart3,
-  Zap, Eye, FileWarning, Gavel, Briefcase, Hash,
+  User, GitCommit, Award, AlertTriangle, DollarSign,
+  Calendar, Landmark, Info, Search, Newspaper, MessageSquare,
+  Scale, Vote, TrendingUp, ExternalLink, BarChart3,
+  Zap, Eye, FileWarning, Gavel, Briefcase,
   MessageCircle, Repeat, Heart, Share2
 } from "lucide-react";
+
+const EMPTY_NEWS = [];
 
 const XIcon = (props) => (
   <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" style={{ display: "inline-block", verticalAlign: "middle" }} {...props}>
@@ -169,47 +171,15 @@ const getPostingTrend = (posts) => {
   return dataPoints;
 };
 
-export default function PoliticianSpace({ politician, parties }) {
+export default function PoliticianSpace({ politician, parties, events = [], onSelectEvent }) {
   const [activeTab, setActiveTab] = useState("dossier");
   const [newsSearch, setNewsSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [expandedCard, setExpandedCard] = useState(null);
   const [selectedHashtag, setSelectedHashtag] = useState(null);
 
-  useEffect(() => {
-    setActiveTab("dossier");
-    setNewsSearch("");
-    setActiveCategory("all");
-    setExpandedCard(null);
-    setSelectedHashtag(null);
-  }, [politician?.id]);
-
-  if (!politician) {
-    return (
-      <div className="politician-space-container" style={{ justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-secondary)" }}>
-        <Info size={44} strokeWidth={1.5} style={{ marginBottom: "16px", color: "var(--accent-color)" }} />
-        <h3>No Politician Selected</h3>
-        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "8px", maxWidth: "340px", textAlign: "center" }}>
-          Select a politician from the navigator directory list on the left to load their dedicated workspace space.
-        </p>
-      </div>
-    );
-  }
-
-  const party = parties.find(pt => pt.id === politician.party) || {
-    name: politician.party.toUpperCase(),
-    color: "var(--color-ind)"
-  };
-  const hasSourcedCaseData = typeof politician.criminalProfile?.hasCases === "boolean";
-  const caseStatusColor = politician.criminalProfile?.hasCases === true
-    ? "var(--danger)"
-    : politician.criminalProfile?.hasCases === false
-      ? "var(--success)"
-      : "var(--text-muted)";
-  const caseCountLabel = hasSourcedCaseData ? politician.criminalProfile.casesCount : "N/A";
-
   // Filter and search news
-  const allNews = politician.newsFeed || [];
+  const allNews = politician?.newsFeed || EMPTY_NEWS;
   const filteredNews = useMemo(() => {
     let list = allNews;
     if (activeCategory !== "all") {
@@ -253,11 +223,36 @@ export default function PoliticianSpace({ politician, parties }) {
     };
   }, [allNews, categoryCounts]);
 
+  if (!politician) {
+    return (
+      <div className="politician-space-container" style={{ justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-secondary)" }}>
+        <Info size={44} strokeWidth={1.5} style={{ marginBottom: "16px", color: "var(--accent-color)" }} />
+        <h3>No Politician Selected</h3>
+        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "8px", maxWidth: "340px", textAlign: "center" }}>
+          Select a politician from the navigator directory list on the left to load their dedicated workspace space.
+        </p>
+      </div>
+    );
+  }
+
+  const party = parties.find(pt => pt.id === politician.party) || {
+    name: politician.party.toUpperCase(),
+    color: "var(--color-ind)"
+  };
+  const hasSourcedCaseData = typeof politician.criminalProfile?.hasCases === "boolean";
+  const caseStatusColor = politician.criminalProfile?.hasCases === true
+    ? "var(--danger)"
+    : politician.criminalProfile?.hasCases === false
+      ? "var(--success)"
+      : "var(--text-muted)";
+  const caseCountLabel = hasSourcedCaseData ? politician.criminalProfile.casesCount : "N/A";
+
   const tabs = [
     { id: "dossier", label: "Dossier", icon: Briefcase },
     { id: "cases", label: "Criminal Record", icon: Gavel },
     { id: "shifts", label: "Party Shifts", icon: GitCommit },
     { id: "deeds", label: "Impact", icon: Award },
+    { id: "events", label: "Timeline", icon: Calendar, badge: events.length },
     { id: "intel", label: "Live Intel", icon: Zap, badge: allNews.length },
   ];
 
@@ -488,6 +483,43 @@ export default function PoliticianSpace({ politician, parties }) {
         )}
 
         {/* TAB 5: Live Intel & Evidence — UPGRADED */}
+        {activeTab === "events" && (
+          <div className="tab-content-animate politician-event-history">
+            <div className="intel-section-header">
+              <div>
+                <h3>Event Time Fabric</h3>
+                <span className="feed-submeta">
+                  Curated and extracted events linked to {politician.name}.
+                </span>
+              </div>
+              <span className="feed-count-badge">{events.length} events</span>
+            </div>
+            {events.length > 0 ? (
+              <div className="politician-event-list">
+                {[...events]
+                  .sort((a, b) => String(b.occurredAt || b.year).localeCompare(String(a.occurredAt || a.year)))
+                  .map(event => (
+                    <button
+                      key={event.id}
+                      type="button"
+                      className="politician-event-row"
+                      onClick={() => onSelectEvent?.(event.id)}
+                    >
+                      <span>{event.occurredAt || event.year}</span>
+                      <strong>{event.title?.replace(/^\d{4}:\s*/, "")}</strong>
+                      <small>{event.verificationStatus || (event.isCurated ? "curated" : "reported")}</small>
+                    </button>
+                  ))}
+              </div>
+            ) : (
+              <div className="no-news-fallback">
+                <Calendar size={28} />
+                <p>No clustered events are linked to this politician yet.</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === "intel" && (
           <div className="tab-content-animate intel-tab-layout">
 

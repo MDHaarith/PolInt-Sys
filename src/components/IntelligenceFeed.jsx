@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Database,
   Filter,
+  GitBranch,
   Newspaper,
   Radio,
   Search,
@@ -68,7 +69,9 @@ export default function IntelligenceFeed({
   news = [],
   politicians = [],
   parties = [],
+  events = [],
   onSelectPolitician,
+  onSelectEvent,
   lastIntelSync = null,
 }) {
   const [query, setQuery] = useState("");
@@ -86,6 +89,16 @@ export default function IntelligenceFeed({
     parties.forEach(party => map.set(party.id, party));
     return map;
   }, [parties]);
+
+  const eventByEvidenceId = useMemo(() => {
+    const map = new Map();
+    events.forEach(event => {
+      (event.evidence || []).forEach(item => {
+        if (item.id) map.set(item.id, event);
+      });
+    });
+    return map;
+  }, [events]);
 
   const allStories = useMemo(() => {
     const seen = new Set();
@@ -263,6 +276,7 @@ export default function IntelligenceFeed({
             const config = CATEGORY_CONFIG[story.category] || CATEGORY_CONFIG.news;
             const party = partyById.get(story.partyId);
             const socialPlatform = story.platform ? story.platform.toUpperCase() : null;
+            const clusteredEvent = eventByEvidenceId.get(story.id);
             return (
               <article key={story.id} className={`news-feed-card global-news-card ${story.isRumor ? "rumor-card" : ""}`}>
                 <div className="news-card-header">
@@ -301,6 +315,12 @@ export default function IntelligenceFeed({
                     )}
                   </div>
                   <div className="story-actions">
+                    {clusteredEvent && (
+                      <button type="button" onClick={() => onSelectEvent?.(clusteredEvent.id)}>
+                        <GitBranch size={12} />
+                        Open event
+                      </button>
+                    )}
                     {!story.isGeneral && politicianById.has(story.politicianId) && (
                       <button type="button" onClick={() => onSelectPolitician?.(story.politicianId)}>
                         Open dossier
