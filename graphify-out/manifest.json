@@ -1,0 +1,202 @@
+{
+  ".codex/hooks.json": {
+    "mtime": 1781115209.4279792,
+    "ast_hash": "88f9e2a7ee5b57a0a24470a8ee0ef7c4",
+    "semantic_hash": ""
+  },
+  "eslint.config.js": {
+    "mtime": 1780859880.838371,
+    "ast_hash": "3aa4b57d7f08181d86bde52a4dcb7f22",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1780859916.0257614,
+    "ast_hash": "1ee583f538eae7d92d30bed521f8cbea",
+    "semantic_hash": ""
+  },
+  "public/scrapedIntel.json": {
+    "mtime": 1781110968.4303882,
+    "ast_hash": "39ada7071bd622ea19f6cbba1d01c33d",
+    "semantic_hash": ""
+  },
+  "scripts/build_mla_roster.py": {
+    "mtime": 1780918808.2819517,
+    "ast_hash": "82ac294bfa723b318382da9e2e2cdecf",
+    "semantic_hash": ""
+  },
+  "scripts/scrape_political_intel.py": {
+    "mtime": 1781106335.353867,
+    "ast_hash": "cce125a4350aa4bae2aaa8758364ece3",
+    "semantic_hash": ""
+  },
+  "scripts/seed_all_234_mlas.py": {
+    "mtime": 1781104485.1803937,
+    "ast_hash": "a90c89798954175557d341eeb1730124",
+    "semantic_hash": ""
+  },
+  "src/App.jsx": {
+    "mtime": 1781106238.447153,
+    "ast_hash": "a97c6cb269f4089b3afe9c4cfff3b5c5",
+    "semantic_hash": ""
+  },
+  "src/components/AssemblyDashboard.jsx": {
+    "mtime": 1781106226.3675628,
+    "ast_hash": "dc3c921276964463e7a68a58cc60223f",
+    "semantic_hash": ""
+  },
+  "src/components/Dashboard.jsx": {
+    "mtime": 1780860004.9567478,
+    "ast_hash": "7a36494b671685ead7130954717cdd34",
+    "semantic_hash": ""
+  },
+  "src/components/DossierCard.jsx": {
+    "mtime": 1780860788.8354604,
+    "ast_hash": "d3fb424b1ca9d0320b3145fee846e04f",
+    "semantic_hash": ""
+  },
+  "src/components/EventGraph.jsx": {
+    "mtime": 1781106012.9328046,
+    "ast_hash": "858228d6935d4d37bfa5791621bfaba7",
+    "semantic_hash": ""
+  },
+  "src/components/GraphView.jsx": {
+    "mtime": 1780859968.3983421,
+    "ast_hash": "1488096f85f27c4f832fd2601bc650cd",
+    "semantic_hash": ""
+  },
+  "src/components/ImportExport.jsx": {
+    "mtime": 1780859998.8196797,
+    "ast_hash": "1e451a487a693b0a7f693d4afbb6f7a4",
+    "semantic_hash": ""
+  },
+  "src/components/IntelligenceFeed.jsx": {
+    "mtime": 1781106158.576862,
+    "ast_hash": "964bfbb32b834b626c60d6003e425c16",
+    "semantic_hash": ""
+  },
+  "src/components/ModeSelector.jsx": {
+    "mtime": 1780860778.8393493,
+    "ast_hash": "4e89bfcc1cae3b8b0ca2aa799e03e3d4",
+    "semantic_hash": ""
+  },
+  "src/components/NoteEditor.jsx": {
+    "mtime": 1780860460.814812,
+    "ast_hash": "26c15431b08d59eb57019d0c7fd9e203",
+    "semantic_hash": ""
+  },
+  "src/components/NoteExplorer.jsx": {
+    "mtime": 1780860450.4016962,
+    "ast_hash": "97d9aa7fbe71e05452a6c020dacaabe9",
+    "semantic_hash": ""
+  },
+  "src/components/ObsidianGraph.jsx": {
+    "mtime": 1780860883.618515,
+    "ast_hash": "065ef25fad3ad62a3a6dfd4a356ab161",
+    "semantic_hash": ""
+  },
+  "src/components/PolicyImpactDashboard.jsx": {
+    "mtime": 1781105937.815355,
+    "ast_hash": "c251841ca35ce62bb70cc7236f76023f",
+    "semantic_hash": ""
+  },
+  "src/components/PoliticianSpace.jsx": {
+    "mtime": 1780919184.4798882,
+    "ast_hash": "b86d35d9e5a5c65b9376e34cb520f5e0",
+    "semantic_hash": ""
+  },
+  "src/components/Sidebar.jsx": {
+    "mtime": 1780859954.9841933,
+    "ast_hash": "3dfaa10f2f2f6715828aefd6a4c99612",
+    "semantic_hash": ""
+  },
+  "src/components/TableView.jsx": {
+    "mtime": 1780859978.1254501,
+    "ast_hash": "3fad96b9c2942b2bb768b1ff7cda2216",
+    "semantic_hash": ""
+  },
+  "src/components/TimelineView.jsx": {
+    "mtime": 1780859984.975526,
+    "ast_hash": "a1a15fb21b7dd93b370f5b0c9c9f2d87",
+    "semantic_hash": ""
+  },
+  "src/data/policyImpactDatabase.js": {
+    "mtime": 1781105924.1118205,
+    "ast_hash": "0c8d5aeb39999a11486ebc1c417b7235",
+    "semantic_hash": ""
+  },
+  "src/data/politicalDatabase.js": {
+    "mtime": 1781105961.580548,
+    "ast_hash": "8ece3c25064ce8d6047c3d50cf4a9d6d",
+    "semantic_hash": ""
+  },
+  "src/main.jsx": {
+    "mtime": 1780859880.8403711,
+    "ast_hash": "e13723e2574429d9a6d849727e3ff695",
+    "semantic_hash": ""
+  },
+  "tests/test_build_mla_roster.py": {
+    "mtime": 1780918734.3577306,
+    "ast_hash": "6c1d55b4eca9b28a1befc39357693560",
+    "semantic_hash": ""
+  },
+  "tests/test_social_scraper.py": {
+    "mtime": 1781103019.3955271,
+    "ast_hash": "cbbe9382b62e7d5427fff79305a9fada",
+    "semantic_hash": ""
+  },
+  "vite.config.js": {
+    "mtime": 1781106343.1024597,
+    "ast_hash": "b184a36836dd14ec848e6eba780696f8",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1781115209.4269788,
+    "ast_hash": "62c05a2bf20bf036a0b2633478663e64",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1780919248.954471,
+    "ast_hash": "31a8848563928eac489cb0c8a3136c4b",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md": {
+    "mtime": 1780918097.0295067,
+    "ast_hash": "88b0f28b838957178c1df3785cc0a2c1",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md": {
+    "mtime": 1780917711.6069005,
+    "ast_hash": "afdc07e0ad4dd597c409bdbd2f35ee72",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1780859880.838371,
+    "ast_hash": "c96d00b0875c88d5c2c765e7208191b8",
+    "semantic_hash": ""
+  },
+  "public/favicon.svg": {
+    "mtime": 1780859880.838371,
+    "ast_hash": "7e840862161341271697daa99a40d76b",
+    "semantic_hash": ""
+  },
+  "public/icons.svg": {
+    "mtime": 1780859880.838371,
+    "ast_hash": "3b4fcfcf393eca4d264dca4a4663bc37",
+    "semantic_hash": ""
+  },
+  "src/assets/hero.png": {
+    "mtime": 1780859880.8393712,
+    "ast_hash": "aead493361b27e7510691c5d7072dfc1",
+    "semantic_hash": ""
+  },
+  "src/assets/react.svg": {
+    "mtime": 1780859880.8393712,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": ""
+  },
+  "src/assets/vite.svg": {
+    "mtime": 1780859880.8393712,
+    "ast_hash": "9960a24288958394ac50e57ff638b036",
+    "semantic_hash": ""
+  }
+}
