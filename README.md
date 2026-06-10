@@ -15,13 +15,14 @@ This parses the official Election Commission of India detailed-results PDF, vali
 Install the optional integrated collectors:
 
 ```bash
-python3 -m pip install -r requirements-intelligence.txt
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-intelligence.txt
 ```
 
 Run the integrated evidence pipeline:
 
 ```bash
-python3 scripts/run_intelligence_pipeline.py --all --extended-public
+.venv/bin/python scripts/run_intelligence_pipeline.py --all --extended-public
 ```
 
 This imports the existing JSON data into a local SQLite warehouse, preserves the
@@ -33,7 +34,7 @@ frontend snapshots.
 Run a bounded smoke collection:
 
 ```bash
-python3 scripts/run_intelligence_pipeline.py --all --extended-public \
+.venv/bin/python scripts/run_intelligence_pipeline.py --all --extended-public \
   --max-rss-queries 10 --max-social-queries 5 --social-limit 5
 ```
 

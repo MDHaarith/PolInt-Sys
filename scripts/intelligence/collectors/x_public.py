@@ -54,7 +54,7 @@ class XPublicCollector:
 
     def collect(self):
         try:
-            items = asyncio.run(self._collect_async())
+            items = asyncio.run(asyncio.wait_for(self._collect_async(), timeout=20))
         except Exception as exc:
             self.health = {
                 "status": "unavailable",

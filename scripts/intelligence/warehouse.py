@@ -122,7 +122,7 @@ class IntelligenceWarehouse:
         )
         return source_id
 
-    def upsert_raw_item(self, item: dict) -> bool:
+    def upsert_raw_item(self, item: dict, check_existing: bool = True) -> bool:
         source_id = self._upsert_source(item)
         title = str(item.get("title") or "").strip()
         body = str(item.get("body") or item.get("snippet") or "").strip()
@@ -130,24 +130,36 @@ class IntelligenceWarehouse:
         external_id = str(item.get("externalId") or item.get("id") or "").strip() or None
         collector = str(item.get("collector") or item.get("sourceType") or "legacy")
         item_id = external_id or stable_id("raw", canonical_url or f"{title}|{body}")
-        existing = self.connection.execute(
-            """
-            SELECT 1 FROM raw_items
-            WHERE id = ?
-               OR (? IS NOT NULL AND canonical_url = ?)
-               OR (? IS NOT NULL AND collector = ? AND external_id = ?)
-            LIMIT 1
-            """,
-            (
-                item_id,
-                canonical_url,
-                canonical_url,
-                external_id,
-                collector,
-                external_id,
-            ),
-        ).fetchone()
         retrieved_at = item.get("retrievedAt") or now_utc_iso()
+        existing = None
+        if check_existing:
+            existing = self.connection.execute(
+                """
+                SELECT id FROM raw_items
+                WHERE id = ?
+                   OR (? IS NOT NULL AND canonical_url = ?)
+                   OR (? IS NOT NULL AND collector = ? AND external_id = ?)
+                LIMIT 1
+                """,
+                (
+                    item_id,
+                    canonical_url,
+                    canonical_url,
+                    external_id,
+                    collector,
+                    external_id,
+                ),
+            ).fetchone()
+        if existing is not None:
+            self.connection.execute(
+                """
+                UPDATE raw_items
+                SET last_seen_at = ?, raw_metadata_json = ?
+                WHERE id = ?
+                """,
+                (retrieved_at, json.dumps(item, ensure_ascii=False), existing["id"]),
+            )
+            return False
         published_at = item.get("publishedAtRaw") or item.get("publishedAt") or item.get("date")
         item_hash = content_hash(title, body)
         is_social = bool(item.get("isSocial") or item.get("platform") or item.get("category") == "social_media")
@@ -186,7 +198,7 @@ class IntelligenceWarehouse:
                 retrieved_at,
             ),
         )
-        return existing is None
+        return True
 
     def import_legacy_document(self, document: dict) -> dict:
         added = 0
@@ -194,7 +206,53 @@ class IntelligenceWarehouse:
             for key in ("mlas", "rosterMeta", "dataQuality", "coverageMeta", "evidence"):
                 if key in document:
                     self.set_state(key, document[key])
+            existing_ids = {
+                row[0] for row in self.connection.execute("SELECT id FROM raw_items")
+            }
+            existing_urls = {
+                row[0]
+                for row in self.connection.execute(
+                    "SELECT canonical_url FROM raw_items WHERE canonical_url IS NOT NULL"
+                )
+            }
+            existing_external = {
+                (row[0], row[1])
+                for row in self.connection.execute(
+                    """
+                    SELECT collector, external_id FROM raw_items
+                    WHERE external_id IS NOT NULL
+                    """
+                )
+            }
             for item in document.get("news", []):
-                if self.upsert_raw_item(item):
-                    added += 1
+                canonical_url = str(
+                    item.get("canonicalUrl") or item.get("url") or ""
+                ).strip() or None
+                external_id = str(
+                    item.get("externalId") or item.get("id") or ""
+                ).strip() or None
+                collector = str(
+                    item.get("collector") or item.get("sourceType") or "legacy"
+                )
+                item_id = external_id or stable_id(
+                    "raw",
+                    canonical_url
+                    or f"{item.get('title') or ''}|{item.get('body') or item.get('snippet') or ''}",
+                )
+                if (
+                    item_id in existing_ids
+                    or (canonical_url and canonical_url in existing_urls)
+                    or (
+                        external_id
+                        and (collector, external_id) in existing_external
+                    )
+                ):
+                    continue
+                self.upsert_raw_item(item, check_existing=False)
+                existing_ids.add(item_id)
+                if canonical_url:
+                    existing_urls.add(canonical_url)
+                if external_id:
+                    existing_external.add((collector, external_id))
+                added += 1
         return {"raw_items_added": added, "raw_items_total": self.count("raw_items")}

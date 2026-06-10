@@ -5,6 +5,7 @@ import os
 import tempfile
 from pathlib import Path
 
+from .assembly_status import apply_current_assembly_status
 from .warehouse import IntelligenceWarehouse, now_utc_iso
 
 
@@ -98,6 +99,54 @@ def _event_links(warehouse: IntelligenceWarehouse) -> list[dict]:
     ]
 
 
+def _collector_health(warehouse: IntelligenceWarehouse) -> list[dict]:
+    rows = warehouse.connection.execute(
+        """
+        SELECT crawl_runs.*
+        FROM crawl_runs
+        JOIN (
+            SELECT collector, MAX(started_at) AS latest_started_at
+            FROM crawl_runs
+            GROUP BY collector
+        ) latest
+          ON latest.collector = crawl_runs.collector
+         AND latest.latest_started_at = crawl_runs.started_at
+        ORDER BY crawl_runs.collector
+        """
+    ).fetchall()
+    health = []
+    for row in rows:
+        item = dict(row)
+        item["health"] = json.loads(item.pop("details_json") or "{}")
+        health.append(item)
+    return health
+
+
+def _coverage_gaps(warehouse: IntelligenceWarehouse, collector_health: list[dict]) -> list[dict]:
+    gaps = []
+    for collector in collector_health:
+        health = collector["health"]
+        if collector["status"] == "failed" or health.get("status") in {"degraded", "unavailable"}:
+            gaps.append(
+                {
+                    "collector": collector["collector"],
+                    "status": health.get("status") or collector["status"],
+                    "reason": health.get("reason"),
+                    "pageFailures": health.get("pageFailures", []),
+                }
+            )
+    failures = warehouse.connection.execute(
+        """
+        SELECT collector, error_type, message, retryable, occurred_at
+        FROM crawl_failures
+        ORDER BY occurred_at DESC, id DESC
+        LIMIT 50
+        """
+    ).fetchall()
+    gaps.extend(dict(row) for row in failures)
+    return gaps
+
+
 def generate_snapshots(
     warehouse: IntelligenceWarehouse,
     output_dir: str | Path,
@@ -125,6 +174,10 @@ def generate_snapshots(
     }
     if not isinstance(compatibility["mlas"], list):
         raise ValueError("Compatibility snapshot requires an MLA list")
+    compatibility["mlas"], compatibility["rosterMeta"] = apply_current_assembly_status(
+        compatibility["mlas"],
+        compatibility["rosterMeta"],
+    )
 
     events = _event_rows(warehouse)
     time_fabric = {
@@ -141,12 +194,15 @@ def generate_snapshots(
         "generatedAt": generated_at,
         "events": [event for event in events if event["event_type"] == "policy"],
     }
+    collector_health = _collector_health(warehouse)
     status = {
         "generatedAt": generated_at,
         "rawItemCount": raw_count,
         "eventCount": event_count,
         "mlaCount": len(compatibility["mlas"]),
         "coverageMeta": coverage_meta,
+        "collectorHealth": collector_health,
+        "coverageGaps": _coverage_gaps(warehouse, collector_health),
     }
 
     atomic_write_json(output / "scrapedIntel.json", compatibility)
@@ -154,4 +210,3 @@ def generate_snapshots(
     atomic_write_json(output / "policyUpdates.json", policy_updates)
     atomic_write_json(output / "intelStatus.json", status)
     return {"raw_items": raw_count, "events": event_count}
-

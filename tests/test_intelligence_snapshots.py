@@ -73,6 +73,26 @@ def test_atomic_write_keeps_existing_file_when_validation_fails(tmp_path):
 
 def test_generate_snapshots_preserves_state_and_bounds_recent_news(tmp_path):
     warehouse = seed_warehouse(tmp_path / "intel.db")
+    warehouse.connection.execute(
+        """
+        INSERT INTO crawl_runs (
+            id, collector, started_at, completed_at, status,
+            items_seen, items_added, errors, details_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "crawl_instagram",
+            "instagram",
+            "2026-06-10T00:00:00Z",
+            "2026-06-10T00:00:10Z",
+            "completed",
+            0,
+            0,
+            0,
+            '{"status":"unavailable","reason":"anonymous access rejected"}',
+        ),
+    )
+    warehouse.connection.commit()
 
     result = generate_snapshots(warehouse, tmp_path / "public", recent_news_limit=2)
 
@@ -81,11 +101,59 @@ def test_generate_snapshots_preserves_state_and_bounds_recent_news(tmp_path):
     status = json.loads((tmp_path / "public/intelStatus.json").read_text(encoding="utf-8"))
 
     assert len(compatibility["news"]) == 2
-    assert compatibility["mlas"] == [{"id": "tn-2026-001"}]
+    assert compatibility["mlas"] == [
+        {
+            "id": "tn-2026-001",
+            "isVacant": False,
+            "currentStatus": "occupied",
+        }
+    ]
     assert compatibility["rosterMeta"]["sourceType"] == "official_eci"
     assert compatibility["evidence"] == [{"politicianId": "seeman"}]
     assert fabric["events"][0]["id"] == "event_test"
     assert status["rawItemCount"] == 3
     assert status["eventCount"] == 1
     assert status["coverageMeta"]["storyTarget"] == 100000
+    assert status["collectorHealth"][0]["collector"] == "instagram"
+    assert status["collectorHealth"][0]["health"]["status"] == "unavailable"
+    assert status["coverageGaps"][0]["collector"] == "instagram"
     assert result["raw_items"] == 3
+
+
+def test_snapshot_distinguishes_eci_wins_from_current_house_strength(tmp_path):
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    warehouse.import_legacy_document(
+        {
+            "news": [],
+            "mlas": [
+                {
+                    "id": "perambur",
+                    "candidateName": "C. Joseph Vijay",
+                    "constituencyNumber": 12,
+                    "constituency": "PERAMBUR",
+                    "party": "tvk",
+                },
+                {
+                    "id": "trichy-east",
+                    "candidateName": "C. Joseph Vijay",
+                    "constituencyNumber": 141,
+                    "constituency": "TIRUCHIRAPPALLI (EAST)",
+                    "party": "tvk",
+                },
+            ],
+            "rosterMeta": {"partyTotals": {"tvk": 2}},
+        }
+    )
+
+    generate_snapshots(warehouse, tmp_path / "public")
+
+    compatibility = json.loads((tmp_path / "public/scrapedIntel.json").read_text())
+    meta = compatibility["rosterMeta"]
+    trichy = next(item for item in compatibility["mlas"] if item["constituencyNumber"] == 141)
+
+    assert meta["sourcePartyTotals"]["tvk"] == 2
+    assert meta["currentPartyStrength"]["tvk"] == 1
+    assert meta["occupiedSeatCount"] == 1
+    assert meta["vacancyCount"] == 1
+    assert trichy["isVacant"] is True
+    assert trichy["vacancySourceUrl"].startswith("https://www.newindianexpress.com/")

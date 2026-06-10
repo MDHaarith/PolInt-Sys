@@ -48,7 +48,20 @@ class ScrapyDiscoveryCollector:
     def discover(self):
         seen = set()
         for start_url in self.start_urls:
-            html = self.page_fetcher(start_url)
+            try:
+                html = self.page_fetcher(start_url)
+            except Exception as exc:
+                failures = self.health.setdefault("pageFailures", [])
+                failures.append(
+                    {
+                        "url": start_url,
+                        "errorType": type(exc).__name__,
+                        "message": str(exc),
+                    }
+                )
+                self.health["page_failures"] = len(failures)
+                self.health["status"] = "degraded"
+                continue
             for href in self._links(html):
                 absolute = urljoin(start_url, href)
                 if urlsplit(absolute).hostname not in self.allowed_domains:
@@ -139,4 +152,3 @@ class WebArticleCollector:
                 failures += 1
         if failures:
             self.health["article_failures"] = failures
-

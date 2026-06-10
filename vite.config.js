@@ -11,6 +11,9 @@ let scraperStatus = "idle";
 let lastCompleted = null;
 let scraperTimerStarted = false;
 const intelPath = path.join(__dirname, 'public', 'scrapedIntel.json');
+const pipelinePython = fs.existsSync(path.join(__dirname, '.venv', 'bin', 'python'))
+  ? path.join(__dirname, '.venv', 'bin', 'python')
+  : 'python3';
 const MIN_SCRAPE_INTERVAL_MS = 30 * 60 * 1000;
 
 const readIntelStatus = () => {
@@ -50,9 +53,9 @@ const launchScraper = (reason = 'scheduled') => {
 
   scraperStatus = "crawling";
   const scriptPath = path.join(__dirname, 'scripts/run_intelligence_pipeline.py');
-  console.log(`[Vite Middleware] Launching ${reason} pipeline: python3 ${scriptPath}`);
+  console.log(`[Vite Middleware] Launching ${reason} pipeline: ${pipelinePython} ${scriptPath}`);
 
-  exec(`python3 "${scriptPath}" --all --extended-public`, (error, stdout, stderr) => {
+  exec(`"${pipelinePython}" "${scriptPath}" --all --extended-public`, (error, stdout, stderr) => {
     scraperStatus = "idle";
     lastCompleted = new Date().toISOString();
 

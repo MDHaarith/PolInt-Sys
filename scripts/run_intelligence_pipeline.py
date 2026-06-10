@@ -4,8 +4,13 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.intelligence.collectors.base import CollectorRunner
 from scripts.intelligence.collectors.bluesky import BlueskyCollector
@@ -155,7 +160,7 @@ def main() -> None:
     parser.add_argument("--extended-public", action="store_true")
     args = parser.parse_args()
 
-    project_root = Path(__file__).resolve().parents[1]
+    project_root = PROJECT_ROOT
     run_all = args.all or not any(
         (args.migrate, args.collect, args.extract_events, args.snapshot)
     )

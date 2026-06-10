@@ -24,6 +24,8 @@ class InstagramCollector:
             save_metadata=False,
             compress_json=False,
             quiet=True,
+            max_connection_attempts=1,
+            request_timeout=10,
         )
 
     def collect(self):
@@ -65,4 +67,3 @@ class InstagramCollector:
                 "reason": str(exc),
             }
             return
-

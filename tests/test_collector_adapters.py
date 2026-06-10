@@ -87,3 +87,27 @@ def test_collector_runner_records_failure_without_blocking_other_collectors(tmp_
     assert result["errors"] == 1
     assert warehouse.count("raw_items") == 1
     assert warehouse.count("crawl_failures") == 1
+
+
+def test_duplicate_url_with_new_external_id_does_not_fail_collector(tmp_path):
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    first = CollectedItem.from_legacy(
+        {
+            "id": "old-id",
+            "url": "https://example.test/same-story",
+            "title": "Same story",
+            "source": "Example",
+        }
+    )
+    second = CollectedItem.from_legacy(
+        {
+            "id": "new-id",
+            "url": "https://example.test/same-story",
+            "title": "Same story republished",
+            "source": "Example",
+        }
+    )
+
+    assert warehouse.upsert_raw_item(first.to_warehouse_dict()) is True
+    assert warehouse.upsert_raw_item(second.to_warehouse_dict()) is False
+    assert warehouse.count("raw_items") == 1

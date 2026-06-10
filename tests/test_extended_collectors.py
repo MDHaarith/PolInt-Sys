@@ -44,6 +44,22 @@ def test_scrapy_discovery_uses_injected_fetcher_without_network():
     assert discovered == ["https://example.test/article-one"]
 
 
+def test_scrapy_discovery_skips_failed_start_url():
+    def fetcher(url):
+        if "broken" in url:
+            raise RuntimeError("404")
+        return '<a href="/article-one">One</a>'
+
+    collector = ScrapyDiscoveryCollector(
+        start_urls=["https://broken.test/politics", "https://example.test/politics"],
+        page_fetcher=fetcher,
+        allowed_domains=["broken.test", "example.test"],
+    )
+
+    assert list(collector.discover()) == ["https://example.test/article-one"]
+    assert collector.health["page_failures"] == 1
+
+
 def test_instagram_collector_disables_cleanly_when_library_or_access_is_unavailable():
     collector = InstagramCollector(
         profiles=["public_profile"],
