@@ -7,6 +7,7 @@ import PolicyImpactDashboard from "./components/PolicyImpactDashboard";
 import { 
   seedPoliticians, seedParties, generateEventGraphData, seedAdministrations, generateAssemblySeats 
 } from "./data/politicalDatabase";
+import { mergeTimeFabricData } from "./data/timeFabricData";
 import { 
   Users, GitBranch, Search, ChevronRight, LayoutDashboard, Newspaper, ClipboardList
 } from "lucide-react";
@@ -290,6 +291,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAdminId, setSelectedAdminId] = useState("all");
   const [selectedPoliticianId, setSelectedPoliticianId] = useState("mk_stalin");
+  const [timeFabricSnapshot, setTimeFabricSnapshot] = useState(null);
+  const [focusedEventId, setFocusedEventId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "info" });
 
   const showToast = (message, type = "info") => {
@@ -330,6 +333,19 @@ export default function App() {
     };
     loadInitialIntel();
   }, []);
+
+  useEffect(() => {
+    const loadTimeFabric = async () => {
+      try {
+        const response = await fetch(`/timeFabric.json?t=${Date.now()}`);
+        if (!response.ok) return;
+        setTimeFabricSnapshot(await response.json());
+      } catch (error) {
+        console.error("Error loading extracted Time Fabric:", error);
+      }
+    };
+    loadTimeFabric();
+  }, [db.lastIntelSync]);
 
   useEffect(() => {
     const pollIntelStatus = async () => {
@@ -398,12 +414,22 @@ export default function App() {
 
   // 4. Generate Event Graph Nodes & Edges (Time Fabric)
   const { nodes: eventNodes, edges: eventEdges } = useMemo(() => {
-    return generateEventGraphData();
-  }, []);
+    return mergeTimeFabricData(generateEventGraphData(), timeFabricSnapshot);
+  }, [timeFabricSnapshot]);
+
+  const activePoliticianEvents = useMemo(
+    () => eventNodes.filter(event => event.politicianId === selectedPoliticianId),
+    [eventNodes, selectedPoliticianId],
+  );
 
   const handleSelectPolitician = (id) => {
     setSelectedPoliticianId(id);
     setWorkspaceMode("politician"); // Auto shift to profile view
+  };
+
+  const handleSelectEvent = (id) => {
+    setFocusedEventId(id);
+    setWorkspaceMode("events");
   };
 
   const renderPoliticianItem = (p) => {
@@ -617,20 +643,27 @@ export default function App() {
             news={db.news}
             politicians={db.politicians}
             parties={db.parties}
+            events={eventNodes}
             lastIntelSync={db.lastIntelSync}
             onSelectPolitician={handleSelectPolitician}
+            onSelectEvent={handleSelectEvent}
           />
         ) : workspaceMode === "policies" ? (
           <PolicyImpactDashboard />
         ) : workspaceMode === "politician" ? (
           <PoliticianSpace 
+            key={activePolitician?.id || "no-politician"}
             politician={activePolitician} 
             parties={db.parties} 
+            events={activePoliticianEvents}
+            onSelectEvent={handleSelectEvent}
           />
         ) : (
           <EventGraph 
+            key={focusedEventId || "time-fabric"}
             nodes={eventNodes} 
             edges={eventEdges} 
+            focusEventId={focusedEventId}
           />
         )}
       </main>

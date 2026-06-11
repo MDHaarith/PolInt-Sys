@@ -1367,6 +1367,36 @@ body {
   padding: 14px;
 }
 
+.time-fabric-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.time-fabric-filter-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.time-fabric-filter-row select {
+  min-width: 190px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .time-fabric-clear {
   display: inline-flex;
   align-items: center;
@@ -1422,10 +1452,20 @@ body {
 }
 
 .time-fabric-year {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   color: var(--warning);
   font-family: var(--font-title);
   font-size: 1.05rem;
   font-weight: 850;
+}
+
+.time-fabric-year small {
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 750;
 }
 
 .time-fabric-card-body {
@@ -1540,6 +1580,23 @@ body {
   margin-top: 0;
 }
 
+.time-fabric-verification-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.time-fabric-verification-row span {
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  background: rgba(56, 189, 248, 0.055);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
 .time-fabric-impact-box,
 .time-fabric-watchlist,
 .time-fabric-linkage,
@@ -1582,6 +1639,53 @@ body {
 .time-fabric-watchlist,
 .time-fabric-linkage {
   margin-top: 12px;
+}
+
+.time-fabric-evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.time-fabric-evidence-list h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  margin: 0 0 2px;
+}
+
+.time-fabric-evidence-list a {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) auto;
+  gap: 8px;
+  color: var(--text-primary);
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 7px;
+  padding: 9px;
+}
+
+.time-fabric-evidence-list a:hover {
+  border-color: rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.04);
+}
+
+.time-fabric-evidence-list span,
+.time-fabric-evidence-list small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.time-fabric-evidence-list strong {
+  font-size: 0.76rem;
+  line-height: 1.35;
 }
 
 .time-fabric-watchlist h3,
@@ -2999,6 +3103,55 @@ body {
 /* Active tag filter pill styling */
 .active-tag-filter-pill {
   animation: fadeIn 0.2s ease-out;
+}
+
+.politician-event-history {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.politician-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.politician-event-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border-color);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 11px 12px;
+  cursor: pointer;
+}
+
+.politician-event-row:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.045);
+}
+
+.politician-event-row span {
+  color: var(--warning);
+  font-size: 0.75rem;
+  font-weight: 850;
+}
+
+.politician-event-row strong {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.politician-event-row small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
 }
 
 @keyframes fadeIn {

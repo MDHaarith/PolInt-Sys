@@ -8,10 +8,14 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.venv/
 dist
 dist-ssr
 *.local
 .worktrees/
+data/*.db
+data/*.db-*
+data/quarantine/
 
 # Editor directories and files
 .vscode/*
