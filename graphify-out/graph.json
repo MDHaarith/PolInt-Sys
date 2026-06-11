@@ -1,7 +1,80 @@
 {
   "directed": false,
   "multigraph": false,
-  "graph": {},
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "mla_roster_workflow",
+        "label": "MLA Roster Ingestion and Presentation Flow",
+        "nodes": [
+          "scripts_build_mla_roster_main",
+          "public_scrapedintel_data",
+          "src_app_mergeintelandroster",
+          "components_assemblydashboard_assemblydashboard"
+        ],
+        "relation": "form",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "scripts/build_mla_roster.py"
+      },
+      {
+        "id": "integrated_ingestion_pipeline",
+        "label": "Integrated Intelligence Ingestion Pipeline Definition",
+        "nodes": [
+          "plans_2026_06_11_integrated_intelligence_ingestion_plan",
+          "specs_2026_06_11_integrated_intelligence_ingestion_design_spec",
+          "scripts_scrape_political_intel_main"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "docs/superpowers/plans/2026-06-11-integrated-intelligence-ingestion.md"
+      },
+      {
+        "id": "political_timeline_presentation_flow",
+        "label": "Political Timeline and Causal Event Flow",
+        "nodes": [
+          "components_timelineview_timelineview",
+          "data_politicaldatabase_seedevents",
+          "data_politicaldatabase_generateeventgraphdata"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "src/components/TimelineView.jsx"
+      },
+      {
+        "id": "mla_database_view_deep_dive_flow",
+        "label": "MLA Directory and Profile Deep Dive Flow",
+        "nodes": [
+          "components_tableview_tableview",
+          "components_sidebar_sidebar",
+          "data_politicaldatabase_seedpoliticians",
+          "data_politicaldatabase_generateassemblyseats"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "src/components/TableView.jsx"
+      },
+      {
+        "id": "public_icons_set",
+        "label": "SVG Icon Assets Set",
+        "nodes": [
+          "public_icons_bluesky_icon",
+          "public_icons_discord_icon",
+          "public_icons_documentation_icon",
+          "public_icons_github_icon",
+          "public_icons_social_icon",
+          "public_icons_x_icon"
+        ],
+        "relation": "form",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "public/icons.svg"
+      }
+    ]
+  },
   "nodes": [
     {
       "label": "hooks.json",
@@ -10,7 +83,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "codex_hooks",
-      "community": 15,
+      "community": 13,
       "norm_label": "hooks.json"
     },
     {
@@ -20,7 +93,7 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "codex_hooks_hooks",
-      "community": 15,
+      "community": 13,
       "norm_label": "hooks"
     },
     {
@@ -30,7 +103,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "codex_hooks_hooks_pretooluse",
-      "community": 15,
+      "community": 13,
       "norm_label": "pretooluse"
     },
     {
@@ -40,7 +113,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "eslint_config",
-      "community": 26,
+      "community": 22,
       "norm_label": "eslint.config.js"
     },
     {
@@ -290,7 +363,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "package_devdependencies_vite",
-      "community": 2,
+      "community": 6,
       "norm_label": "vite"
     },
     {
@@ -670,7 +743,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "scripts_seed_all_234_mlas",
-      "community": 14,
+      "community": 11,
       "norm_label": "seed_all_234_mlas.py"
     },
     {
@@ -680,7 +753,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "scripts_seed_all_234_mlas_get_tamil_name",
-      "community": 14,
+      "community": 11,
       "norm_label": "get_tamil_name()"
     },
     {
@@ -690,7 +763,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "scripts_seed_all_234_mlas_generate_mla_roster",
-      "community": 14,
+      "community": 11,
       "norm_label": "generate_mla_roster()"
     },
     {
@@ -700,7 +773,7 @@
       "source_location": "L180",
       "_origin": "ast",
       "id": "scripts_seed_all_234_mlas_seed_scraped_intel",
-      "community": 14,
+      "community": 11,
       "norm_label": "seed_scraped_intel()"
     },
     {
@@ -710,7 +783,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app",
-      "community": 0,
+      "community": 5,
       "norm_label": "app.jsx"
     },
     {
@@ -720,7 +793,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_app_getpoliticianendyear",
-      "community": 0,
+      "community": 5,
       "norm_label": "getpoliticianendyear()"
     },
     {
@@ -730,7 +803,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_app_formatassemblysummary",
-      "community": 0,
+      "community": 5,
       "norm_label": "formatassemblysummary()"
     },
     {
@@ -740,7 +813,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_app_formatpartyshiftssummary",
-      "community": 0,
+      "community": 5,
       "norm_label": "formatpartyshiftssummary()"
     },
     {
@@ -750,7 +823,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_app_normalizepersonname",
-      "community": 0,
+      "community": 5,
       "norm_label": "normalizepersonname()"
     },
     {
@@ -760,7 +833,7 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "src_app_hasnumbervalue",
-      "community": 0,
+      "community": 5,
       "norm_label": "hasnumbervalue()"
     },
     {
@@ -770,7 +843,7 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "src_app_formatvotecount",
-      "community": 0,
+      "community": 5,
       "norm_label": "formatvotecount()"
     },
     {
@@ -780,7 +853,7 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "src_app_buildofficialroster",
-      "community": 0,
+      "community": 5,
       "norm_label": "buildofficialroster()"
     },
     {
@@ -790,7 +863,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "src_app_buildpoliticianidaliases",
-      "community": 0,
+      "community": 5,
       "norm_label": "buildpoliticianidaliases()"
     },
     {
@@ -800,7 +873,7 @@
       "source_location": "L130",
       "_origin": "ast",
       "id": "src_app_canonicalizepoliticianid",
-      "community": 0,
+      "community": 5,
       "norm_label": "canonicalizepoliticianid()"
     },
     {
@@ -810,7 +883,7 @@
       "source_location": "L135",
       "_origin": "ast",
       "id": "src_app_normalizeintelrecords",
-      "community": 0,
+      "community": 5,
       "norm_label": "normalizeintelrecords()"
     },
     {
@@ -820,7 +893,7 @@
       "source_location": "L147",
       "_origin": "ast",
       "id": "src_app_mergeintelandroster",
-      "community": 0,
+      "community": 5,
       "norm_label": "mergeintelandroster()"
     },
     {
@@ -830,7 +903,7 @@
       "source_location": "L276",
       "_origin": "ast",
       "id": "src_app_app",
-      "community": 0,
+      "community": 5,
       "norm_label": "app()"
     },
     {
@@ -960,7 +1033,7 @@
       "source_location": "L277",
       "_origin": "ast",
       "id": "components_assemblydashboard_assemblydashboard",
-      "community": 5,
+      "community": 4,
       "norm_label": "assemblydashboard()"
     },
     {
@@ -970,7 +1043,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_dashboard",
-      "community": 17,
+      "community": 14,
       "norm_label": "dashboard.jsx"
     },
     {
@@ -980,7 +1053,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "components_dashboard_dashboard",
-      "community": 17,
+      "community": 14,
       "norm_label": "dashboard()"
     },
     {
@@ -990,7 +1063,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_dossiercard",
-      "community": 18,
+      "community": 15,
       "norm_label": "dossiercard.jsx"
     },
     {
@@ -1000,7 +1073,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_dossiercard_dossiercard",
-      "community": 18,
+      "community": 15,
       "norm_label": "dossiercard()"
     },
     {
@@ -1010,7 +1083,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_eventgraph",
-      "community": 11,
+      "community": 9,
       "norm_label": "eventgraph.jsx"
     },
     {
@@ -1020,7 +1093,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_eventgraph_geteventlabel",
-      "community": 11,
+      "community": 9,
       "norm_label": "geteventlabel()"
     },
     {
@@ -1030,7 +1103,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "components_eventgraph_geteventtype",
-      "community": 11,
+      "community": 9,
       "norm_label": "geteventtype()"
     },
     {
@@ -1040,7 +1113,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "components_eventgraph_eventgraph",
-      "community": 11,
+      "community": 9,
       "norm_label": "eventgraph()"
     },
     {
@@ -1050,7 +1123,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_graphview",
-      "community": 9,
+      "community": 0,
       "norm_label": "graphview.jsx"
     },
     {
@@ -1060,7 +1133,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "components_graphview_politiciannode",
-      "community": 9,
+      "community": 0,
       "norm_label": "politiciannode()"
     },
     {
@@ -1070,7 +1143,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "components_graphview_partynode",
-      "community": 9,
+      "community": 0,
       "norm_label": "partynode()"
     },
     {
@@ -1080,7 +1153,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "components_graphview_eventnode",
-      "community": 9,
+      "community": 0,
       "norm_label": "eventnode()"
     },
     {
@@ -1090,7 +1163,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "components_graphview_nodetypes",
-      "community": 9,
+      "community": 0,
       "norm_label": "nodetypes"
     },
     {
@@ -1100,7 +1173,7 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "components_graphview_graphview",
-      "community": 9,
+      "community": 0,
       "norm_label": "graphview()"
     },
     {
@@ -1110,7 +1183,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_importexport",
-      "community": 19,
+      "community": 16,
       "norm_label": "importexport.jsx"
     },
     {
@@ -1120,7 +1193,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_importexport_importexport",
-      "community": 19,
+      "community": 16,
       "norm_label": "importexport()"
     },
     {
@@ -1130,7 +1203,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_intelligencefeed",
-      "community": 5,
+      "community": 4,
       "norm_label": "intelligencefeed.jsx"
     },
     {
@@ -1140,7 +1213,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "components_intelligencefeed_rumor_terms",
-      "community": 5,
+      "community": 4,
       "norm_label": "rumor_terms"
     },
     {
@@ -1150,7 +1223,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "components_intelligencefeed_category_config",
-      "community": 5,
+      "community": 4,
       "norm_label": "category_config"
     },
     {
@@ -1160,7 +1233,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "components_intelligencefeed_formatnumber",
-      "community": 5,
+      "community": 4,
       "norm_label": "formatnumber()"
     },
     {
@@ -1170,7 +1243,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "components_intelligencefeed_parsestorydate",
-      "community": 5,
+      "community": 4,
       "norm_label": "parsestorydate()"
     },
     {
@@ -1180,7 +1253,7 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "components_intelligencefeed_normalizetext",
-      "community": 5,
+      "community": 4,
       "norm_label": "normalizetext()"
     },
     {
@@ -1190,7 +1263,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "components_intelligencefeed_detectrumor",
-      "community": 5,
+      "community": 4,
       "norm_label": "detectrumor()"
     },
     {
@@ -1200,7 +1273,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "components_intelligencefeed_cleansnippet",
-      "community": 5,
+      "community": 4,
       "norm_label": "cleansnippet()"
     },
     {
@@ -1210,7 +1283,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "components_intelligencefeed_getstorykey",
-      "community": 5,
+      "community": 4,
       "norm_label": "getstorykey()"
     },
     {
@@ -1220,7 +1293,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "components_intelligencefeed_intelligencefeed",
-      "community": 5,
+      "community": 4,
       "norm_label": "intelligencefeed()"
     },
     {
@@ -1230,7 +1303,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_modeselector",
-      "community": 20,
+      "community": 17,
       "norm_label": "modeselector.jsx"
     },
     {
@@ -1240,7 +1313,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_modeselector_modeselector",
-      "community": 20,
+      "community": 17,
       "norm_label": "modeselector()"
     },
     {
@@ -1250,7 +1323,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_noteeditor",
-      "community": 21,
+      "community": 18,
       "norm_label": "noteeditor.jsx"
     },
     {
@@ -1260,7 +1333,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_noteeditor_noteeditor",
-      "community": 21,
+      "community": 18,
       "norm_label": "noteeditor()"
     },
     {
@@ -1270,7 +1343,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_noteexplorer",
-      "community": 12,
+      "community": 10,
       "norm_label": "noteexplorer.jsx"
     },
     {
@@ -1280,7 +1353,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_noteexplorer_noteexplorer",
-      "community": 12,
+      "community": 10,
       "norm_label": "noteexplorer()"
     },
     {
@@ -1290,7 +1363,7 @@
       "source_location": "L161",
       "_origin": "ast",
       "id": "components_noteexplorer_chevrondownicon",
-      "community": 12,
+      "community": 10,
       "norm_label": "chevrondownicon()"
     },
     {
@@ -1300,7 +1373,7 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "components_noteexplorer_chevronrighticon",
-      "community": 12,
+      "community": 10,
       "norm_label": "chevronrighticon()"
     },
     {
@@ -1310,7 +1383,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_obsidiangraph",
-      "community": 22,
+      "community": 19,
       "norm_label": "obsidiangraph.jsx"
     },
     {
@@ -1320,7 +1393,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_obsidiangraph_obsidiangraph",
-      "community": 22,
+      "community": 19,
       "norm_label": "obsidiangraph()"
     },
     {
@@ -1460,7 +1533,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_sidebar",
-      "community": 23,
+      "community": 0,
       "norm_label": "sidebar.jsx"
     },
     {
@@ -1470,7 +1543,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "components_sidebar_sidebar",
-      "community": 23,
+      "community": 0,
       "norm_label": "sidebar()"
     },
     {
@@ -1480,7 +1553,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_tableview",
-      "community": 24,
+      "community": 0,
       "norm_label": "tableview.jsx"
     },
     {
@@ -1490,7 +1563,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_tableview_tableview",
-      "community": 24,
+      "community": 0,
       "norm_label": "tableview()"
     },
     {
@@ -1500,7 +1573,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_timelineview",
-      "community": 25,
+      "community": 0,
       "norm_label": "timelineview.jsx"
     },
     {
@@ -1510,7 +1583,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "components_timelineview_timelineview",
-      "community": 25,
+      "community": 0,
       "norm_label": "timelineview()"
     },
     {
@@ -1680,7 +1753,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_main",
-      "community": 0,
+      "community": 5,
       "norm_label": "main.jsx"
     },
     {
@@ -1840,7 +1913,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "vite_config",
-      "community": 10,
+      "community": 6,
       "norm_label": "vite.config.js"
     },
     {
@@ -1850,7 +1923,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "vite_config_dirname",
-      "community": 10,
+      "community": 6,
       "norm_label": "__dirname"
     },
     {
@@ -1860,7 +1933,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "vite_config_intelpath",
-      "community": 10,
+      "community": 6,
       "norm_label": "intelpath"
     },
     {
@@ -1870,7 +1943,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "vite_config_readintelstatus",
-      "community": 10,
+      "community": 6,
       "norm_label": "readintelstatus()"
     },
     {
@@ -1880,7 +1953,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "vite_config_launchscraper",
-      "community": 10,
+      "community": 6,
       "norm_label": "launchscraper()"
     },
     {
@@ -1890,258 +1963,389 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "vite_config_configureserver",
-      "community": 10,
+      "community": 6,
       "norm_label": "configureserver()"
     },
     {
-      "label": "AGENTS.md",
+      "label": "Graphify Rules",
       "file_type": "document",
       "source_file": "AGENTS.md",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "agents",
-      "community": 16,
-      "norm_label": "agents.md"
-    },
-    {
-      "label": "graphify",
-      "file_type": "document",
-      "source_file": "AGENTS.md",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "agents_graphify",
-      "community": 16,
-      "norm_label": "graphify"
-    },
-    {
-      "label": "README.md",
-      "file_type": "document",
-      "source_file": "README.md",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "readme",
-      "community": 13,
-      "norm_label": "readme.md"
-    },
-    {
-      "label": "Intelligence Graph",
-      "file_type": "document",
-      "source_file": "README.md",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "readme_intelligence_graph",
-      "community": 13,
-      "norm_label": "intelligence graph"
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "agents_graphify_rules",
+      "community": 20,
+      "norm_label": "graphify rules"
     },
     {
       "label": "Data Workflow",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L5",
-      "_origin": "ast",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
       "id": "readme_data_workflow",
-      "community": 13,
+      "community": 28,
       "norm_label": "data workflow"
     },
     {
-      "label": "Source Rules",
-      "file_type": "document",
-      "source_file": "README.md",
-      "source_location": "L35",
-      "_origin": "ast",
-      "id": "readme_source_rules",
-      "community": 13,
-      "norm_label": "source rules"
+      "label": "ESLint Configuration",
+      "file_type": "code",
+      "source_file": "eslint.config.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "eslint_config_rules",
+      "community": 23,
+      "norm_label": "eslint configuration"
     },
     {
-      "label": "2026-06-08-hybrid-mla-roster.md",
+      "label": "HTML Index Root",
+      "file_type": "code",
+      "source_file": "index.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "index_root",
+      "community": 24,
+      "norm_label": "html index root"
+    },
+    {
+      "label": "Package Config",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "package_config",
+      "community": 25,
+      "norm_label": "package config"
+    },
+    {
+      "label": "Define Config",
+      "file_type": "code",
+      "source_file": "vite.config.js",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "vite_config_defineconfig",
+      "community": 31,
+      "norm_label": "define config"
+    },
+    {
+      "label": "Graphify Always On Rules",
+      "file_type": "document",
+      "source_file": ".agents/rules/graphify.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "rules_graphify_always_on",
+      "community": 29,
+      "norm_label": "graphify always on rules"
+    },
+    {
+      "label": "Graphify Pipeline Workflow",
+      "file_type": "document",
+      "source_file": ".agents/workflows/graphify.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "workflows_graphify_pipeline",
+      "community": 32,
+      "norm_label": "graphify pipeline workflow"
+    },
+    {
+      "label": "Pre-Tool Use Hook Config",
+      "file_type": "code",
+      "source_file": ".codex/hooks.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "codex_hooks_pretooluse",
+      "community": 21,
+      "norm_label": "pre-tool use hook config"
+    },
+    {
+      "label": "Hybrid MLA Roster Plan",
       "file_type": "document",
       "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "plans_2026_06_08_hybrid_mla_roster",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Goal is to replace generated/fake 17th Assembly MLA data with a source-labeled ECI-first roster.",
+      "id": "plans_2026_06_08_hybrid_mla_roster_plan",
+      "community": 1,
+      "norm_label": "hybrid mla roster plan"
+    },
+    {
+      "label": "Integrated Intelligence Ingestion Plan",
+      "file_type": "document",
+      "source_file": "docs/superpowers/plans/2026-06-11-integrated-intelligence-ingestion.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Extends existing app with local SQLite evidence warehouse, Newspaper/Scrapy adapters, clustered event extraction from 1952 onward, and snapshots.",
+      "id": "plans_2026_06_11_integrated_intelligence_ingestion_plan",
+      "community": 26,
+      "norm_label": "integrated intelligence ingestion plan"
+    },
+    {
+      "label": "Hybrid MLA Roster Design Spec",
+      "file_type": "document",
+      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Design decisions call for official ECI as primary source of truth, secondary sources for enrichment only, and rendering unsourced fields as unavailable.",
+      "id": "specs_2026_06_08_hybrid_mla_roster_design_spec",
+      "community": 1,
+      "norm_label": "hybrid mla roster design spec"
+    },
+    {
+      "label": "Integrated Intelligence Ingestion Spec",
+      "file_type": "document",
+      "source_file": "docs/superpowers/specs/2026-06-11-integrated-intelligence-ingestion-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Ensures complete raw item storage as evidence, clustering duplicates, 1952+ coverage scope, SQLite DB engine, and atomic compatibility snapshots.",
+      "id": "specs_2026_06_11_integrated_intelligence_ingestion_design_spec",
+      "community": 30,
+      "norm_label": "integrated intelligence ingestion spec"
+    },
+    {
+      "label": "Scraped Intelligence Data Store",
+      "file_type": "document",
+      "source_file": "public/scrapedIntel.json",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_scrapedintel_data",
+      "community": 6,
+      "norm_label": "scraped intelligence data store"
+    },
+    {
+      "label": "Seeder Main execution",
+      "file_type": "code",
+      "source_file": "scripts/seed_all_234_mlas.py",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "scripts_seed_all_234_mlas_main",
+      "community": 6,
+      "norm_label": "seeder main execution"
+    },
+    {
+      "label": "Main Render Entry",
+      "file_type": "code",
+      "source_file": "src/main.jsx",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_main_render",
+      "community": 5,
+      "norm_label": "main render entry"
+    },
+    {
+      "label": "Intelligence Graph Favicon Logo",
+      "file_type": "image",
+      "source_file": "public/favicon.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_favicon_logo",
+      "community": 27,
+      "norm_label": "intelligence graph favicon logo"
+    },
+    {
+      "label": "Icons SVG Asset",
+      "file_type": "image",
+      "source_file": "public/icons.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_icons",
       "community": 8,
-      "norm_label": "2026-06-08-hybrid-mla-roster.md"
+      "norm_label": "icons svg asset"
     },
     {
-      "label": "Hybrid MLA Roster Implementation Plan",
-      "file_type": "document",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "plans_2026_06_08_hybrid_mla_roster_hybrid_mla_roster_implementation_plan",
+      "label": "Bluesky Icon",
+      "file_type": "concept",
+      "source_file": "public/icons.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_icons_bluesky_icon",
       "community": 8,
-      "norm_label": "hybrid mla roster implementation plan"
+      "norm_label": "bluesky icon"
     },
     {
-      "label": "Task 1: Add Testable ECI Roster Parser",
-      "file_type": "document",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L13",
-      "_origin": "ast",
-      "id": "plans_2026_06_08_hybrid_mla_roster_task_1_add_testable_eci_roster_parser",
+      "label": "Discord Icon",
+      "file_type": "concept",
+      "source_file": "public/icons.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_icons_discord_icon",
       "community": 8,
-      "norm_label": "task 1: add testable eci roster parser"
+      "norm_label": "discord icon"
     },
     {
-      "label": "Task 2: Generate Official `mlas` Data",
-      "file_type": "document",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L103",
-      "_origin": "ast",
-      "id": "plans_2026_06_08_hybrid_mla_roster_task_2_generate_official_mlas_data",
+      "label": "Documentation Icon",
+      "file_type": "concept",
+      "source_file": "public/icons.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_icons_documentation_icon",
       "community": 8,
-      "norm_label": "task 2: generate official `mlas` data"
+      "norm_label": "documentation icon"
     },
     {
-      "label": "Task 3: Wire Official Roster Into React State",
-      "file_type": "document",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L125",
-      "_origin": "ast",
-      "id": "plans_2026_06_08_hybrid_mla_roster_task_3_wire_official_roster_into_react_state",
+      "label": "GitHub Icon",
+      "file_type": "concept",
+      "source_file": "public/icons.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_icons_github_icon",
       "community": 8,
-      "norm_label": "task 3: wire official roster into react state"
+      "norm_label": "github icon"
     },
     {
-      "label": "Task 4: Update Assembly Dashboard Copy And Fields",
-      "file_type": "document",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L139",
-      "_origin": "ast",
-      "id": "plans_2026_06_08_hybrid_mla_roster_task_4_update_assembly_dashboard_copy_and_fields",
+      "label": "Social Icon",
+      "file_type": "concept",
+      "source_file": "public/icons.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_icons_social_icon",
       "community": 8,
-      "norm_label": "task 4: update assembly dashboard copy and fields"
+      "norm_label": "social icon"
     },
     {
-      "label": "Task 5: Remove Fake Roster From Normal Workflow",
-      "file_type": "document",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L157",
-      "_origin": "ast",
-      "id": "plans_2026_06_08_hybrid_mla_roster_task_5_remove_fake_roster_from_normal_workflow",
+      "label": "X Icon",
+      "file_type": "concept",
+      "source_file": "public/icons.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "public_icons_x_icon",
       "community": 8,
-      "norm_label": "task 5: remove fake roster from normal workflow"
+      "norm_label": "x icon"
     },
     {
-      "label": "Task 6: Verify Build And Runtime",
-      "file_type": "document",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L176",
-      "_origin": "ast",
-      "id": "plans_2026_06_08_hybrid_mla_roster_task_6_verify_build_and_runtime",
-      "community": 8,
-      "norm_label": "task 6: verify build and runtime"
+      "label": "Hero Graphic Asset",
+      "file_type": "image",
+      "source_file": "src/assets/hero.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "assets_hero_image",
+      "community": 12,
+      "norm_label": "hero graphic asset"
     },
     {
-      "label": "2026-06-08-hybrid-mla-roster-design.md",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design",
+      "label": "Isometric Stacked Illustration",
+      "file_type": "concept",
+      "source_file": "src/assets/hero.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "assets_hero_isometric_stack",
+      "community": 12,
+      "norm_label": "isometric stacked illustration"
+    },
+    {
+      "label": "Layered Visualization Pattern",
+      "file_type": "concept",
+      "source_file": "src/assets/hero.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "assets_hero_layered_visualization",
+      "community": 12,
+      "norm_label": "layered visualization pattern"
+    },
+    {
+      "label": "React SVG Logo",
+      "file_type": "image",
+      "source_file": "src/assets/react.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "assets_react",
+      "community": 2,
+      "norm_label": "react svg logo"
+    },
+    {
+      "label": "Vite Logo",
+      "file_type": "image",
+      "source_file": "src/assets/vite.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "assets_vite_logo",
       "community": 6,
-      "norm_label": "2026-06-08-hybrid-mla-roster-design.md"
-    },
-    {
-      "label": "Hybrid MLA Roster Design",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "community": 6,
-      "norm_label": "hybrid mla roster design"
-    },
-    {
-      "label": "Goal",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L7",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_goal",
-      "community": 6,
-      "norm_label": "goal"
-    },
-    {
-      "label": "Sources",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L17",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_sources",
-      "community": 6,
-      "norm_label": "sources"
-    },
-    {
-      "label": "Data Model",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L44",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_data_model",
-      "community": 6,
-      "norm_label": "data model"
-    },
-    {
-      "label": "Architecture",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L94",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_architecture",
-      "community": 6,
-      "norm_label": "architecture"
-    },
-    {
-      "label": "UI Changes",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L116",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_ui_changes",
-      "community": 6,
-      "norm_label": "ui changes"
-    },
-    {
-      "label": "Error Handling",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L137",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_error_handling",
-      "community": 6,
-      "norm_label": "error handling"
-    },
-    {
-      "label": "Testing And Verification",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L148",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_testing_and_verification",
-      "community": 6,
-      "norm_label": "testing and verification"
-    },
-    {
-      "label": "Implementation Order",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L159",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_implementation_order",
-      "community": 6,
-      "norm_label": "implementation order"
-    },
-    {
-      "label": "Decisions",
-      "file_type": "document",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L169",
-      "_origin": "ast",
-      "id": "specs_2026_06_08_hybrid_mla_roster_design_decisions",
-      "community": 6,
-      "norm_label": "decisions"
+      "norm_label": "vite logo"
     }
   ],
   "links": [
@@ -2316,6 +2520,16 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/assets/react.svg",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "assets_react",
+      "target": "package_dependencies_react"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "package.json",
@@ -2404,6 +2618,16 @@
       "source": "package_devdependencies",
       "target": "package_devdependencies_vitejs_plugin_react",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/assets/vite.svg",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "assets_vite_logo",
+      "target": "package_devdependencies_vite"
     },
     {
       "relation": "contains",
@@ -2601,77 +2825,77 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L101",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_normalize_party_id",
-      "target": "scripts_build_mla_roster_normalize_spaces",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_normalize_spaces"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L178",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_parse_candidate_line",
-      "target": "scripts_build_mla_roster_normalize_spaces",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_normalize_spaces"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L111",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_parse_constituency_header",
-      "target": "scripts_build_mla_roster_normalize_spaces",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_normalize_spaces"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L304",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_parse_winner_blocks",
-      "target": "scripts_build_mla_roster_normalize_spaces",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_normalize_spaces"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L94",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_remove_page_artifacts",
-      "target": "scripts_build_mla_roster_normalize_spaces",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_normalize_spaces"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L139",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_parse_candidate_line",
-      "target": "scripts_build_mla_roster_remove_page_artifacts",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_remove_page_artifacts"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L194",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_parse_candidate_line",
-      "target": "scripts_build_mla_roster_normalize_party_id",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_normalize_party_id"
     },
     {
       "relation": "imports",
@@ -2683,6 +2907,16 @@
       "source": "tests_test_build_mla_roster",
       "target": "scripts_build_mla_roster_normalize_party_id",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_build_mla_roster.py",
+      "source_location": "L27",
+      "weight": 1.0,
+      "source": "tests_test_build_mla_roster_buildmlarostertest",
+      "target": "scripts_build_mla_roster_normalize_party_id"
     },
     {
       "relation": "calls",
@@ -2700,22 +2934,22 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L215",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_build_winner_record",
-      "target": "scripts_build_mla_roster_slugify",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_slugify"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L310",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_parse_winner_blocks",
-      "target": "scripts_build_mla_roster_parse_constituency_header",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_parse_constituency_header"
     },
     {
       "relation": "imports",
@@ -2727,6 +2961,16 @@
       "source": "tests_test_build_mla_roster",
       "target": "scripts_build_mla_roster_parse_constituency_header",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_build_mla_roster.py",
+      "source_location": "L33",
+      "weight": 1.0,
+      "source": "tests_test_build_mla_roster_buildmlarostertest",
+      "target": "scripts_build_mla_roster_parse_constituency_header"
     },
     {
       "relation": "calls",
@@ -2744,11 +2988,11 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L330",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_parse_winner_blocks",
-      "target": "scripts_build_mla_roster_parse_candidate_line",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_parse_candidate_line"
     },
     {
       "relation": "imports",
@@ -2760,6 +3004,16 @@
       "source": "tests_test_build_mla_roster",
       "target": "scripts_build_mla_roster_parse_candidate_line",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_build_mla_roster.py",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "tests_test_build_mla_roster_buildmlarostertest",
+      "target": "scripts_build_mla_roster_parse_candidate_line"
     },
     {
       "relation": "calls",
@@ -2785,14 +3039,24 @@
     },
     {
       "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/build_mla_roster.py",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "scripts_build_mla_roster_parse_winner_blocks",
+      "target": "scripts_build_mla_roster_build_winner_record"
+    },
+    {
+      "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L495",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_build_roster",
-      "target": "scripts_build_mla_roster_parse_winner_blocks",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_parse_winner_blocks"
     },
     {
       "relation": "imports",
@@ -2804,6 +3068,16 @@
       "source": "tests_test_build_mla_roster",
       "target": "scripts_build_mla_roster_parse_winner_blocks",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_build_mla_roster.py",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "tests_test_build_mla_roster_buildmlarostertest",
+      "target": "scripts_build_mla_roster_parse_winner_blocks"
     },
     {
       "relation": "calls",
@@ -2843,99 +3117,129 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L490",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_build_roster",
-      "target": "scripts_build_mla_roster_download_pdf",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_download_pdf"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L393",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_extract_pdf_text",
-      "target": "scripts_build_mla_roster_extract_text_with_pdfplumber",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_extract_text_with_pdfplumber"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L397",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_extract_pdf_text",
-      "target": "scripts_build_mla_roster_extract_text_with_pdftotext",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_extract_text_with_pdftotext"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L485",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_build_roster",
-      "target": "scripts_build_mla_roster_extract_pdf_text",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_extract_pdf_text"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L496",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_build_roster",
-      "target": "scripts_build_mla_roster_validate_winners",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_validate_winners"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L454",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_write_roster",
-      "target": "scripts_build_mla_roster_load_json_database",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_load_json_database"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L457",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_build_mla_roster_write_roster",
-      "target": "scripts_build_mla_roster_is_generated_evidence",
-      "confidence_score": 1.0
+      "target": "scripts_build_mla_roster_is_generated_evidence"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L523",
+      "source_location": null,
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_build_mla_roster_main",
+      "target": "scripts_build_mla_roster_write_roster"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/build_mla_roster.py",
+      "source_location": null,
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "scripts_build_mla_roster_main",
+      "target": "scripts_build_mla_roster_build_roster"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "scripts/build_mla_roster.py",
+      "source_location": null,
       "weight": 1.0,
       "source": "scripts_build_mla_roster_main",
-      "target": "scripts_build_mla_roster_write_roster",
-      "confidence_score": 1.0
+      "target": "plans_2026_06_08_hybrid_mla_roster_plan"
     },
     {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
       "source_file": "scripts/build_mla_roster.py",
-      "source_location": "L516",
+      "source_location": null,
       "weight": 1.0,
       "source": "scripts_build_mla_roster_main",
-      "target": "scripts_build_mla_roster_build_roster",
-      "confidence_score": 1.0
+      "target": "scripts_seed_all_234_mlas_main"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "scripts/build_mla_roster.py",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "scripts_build_mla_roster_main",
+      "target": "specs_2026_06_08_hybrid_mla_roster_design_spec"
     },
     {
       "relation": "contains",
@@ -3093,55 +3397,55 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L788",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_bluesky",
-      "target": "scripts_scrape_political_intel_clean_html",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_clean_html"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L976",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_rss",
-      "target": "scripts_scrape_political_intel_clean_html",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_clean_html"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L835",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_reddit_submission_to_item",
-      "target": "scripts_scrape_political_intel_clean_html",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_clean_html"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L1010",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_rss",
-      "target": "scripts_scrape_political_intel_parse_date",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_parse_date"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L1003",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_rss",
-      "target": "scripts_scrape_political_intel_detect_unverified_signal",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_detect_unverified_signal"
     },
     {
       "relation": "imports",
@@ -3153,6 +3457,16 @@
       "source": "tests_test_social_scraper",
       "target": "scripts_scrape_political_intel_detect_unverified_signal",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_social_scraper.py",
+      "source_location": "L13",
+      "weight": 1.0,
+      "source": "tests_test_social_scraper_socialscrapertest",
+      "target": "scripts_scrape_political_intel_detect_unverified_signal"
     },
     {
       "relation": "calls",
@@ -3170,22 +3484,22 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L803",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_bluesky",
-      "target": "scripts_scrape_political_intel_iso_to_display_date",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_iso_to_display_date"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L855",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_reddit_submission_to_item",
-      "target": "scripts_scrape_political_intel_iso_to_display_date",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_iso_to_display_date"
     },
     {
       "relation": "imports",
@@ -3197,6 +3511,16 @@
       "source": "tests_test_social_scraper",
       "target": "scripts_scrape_political_intel_iso_to_display_date",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_social_scraper.py",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "tests_test_social_scraper_socialscrapertest",
+      "target": "scripts_scrape_political_intel_iso_to_display_date"
     },
     {
       "relation": "calls",
@@ -3214,77 +3538,77 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L822",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_bluesky",
-      "target": "scripts_scrape_political_intel_now_utc_iso",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_now_utc_iso"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L1017",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_rss",
-      "target": "scripts_scrape_political_intel_now_utc_iso",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_now_utc_iso"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L1213",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_main",
-      "target": "scripts_scrape_political_intel_now_utc_iso",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_now_utc_iso"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L872",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_reddit_submission_to_item",
-      "target": "scripts_scrape_political_intel_now_utc_iso",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_now_utc_iso"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L785",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_bluesky",
-      "target": "scripts_scrape_political_intel_load_json_url",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_load_json_url"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L888",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_reddit",
-      "target": "scripts_scrape_political_intel_load_json_url",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_load_json_url"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L806",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_bluesky",
-      "target": "scripts_scrape_political_intel_bluesky_post_url",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_bluesky_post_url"
     },
     {
       "relation": "imports",
@@ -3296,6 +3620,16 @@
       "source": "tests_test_social_scraper",
       "target": "scripts_scrape_political_intel_bluesky_post_url",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_social_scraper.py",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "tests_test_social_scraper_socialscrapertest",
+      "target": "scripts_scrape_political_intel_bluesky_post_url"
     },
     {
       "relation": "calls",
@@ -3313,11 +3647,11 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L926",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_social",
-      "target": "scripts_scrape_political_intel_fetch_bluesky",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_fetch_bluesky"
     },
     {
       "relation": "rationale_for",
@@ -3334,22 +3668,22 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L890",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_reddit",
-      "target": "scripts_scrape_political_intel_reddit_submission_to_item",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_reddit_submission_to_item"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L927",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_fetch_social",
-      "target": "scripts_scrape_political_intel_fetch_reddit",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_fetch_reddit"
     },
     {
       "relation": "rationale_for",
@@ -3360,6 +3694,26 @@
       "source": "scripts_scrape_political_intel_rationale_879",
       "target": "scripts_scrape_political_intel_fetch_reddit",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/scrape_political_intel.py",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "scripts_scrape_political_intel_main",
+      "target": "scripts_scrape_political_intel_fetch_social"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/scrape_political_intel.py",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "scripts_scrape_political_intel_main",
+      "target": "scripts_scrape_political_intel_fetch_rss"
     },
     {
       "relation": "rationale_for",
@@ -3376,11 +3730,11 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "scripts/scrape_political_intel.py",
-      "source_location": "L1131",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "scripts_scrape_political_intel_main",
-      "target": "scripts_scrape_political_intel_build_social_jobs",
-      "confidence_score": 1.0
+      "target": "scripts_scrape_political_intel_build_social_jobs"
     },
     {
       "relation": "imports",
@@ -3395,6 +3749,16 @@
     },
     {
       "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_social_scraper.py",
+      "source_location": "L40",
+      "weight": 1.0,
+      "source": "tests_test_social_scraper_socialscrapertest",
+      "target": "scripts_scrape_political_intel_build_social_jobs"
+    },
+    {
+      "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
@@ -3403,6 +3767,26 @@
       "weight": 1.0,
       "source": "tests_test_social_scraper_socialscrapertest_test_build_social_jobs_adds_current_mla_queries_and_respects_cap",
       "target": "scripts_scrape_political_intel_build_social_jobs"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "scripts/scrape_political_intel.py",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "scripts_scrape_political_intel_main",
+      "target": "public_scrapedintel_data"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "vite.config.js",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "vite_config_launchscraper",
+      "target": "scripts_scrape_political_intel_main"
     },
     {
       "relation": "contains",
@@ -3713,11 +4097,21 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/App.jsx",
-      "source_location": "L42",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "src_app_formatassemblysummary",
-      "target": "src_app_getpoliticianendyear",
-      "confidence_score": 1.0
+      "target": "src_app_getpoliticianendyear"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/App.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_app_mergeintelandroster",
+      "target": "src_app_normalizepersonname"
     },
     {
       "relation": "calls",
@@ -3732,25 +4126,105 @@
     },
     {
       "relation": "calls",
-      "context": "call",
       "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
       "source_file": "src/App.jsx",
-      "source_location": "L149",
+      "source_location": null,
       "weight": 1.0,
       "source": "src_app_mergeintelandroster",
-      "target": "src_app_buildpoliticianidaliases",
-      "confidence_score": 1.0
+      "target": "src_app_formatvotecount"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/App.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_app_mergeintelandroster",
+      "target": "src_app_buildofficialroster"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/App.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_app_app",
+      "target": "src_app_buildpoliticianidaliases"
     },
     {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/App.jsx",
-      "source_location": "L150",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "src_app_mergeintelandroster",
-      "target": "src_app_normalizeintelrecords",
-      "confidence_score": 1.0
+      "target": "src_app_buildpoliticianidaliases"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/App.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_app_normalizeintelrecords",
+      "target": "src_app_canonicalizepoliticianid"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/App.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_app_app",
+      "target": "src_app_normalizeintelrecords"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/App.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_app_mergeintelandroster",
+      "target": "src_app_normalizeintelrecords"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/App.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_app_app",
+      "target": "src_app_mergeintelandroster"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/App.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_app_app",
+      "target": "specs_2026_06_08_hybrid_mla_roster_design_spec"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/main.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_main_render",
+      "target": "src_app_app"
     },
     {
       "relation": "contains",
@@ -3888,11 +4362,21 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/components/AssemblyDashboard.jsx",
-      "source_location": "L94",
+      "source_location": null,
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_assemblydashboard_buildchamberlayout",
-      "target": "components_assemblydashboard_assignbenchpositions",
-      "confidence_score": 1.0
+      "target": "components_assemblydashboard_assignbenchpositions"
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/AssemblyDashboard.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_assemblydashboard_assemblydashboard",
+      "target": "components_assemblydashboard_buildchamberlayout"
     },
     {
       "relation": "calls",
@@ -3904,6 +4388,16 @@
       "weight": 1.0,
       "source": "components_assemblydashboard_assemblydashboard",
       "target": "components_intelligencefeed_formatnumber"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/components/AssemblyDashboard.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_assemblydashboard_assemblydashboard",
+      "target": "specs_2026_06_08_hybrid_mla_roster_design_spec"
     },
     {
       "relation": "contains",
@@ -4374,6 +4868,46 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/components/Sidebar.jsx",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "components_sidebar_sidebar",
+      "target": "data_politicaldatabase_seedevents"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/components/Sidebar.jsx",
+      "source_location": "L32",
+      "weight": 1.0,
+      "source": "components_sidebar_sidebar",
+      "target": "data_politicaldatabase_seedparties"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/components/Sidebar.jsx",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "components_sidebar_sidebar",
+      "target": "data_politicaldatabase_seedpoliticians"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/components/TableView.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_tableview_tableview",
+      "target": "components_sidebar_sidebar"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/TableView.jsx",
@@ -4384,6 +4918,26 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/components/TableView.jsx",
+      "source_location": "L26",
+      "weight": 1.0,
+      "source": "components_tableview_tableview",
+      "target": "data_politicaldatabase_seedparties"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/components/TableView.jsx",
+      "source_location": "L19",
+      "weight": 1.0,
+      "source": "components_tableview_tableview",
+      "target": "data_politicaldatabase_seedpoliticians"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/components/TimelineView.jsx",
@@ -4392,6 +4946,26 @@
       "source": "components_timelineview",
       "target": "components_timelineview_timelineview",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/components/TimelineView.jsx",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "components_timelineview_timelineview",
+      "target": "data_politicaldatabase_generateeventgraphdata"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "src/components/TimelineView.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "components_timelineview_timelineview",
+      "target": "data_politicaldatabase_seedevents"
     },
     {
       "relation": "contains",
@@ -4454,6 +5028,16 @@
       "source": "data_politicaldatabase",
       "target": "data_policyimpactdatabase_policyimpactrecords",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/data/politicalDatabase.js",
+      "source_location": "L3178",
+      "weight": 1.0,
+      "source": "data_politicaldatabase_generateeventgraphdata",
+      "target": "data_policyimpactdatabase_policyimpactrecords"
     },
     {
       "relation": "contains",
@@ -4554,6 +5138,36 @@
       "source": "data_politicaldatabase",
       "target": "data_politicaldatabase_seedtriggers",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/data/politicalDatabase.js",
+      "source_location": "L3275",
+      "weight": 1.0,
+      "source": "data_politicaldatabase_generateassemblyseats",
+      "target": "data_politicaldatabase_seedpoliticians"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/data/politicalDatabase.js",
+      "source_location": "L3196",
+      "weight": 1.0,
+      "source": "data_politicaldatabase_generateeventgraphdata",
+      "target": "data_politicaldatabase_seedevents"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/data/politicalDatabase.js",
+      "source_location": "L3232",
+      "weight": 1.0,
+      "source": "data_politicaldatabase_generateeventgraphdata",
+      "target": "data_politicaldatabase_seedtriggers"
     },
     {
       "relation": "contains",
@@ -4686,6 +5300,16 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/assets/vite.svg",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "assets_vite_logo",
+      "target": "vite_config"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "vite.config.js",
@@ -4736,216 +5360,177 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
-      "source_location": "L1",
+      "confidence_score": 1.0,
+      "source_file": "vite.config.js",
+      "source_location": null,
       "weight": 1.0,
-      "source": "agents",
-      "target": "agents_graphify",
-      "confidence_score": 1.0
+      "source": "vite_config_readintelstatus",
+      "target": "public_scrapedintel_data"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "README.md",
-      "source_location": "L1",
+      "confidence_score": 1.0,
+      "source_file": "scripts/seed_all_234_mlas.py",
+      "source_location": null,
       "weight": 1.0,
-      "source": "readme",
-      "target": "readme_intelligence_graph",
-      "confidence_score": 1.0
+      "source": "scripts_seed_all_234_mlas_main",
+      "target": "public_scrapedintel_data"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "README.md",
-      "source_location": "L5",
+      "confidence_score": 1.0,
+      "source_file": "public/icons.svg",
+      "source_location": null,
       "weight": 1.0,
-      "source": "readme_intelligence_graph",
-      "target": "readme_data_workflow",
-      "confidence_score": 1.0
+      "source": "public_icons",
+      "target": "public_icons_bluesky_icon"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "README.md",
-      "source_location": "L35",
+      "confidence_score": 1.0,
+      "source_file": "public/icons.svg",
+      "source_location": null,
       "weight": 1.0,
-      "source": "readme_intelligence_graph",
-      "target": "readme_source_rules",
-      "confidence_score": 1.0
+      "source": "public_icons",
+      "target": "public_icons_discord_icon"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L1",
+      "confidence_score": 1.0,
+      "source_file": "public/icons.svg",
+      "source_location": null,
       "weight": 1.0,
-      "source": "plans_2026_06_08_hybrid_mla_roster",
-      "target": "plans_2026_06_08_hybrid_mla_roster_hybrid_mla_roster_implementation_plan",
-      "confidence_score": 1.0
+      "source": "public_icons",
+      "target": "public_icons_documentation_icon"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L13",
+      "confidence_score": 1.0,
+      "source_file": "public/icons.svg",
+      "source_location": null,
       "weight": 1.0,
-      "source": "plans_2026_06_08_hybrid_mla_roster_hybrid_mla_roster_implementation_plan",
-      "target": "plans_2026_06_08_hybrid_mla_roster_task_1_add_testable_eci_roster_parser",
-      "confidence_score": 1.0
+      "source": "public_icons",
+      "target": "public_icons_github_icon"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L103",
+      "confidence_score": 1.0,
+      "source_file": "public/icons.svg",
+      "source_location": null,
       "weight": 1.0,
-      "source": "plans_2026_06_08_hybrid_mla_roster_hybrid_mla_roster_implementation_plan",
-      "target": "plans_2026_06_08_hybrid_mla_roster_task_2_generate_official_mlas_data",
-      "confidence_score": 1.0
+      "source": "public_icons",
+      "target": "public_icons_social_icon"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L125",
+      "confidence_score": 1.0,
+      "source_file": "public/icons.svg",
+      "source_location": null,
       "weight": 1.0,
-      "source": "plans_2026_06_08_hybrid_mla_roster_hybrid_mla_roster_implementation_plan",
-      "target": "plans_2026_06_08_hybrid_mla_roster_task_3_wire_official_roster_into_react_state",
-      "confidence_score": 1.0
+      "source": "public_icons",
+      "target": "public_icons_x_icon"
     },
     {
-      "relation": "contains",
+      "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L139",
+      "confidence_score": 1.0,
+      "source_file": "src/assets/hero.png",
+      "source_location": null,
       "weight": 1.0,
-      "source": "plans_2026_06_08_hybrid_mla_roster_hybrid_mla_roster_implementation_plan",
-      "target": "plans_2026_06_08_hybrid_mla_roster_task_4_update_assembly_dashboard_copy_and_fields",
-      "confidence_score": 1.0
+      "source": "assets_hero_image",
+      "target": "assets_hero_isometric_stack"
     },
     {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L157",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/assets/hero.png",
+      "source_location": null,
       "weight": 1.0,
-      "source": "plans_2026_06_08_hybrid_mla_roster_hybrid_mla_roster_implementation_plan",
-      "target": "plans_2026_06_08_hybrid_mla_roster_task_5_remove_fake_roster_from_normal_workflow",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md",
-      "source_location": "L176",
-      "weight": 1.0,
-      "source": "plans_2026_06_08_hybrid_mla_roster_hybrid_mla_roster_implementation_plan",
-      "target": "plans_2026_06_08_hybrid_mla_roster_task_6_verify_build_and_runtime",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L94",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_architecture",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L44",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_data_model",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L169",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_decisions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L137",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_error_handling",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L7",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_goal",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L159",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_implementation_order",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L17",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_sources",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L148",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_testing_and_verification",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md",
-      "source_location": "L116",
-      "weight": 1.0,
-      "source": "specs_2026_06_08_hybrid_mla_roster_design_hybrid_mla_roster_design",
-      "target": "specs_2026_06_08_hybrid_mla_roster_design_ui_changes",
-      "confidence_score": 1.0
+      "source": "assets_hero_isometric_stack",
+      "target": "assets_hero_layered_visualization"
     }
   ],
-  "hyperedges": [],
-  "built_at_commit": "d5704c514ac48a1a759f797429547f96680d2e99"
+  "hyperedges": [
+    {
+      "id": "mla_roster_workflow",
+      "label": "MLA Roster Ingestion and Presentation Flow",
+      "nodes": [
+        "scripts_build_mla_roster_main",
+        "public_scrapedintel_data",
+        "src_app_mergeintelandroster",
+        "components_assemblydashboard_assemblydashboard"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "scripts/build_mla_roster.py"
+    },
+    {
+      "id": "integrated_ingestion_pipeline",
+      "label": "Integrated Intelligence Ingestion Pipeline Definition",
+      "nodes": [
+        "plans_2026_06_11_integrated_intelligence_ingestion_plan",
+        "specs_2026_06_11_integrated_intelligence_ingestion_design_spec",
+        "scripts_scrape_political_intel_main"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/superpowers/plans/2026-06-11-integrated-intelligence-ingestion.md"
+    },
+    {
+      "id": "political_timeline_presentation_flow",
+      "label": "Political Timeline and Causal Event Flow",
+      "nodes": [
+        "components_timelineview_timelineview",
+        "data_politicaldatabase_seedevents",
+        "data_politicaldatabase_generateeventgraphdata"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/components/TimelineView.jsx"
+    },
+    {
+      "id": "mla_database_view_deep_dive_flow",
+      "label": "MLA Directory and Profile Deep Dive Flow",
+      "nodes": [
+        "components_tableview_tableview",
+        "components_sidebar_sidebar",
+        "data_politicaldatabase_seedpoliticians",
+        "data_politicaldatabase_generateassemblyseats"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "src/components/TableView.jsx"
+    },
+    {
+      "id": "public_icons_set",
+      "label": "SVG Icon Assets Set",
+      "nodes": [
+        "public_icons_bluesky_icon",
+        "public_icons_discord_icon",
+        "public_icons_documentation_icon",
+        "public_icons_github_icon",
+        "public_icons_social_icon",
+        "public_icons_x_icon"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "public/icons.svg"
+    }
+  ],
+  "built_at_commit": "c9fd9c70873bc50a6270038f839a6cda8530daf3"
 }
