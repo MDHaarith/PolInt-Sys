@@ -385,85 +385,58 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
   }
 
   return (
-    <div className="politician-space-container dashboard-layout-container" style={{ gap: "20px" }}>
-      {/* Header */}
-      <div className="politician-space-header" style={{ borderLeft: "6px solid var(--accent-color)" }}>
-        <div className="profile-identity-group">
-          <div className="profile-avatar-placeholder" style={{ color: "var(--accent-color)", borderColor: "var(--accent-color)" }}>
-            <Landmark size={28} />
-          </div>
-          <div>
-            <h1 className="profile-name-title">17th Legislative Assembly</h1>
-            <span className="party-badge-pill" style={{ backgroundColor: "var(--accent-color)", color: "white" }}>
-              Tamil Nadu State Assembly ({stats.occupiedCount} occupied / {seats.length} ECI winners)
-            </span>
-            <span className={`source-status-pill ${stats.rosterComplete ? "verified" : ""}`}>
-              {stats.rosterComplete ? "234 ECI winners loaded" : `${seats.length} sourced seats loaded`}
-            </span>
-            {stats.vacancyCount > 0 && (
-              <span className="source-status-pill warning">
-                {stats.vacancyCount} vacancy: Tiruchirappalli East
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
-          <div className="header-stats-row">
-            <div className="header-stat-chip">
-              <span className="info-card-label">RULING ALLIANCE</span>
-              <span className="header-stat-value text-success">{stats.rulingCount} Seats</span>
+    <div className="assembly-dashboard-shell">
+      {/* ── Compact Command Bar ── */}
+      <header className="assembly-command-bar">
+        <div className="assembly-command-left">
+          <div className="assembly-command-identity">
+            <div className="profile-avatar-placeholder" style={{ width: 36, height: 36, borderRadius: 8, color: "var(--accent-color)", borderColor: "var(--accent-color)" }}>
+              <Landmark size={20} />
             </div>
-            <div className="header-stat-divider" />
-            <div className="header-stat-chip">
-              <span className="info-card-label">OPPOSITION</span>
-              <span className="header-stat-value text-danger">{stats.oppositionCount} Seats</span>
-            </div>
-            <div className="header-stat-divider" />
-            <div className="header-stat-chip">
-              <span className="info-card-label">CRIMINAL PROFILE</span>
-              <span className="header-stat-value text-warning">
-                ADR: {stats.adrTotalCases} cases
-              </span>
-            </div>
-          </div>
-
-          <div className="auto-sync-status compact">
             <div>
-              <strong>Server auto-sync</strong>
-              <small>No manual crawl trigger</small>
+              <h1 className="assembly-command-title">17th Legislative Assembly</h1>
+              <div className="assembly-command-badges">
+                <span className="party-badge-pill" style={{ backgroundColor: "var(--accent-color)", color: "white", fontSize: "0.65rem", padding: "2px 8px" }}>
+                  {stats.occupiedCount} occupied / {seats.length} ECI
+                </span>
+                {stats.vacancyCount > 0 && (
+                  <span className="source-status-pill warning" style={{ fontSize: "0.65rem", padding: "2px 7px" }}>
+                    {stats.vacancyCount} vacancy
+                  </span>
+                )}
+                <span className={`source-status-pill ${stats.rosterComplete ? "verified" : ""}`} style={{ fontSize: "0.65rem", padding: "2px 7px" }}>
+                  {stats.rosterComplete ? "ECI ✓" : `${seats.length} loaded`}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Assembly Statistics Grid */}
-      <div className="profile-cards-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-        <div className="info-card glass-card">
-          <span className="info-card-label">Total Representatives</span>
-          <span className="info-card-value">{stats.occupiedCount} MLAs</span>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "6px" }}>
-            Current occupied House strength. ECI winners remain {seats.length}; Trichy East is vacant after Vijay's resignation.
-          </p>
+        <div className="assembly-command-stats">
+          <div className="assembly-stat-chip">
+            <span className="assembly-stat-number text-success">{stats.rulingCount}</span>
+            <span className="assembly-stat-label">Ruling</span>
+          </div>
+          <div className="assembly-stat-divider" />
+          <div className="assembly-stat-chip">
+            <span className="assembly-stat-number text-danger">{stats.oppositionCount}</span>
+            <span className="assembly-stat-label">Opposition</span>
+          </div>
+          <div className="assembly-stat-divider" />
+          <div className="assembly-stat-chip">
+            <span className="assembly-stat-number text-warning">{stats.adrTotalCases}</span>
+            <span className="assembly-stat-label">ADR Cases</span>
+          </div>
+          <div className="assembly-stat-divider" />
+          <div className="assembly-stat-chip">
+            <span className="assembly-stat-number" style={{ color: "var(--danger)" }}>{stats.adrSeriousCases}</span>
+            <span className="assembly-stat-label">Serious</span>
+          </div>
         </div>
-        <div className="info-card glass-card">
-          <span className="info-card-label">ADR Analysed Winners</span>
-          <span className="info-card-value text-success">{ADR_WINNER_SUMMARY.analysed}/{ADR_WINNER_SUMMARY.totalWinners}</span>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "6px" }}>
-            ADR did not analyse one TVK winner because the affidavit upload was unclear.
-          </p>
-        </div>
-        <div className="info-card glass-card">
-          <span className="info-card-label">ADR Criminal / Serious</span>
-          <span className="info-card-value text-danger">{stats.adrTotalCases} / {stats.adrSeriousCases}</span>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "6px" }}>
-            Party-wise aggregate from ADR winning-candidates report. Individual case extraction remains source-gated.
-          </p>
-        </div>
-      </div>
+      </header>
 
-      {/* Dashboard Sub-Tabs */}
-      <div className="profile-tabs-selector" style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)", marginBottom: "4px" }}>
+      {/* ── Tab Switcher ── */}
+      <div className="profile-tabs-selector" style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)", marginBottom: 0, flexShrink: 0 }}>
         <button
           className={`profile-tab-btn ${activeDashboardTab === "interactive_map" ? "active" : ""}`}
           onClick={() => setActiveDashboardTab("interactive_map")}
@@ -480,30 +453,22 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
         </button>
       </div>
 
-      {/* Main Grid & Panel Split */}
+      {/* ── Full-Height Content Area ── */}
       {activeDashboardTab === "interactive_map" ? (
-        <div className="dashboard-content-split">
-          {/* Left: 234-seat chamber layout */}
-          <div className="dashboard-grid-panel glass-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ fontFamily: "var(--font-title)", fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "8px" }}>
-                <Landmark size={18} style={{ color: "var(--accent-color)" }} />
+        <div className="assembly-content-split">
+          {/* Left: Chamber Grid fills available height */}
+          <div className="assembly-chamber-panel glass-card">
+            <div className="assembly-chamber-panel-header">
+              <h3 style={{ fontFamily: "var(--font-title)", fontSize: "1rem", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Landmark size={16} style={{ color: "var(--accent-color)" }} />
                 Legislative Chamber Seating
               </h3>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                Party benches arranged from official ECI winners.
+              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                Party benches from official ECI winners
               </span>
             </div>
 
-            <div className="assembly-seats-scroll-frame" style={{
-              overflowX: "auto",
-              overflowY: "auto",
-              maxHeight: "550px",
-              padding: "8px",
-              backgroundColor: "rgba(0,0,0,0.15)",
-              borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.05)"
-            }}>
+            <div className="assembly-seats-scroll-frame assembly-chamber-scroll">
               <div className="assembly-chamber-frame">
                 <div className="speaker-dais">
                   <span className="speaker-title">Speaker</span>
@@ -597,7 +562,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
             </div>
 
             {/* Legend */}
-            <div className="party-legend-row" style={{ marginTop: "16px" }}>
+            <div className="party-legend-row">
               {parties.map(p => {
                 const color = PARTY_COLORS[p.id] || "var(--color-ind)";
                 return (
@@ -610,9 +575,9 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
             </div>
           </div>
 
-          {/* Right: Inspector panel & Party compositions */}
-          <div className="dashboard-inspector-sidebar">
-            {/* Selected Seat Inspector Card */}
+          {/* Right: Inspector + Composition (scrollable column) */}
+          <div className="assembly-inspector-column">
+            {/* Inspector Card */}
             <div className="inspector-card glass-card">
               <h4 style={{ color: "var(--text-muted)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
                 Seat Inspector
@@ -714,8 +679,8 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
               )}
             </div>
 
-            {/* Party Composition Chart Card */}
-            <div className="inspector-card glass-card" style={{ flex: 1, marginTop: "12px", display: "flex", flexDirection: "column" }}>
+            {/* Party Composition Chart */}
+            <div className="inspector-card glass-card" style={{ display: "flex", flexDirection: "column" }}>
               <h4 style={{ color: "var(--text-muted)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>
                 Party Composition Breakdown
               </h4>
@@ -757,8 +722,8 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
         </div>
       ) : (
         /* Historical Assembly Timeline */
-        <div className="historical-timeline-panel glass-card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+        <div className="historical-timeline-panel glass-card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "20px", flex: 1, minHeight: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ fontFamily: "var(--font-title)", fontSize: "1.2rem", display: "flex", alignItems: "center", gap: "8px" }}>
               <Landmark size={20} style={{ color: "var(--accent-color)" }} />
               Assembly Comparison Timeline (1952 - 2026)
@@ -768,7 +733,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
             </span>
           </div>
 
-          <div className="historical-cards-list" style={{ display: "flex", flexDirection: "column", gap: "16px", overflowY: "auto", maxHeight: "600px", paddingRight: "8px" }}>
+          <div className="historical-cards-list" style={{ display: "flex", flexDirection: "column", gap: "16px", overflowY: "auto", flex: 1, minHeight: 0, paddingRight: "8px" }}>
             {HISTORICAL_DATA.map(asm => {
               const rulingColor = getPartyColor(asm.rulingParty);
               return (

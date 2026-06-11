@@ -1,12 +1,18 @@
-# Graph Report - .  (2026-06-11)
+# Graph Report - Intelligence-Graph  (2026-06-11)
 
 ## Corpus Check
-- Large corpus: 44 files · ~1,409,646 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder.
+- 71 files · ~1,763,273 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 218 nodes · 302 edges · 33 communities (19 shown, 14 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 19 edges (avg confidence: 0.9)
+- 473 nodes · 730 edges · 45 communities (27 shown, 18 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 34 edges (avg confidence: 0.72)
 - Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `7b8ec4e7`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Graph & Policy Dashboard|Graph & Policy Dashboard]]
@@ -34,26 +40,38 @@
 - [[_COMMUNITY_Intelligence Ingestion Spec|Intelligence Ingestion Spec]]
 - [[_COMMUNITY_Vite Helper DefineConfig|Vite Helper DefineConfig]]
 - [[_COMMUNITY_Graphify Pipeline Workflow|Graphify Pipeline Workflow]]
+- [[_COMMUNITY_Community 33|Community 33]]
+- [[_COMMUNITY_Community 34|Community 34]]
+- [[_COMMUNITY_Community 35|Community 35]]
+- [[_COMMUNITY_Community 36|Community 36]]
+- [[_COMMUNITY_Community 37|Community 37]]
+- [[_COMMUNITY_Community 38|Community 38]]
+- [[_COMMUNITY_Community 39|Community 39]]
+- [[_COMMUNITY_Community 40|Community 40]]
+- [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 42|Community 42]]
+- [[_COMMUNITY_Community 43|Community 43]]
+- [[_COMMUNITY_Community 44|Community 44]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `BuildMlaRosterTest` - 12 edges
-2. `parse_winner_blocks()` - 11 edges
-3. `parse_candidate_line()` - 9 edges
-4. `SocialScraperTest` - 9 edges
-5. `fetch_bluesky()` - 8 edges
-6. `fetch_rss()` - 7 edges
-7. `main()` - 7 edges
-8. `mergeIntelAndRoster()` - 7 edges
-9. `normalize_spaces()` - 6 edges
-10. `normalize_party_id()` - 6 edges
+1. `IntelligenceWarehouse` - 38 edges
+2. `generate_snapshots()` - 20 edges
+3. `CollectedItem` - 18 edges
+4. `Integrated Intelligence Ingestion and Time Fabric Design` - 18 edges
+5. `Path` - 14 edges
+6. `EventExtractor` - 13 edges
+7. `ScrapyDiscoveryCollector` - 12 edges
+8. `BuildMlaRosterTest` - 12 edges
+9. `parse_winner_blocks()` - 11 edges
+10. `build_default_collectors()` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --implements--> `Hybrid MLA Roster Plan`  [INFERRED]
   scripts/build_mla_roster.py → docs/superpowers/plans/2026-06-08-hybrid-mla-roster.md
+- `main()` --implements--> `Hybrid MLA Roster Design Spec`  [INFERRED]
+  scripts/build_mla_roster.py → docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md
 - `App()` --implements--> `Hybrid MLA Roster Design Spec`  [INFERRED]
   src/App.jsx → docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md
-- `AssemblyDashboard()` --implements--> `Hybrid MLA Roster Design Spec`  [INFERRED]
-  src/components/AssemblyDashboard.jsx → docs/superpowers/specs/2026-06-08-hybrid-mla-roster-design.md
 - `React SVG Logo` --conceptually_related_to--> `react`  [INFERRED]
   src/assets/react.svg → package.json
 - `Vite Logo` --conceptually_related_to--> `vite`  [INFERRED]
@@ -69,43 +87,47 @@
 - **MLA Directory and Profile Deep Dive Flow** — components_tableview_tableview, components_sidebar_sidebar, data_politicaldatabase_seedpoliticians, data_politicaldatabase_generateassemblyseats [INFERRED 0.85]
 - **SVG Icon Assets Set** — public_icons_bluesky_icon, public_icons_discord_icon, public_icons_documentation_icon, public_icons_github_icon, public_icons_social_icon, public_icons_x_icon [EXTRACTED 1.00]
 
-## Communities (33 total, 14 thin omitted)
+## Communities (45 total, 18 thin omitted)
 
 ### Community 0 - "Graph & Policy Dashboard"
-Cohesion: 0.09
-Nodes (19): nodeTypes, domains, Sidebar(), TableView(), TimelineView(), chiefMinisterPolicyIndex, dailyDelivery, policyImpactRecords (+11 more)
+Cohesion: 0.07
+Nodes (34): domains, Sidebar(), TableView(), TimelineView(), chiefMinisterPolicyIndex, dailyDelivery, policyImpactRecords, sourceCatalog (+26 more)
 
 ### Community 1 - "MLA Roster Build Script"
-Cohesion: 0.15
-Nodes (21): Hybrid MLA Roster Plan, build_roster(), build_winner_record(), download_pdf(), extract_pdf_text(), extract_text_with_pdfplumber(), extract_text_with_pdftotext(), is_generated_evidence() (+13 more)
+Cohesion: 0.16
+Nodes (20): Hybrid MLA Roster Plan, build_roster(), build_winner_record(), download_pdf(), extract_pdf_text(), extract_text_with_pdfplumber(), extract_text_with_pdftotext(), is_generated_evidence() (+12 more)
 
 ### Community 2 - "Project Dependencies & ReactFlow"
-Cohesion: 0.08
-Nodes (24): React SVG Logo, dependencies, lucide-react, react, react-dom, reactflow, devDependencies, eslint (+16 more)
+Cohesion: 0.07
+Nodes (27): React SVG Logo, Vite Logo, dependencies, lucide-react, react, react-dom, reactflow, devDependencies (+19 more)
 
 ### Community 3 - "Political Intelligence Scraper"
-Cohesion: 0.20
-Nodes (18): bluesky_post_url(), build_social_jobs(), clean_html(), detect_unverified_signal(), fetch_bluesky(), fetch_reddit(), fetch_rss(), fetch_social() (+10 more)
+Cohesion: 0.13
+Nodes (24): Scraped Intelligence Data Store, bluesky_post_url(), build_social_jobs(), clean_html(), detect_unverified_signal(), fetch_bluesky(), fetch_reddit(), fetch_rss() (+16 more)
 
 ### Community 4 - "Assembly Dashboard Layout"
-Cohesion: 0.11
-Nodes (17): ADR_WINNER_SUMMARY, AssemblyDashboard(), assignBenchPositions(), buildChamberLayout(), HISTORICAL_DATA, OPPOSITION_PARTY_ORDER, PARTY_COLORS, PARTY_LABELS (+9 more)
+Cohesion: 0.10
+Nodes (18): ADR_WINNER_SUMMARY, AssemblyDashboard(), assignBenchPositions(), buildChamberLayout(), HISTORICAL_DATA, OPPOSITION_PARTY_ORDER, PARTY_COLORS, PARTY_LABELS (+10 more)
 
 ### Community 5 - "App Initialization & Canonicalization"
-Cohesion: 0.24
-Nodes (12): App(), buildOfficialRoster(), buildPoliticianIdAliases(), canonicalizePoliticianId(), formatAssemblySummary(), formatVoteCount(), getPoliticianEndYear(), hasNumberValue() (+4 more)
+Cohesion: 0.06
+Nodes (30): CollectorRunner, BlueskyCollector, InstagramCollector, RedditCollector, RssCollector, ArticleExtractor, _LinkParser, ScrapyDiscoveryCollector (+22 more)
 
 ### Community 6 - "Vite Configuration & Seeding"
-Cohesion: 0.20
-Nodes (8): Vite Logo, vite, Scraped Intelligence Data Store, Seeder Main execution, __dirname, intelPath, launchScraper(), readIntelStatus()
+Cohesion: 0.09
+Nodes (31): apply_current_assembly_status(), _clean_title(), upsert_curated_payload(), atomic_write_json(), _collector_health(), _coverage_gaps(), _event_links(), _event_rows() (+23 more)
+
+### Community 7 - "Politician Profile Sentiment"
+Cohesion: 0.18
+Nodes (3): CATEGORY_CONFIG, EMPTY_NEWS, POLITICIAN_HANDLES
 
 ### Community 8 - "Social Media Vector Icons"
 Cohesion: 0.29
 Nodes (7): Icons SVG Asset, Bluesky Icon, Discord Icon, Documentation Icon, GitHub Icon, Social Icon, X Icon
 
 ### Community 9 - "Event Graph Visualization"
-Cohesion: 0.83
-Nodes (3): EventGraph(), getEventLabel(), getEventType()
+Cohesion: 0.80
+Nodes (4): EventGraph(), getEventLabel(), getEventType(), humanize()
 
 ### Community 11 - "MLA Seeding Scripts"
 Cohesion: 0.83
@@ -115,25 +137,53 @@ Nodes (3): generate_mla_roster(), get_tamil_name(), seed_scraped_intel()
 Cohesion: 0.67
 Nodes (3): Hero Graphic Asset, Isometric Stacked Illustration, Layered Visualization Pattern
 
+### Community 28 - "README Data Workflow"
+Cohesion: 0.50
+Nodes (3): Data Workflow, Intelligence Graph, Source Rules
+
+### Community 33 - "Community 33"
+Cohesion: 0.04
+Nodes (46): Candidate Detection, Clustering, Collector Integration, Collector Responsibilities, Compatibility Requirements, `crawl_failures`, `crawl_runs`, Curated and Extracted Event Amalgamation (+38 more)
+
+### Community 34 - "Community 34"
+Cohesion: 0.20
+Nodes (13): detect_event_type(), event_key(), EventExtractor, independence_key(), normalize_date(), stable_event_id(), resolve_politician(), add_story() (+5 more)
+
+### Community 35 - "Community 35"
+Cohesion: 0.18
+Nodes (10): Integrated Intelligence Ingestion Implementation Plan, Task 1: Warehouse Schema and Existing JSON Recovery, Task 2: Atomic Compatibility and Time Fabric Snapshots, Task 3: Collector Adapter Contract, Task 4: Scrapy, Newspaper, Instagram, and X Adapters, Task 5: Event Extraction and Clustering, Task 6: Curated Event and Policy Amalgamation, Task 7: Unified Pipeline and Scheduling (+2 more)
+
+### Community 36 - "Community 36"
+Cohesion: 0.18
+Nodes (10): collectorHealth, coverageGaps, coverageMeta, currentStories, lastSnapshotAt, storyTarget, eventCount, generatedAt (+2 more)
+
+### Community 37 - "Community 37"
+Cohesion: 0.18
+Nodes (10): Architecture, Data Model, Decisions, Error Handling, Goal, Hybrid MLA Roster Design, Implementation Order, Sources (+2 more)
+
+### Community 38 - "Community 38"
+Cohesion: 0.25
+Nodes (7): Hybrid MLA Roster Implementation Plan, Task 1: Add Testable ECI Roster Parser, Task 2: Generate Official `mlas` Data, Task 3: Wire Official Roster Into React State, Task 4: Update Assembly Dashboard Copy And Fields, Task 5: Remove Fake Roster From Normal Workflow, Task 6: Verify Build And Runtime
+
 ## Knowledge Gaps
-- **63 isolated node(s):** `PreToolUse`, `name`, `private`, `version`, `type` (+58 more)
+- **142 isolated node(s):** `PreToolUse`, `name`, `private`, `version`, `type` (+137 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `main()` connect `MLA Roster Build Script` to `Vite Configuration & Seeding`?**
-  _High betweenness centrality (0.383) - this node is a cross-community bridge._
-- **Why does `Hybrid MLA Roster Design Spec` connect `MLA Roster Build Script` to `Assembly Dashboard Layout`, `App Initialization & Canonicalization`?**
-  _High betweenness centrality (0.312) - this node is a cross-community bridge._
-- **Why does `Seeder Main execution` connect `Vite Configuration & Seeding` to `MLA Roster Build Script`?**
-  _High betweenness centrality (0.280) - this node is a cross-community bridge._
+- **Why does `main()` connect `MLA Roster Build Script` to `Political Intelligence Scraper`, `Assembly Dashboard Layout`?**
+  _High betweenness centrality (0.091) - this node is a cross-community bridge._
+- **Why does `Hybrid MLA Roster Design Spec` connect `Assembly Dashboard Layout` to `Graph & Policy Dashboard`, `MLA Roster Build Script`?**
+  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+- **Why does `Seeder Main execution` connect `Political Intelligence Scraper` to `MLA Roster Build Script`?**
+  _High betweenness centrality (0.066) - this node is a cross-community bridge._
+- **Are the 4 inferred relationships involving `IntelligenceWarehouse` (e.g. with `IntelligenceWarehouse` and `Path`) actually correct?**
+  _`IntelligenceWarehouse` has 4 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 11 inferred relationships involving `Path` (e.g. with `CollectorRunner` and `BlueskyCollector`) actually correct?**
+  _`Path` has 11 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `PreToolUse`, `name`, `private` to the rest of the system?**
-  _66 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _147 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Graph & Policy Dashboard` be split into smaller, more focused modules?**
-  _Cohesion score 0.09032258064516129 - nodes in this community are weakly interconnected._
-- **Should `MLA Roster Build Script` be split into smaller, more focused modules?**
-  _Cohesion score 0.14942528735632185 - nodes in this community are weakly interconnected._
-- **Should `Project Dependencies & ReactFlow` be split into smaller, more focused modules?**
-  _Cohesion score 0.08 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06802721088435375 - nodes in this community are weakly interconnected._
