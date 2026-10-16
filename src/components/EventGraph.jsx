@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, ArrowRight, CalendarDays, GitBranch, Link2, Search, ShieldCheck, X } from "lucide-react";
 
+import { formatDate, textLanguage, indianNumber } from "./dateLabels";
+import Provenance from "./Provenance";
+
 const getEventLabel = (node) => node.name || node.title?.replace(/^\d{4}:\s*/, "") || "Untitled event";
 
 const humanize = (value = "") =>
@@ -18,6 +21,7 @@ const getEventType = (node) => {
 };
 
 export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEventId = null }) {
+  const [detailOpen, setDetailOpen] = useState(() => matchMedia("(min-width: 769px)").matches);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [verificationFilter, setVerificationFilter] = useState("all");
@@ -91,8 +95,8 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
   }, [nodeById, rawEdges, selectedEvent]);
 
   const yearRange = useMemo(() => {
-    if (!sortedNodes.length) return "No data";
-    return `${sortedNodes[0].year}-${sortedNodes[sortedNodes.length - 1].year}`;
+    const years = sortedNodes.map(node => node.year).filter(year => Number.isFinite(year) && year > 0);
+    return years.length ? `${Math.min(...years)}–${Math.max(...years)}` : "Undated";
   }, [sortedNodes]);
 
   return (
@@ -101,20 +105,20 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
         <div>
           <div className="workspace-eyebrow">
             <GitBranch size={14} />
-            Event Time Fabric
+            Political timeline
           </div>
-          <h1>Political Events, Scheme Lineage, and Impact Watch</h1>
+          <h1>How we got here</h1>
           <p>
-            Chronological fabric for Tamil Nadu politics: power shifts, crises, and CM-wise policies are searchable in one surface with causality links and daily follow-up hooks.
+            Connect the moments that shaped Tamil Nadu. Explore power shifts, policy decisions and their lasting impact.
           </p>
         </div>
         <div className="time-fabric-stats">
           <div>
-            <span>{sortedNodes.length}</span>
-            <small>nodes</small>
+            <span>{indianNumber(sortedNodes.length)}</span>
+            <small>events</small>
           </div>
           <div>
-            <span>{rawEdges?.length || 0}</span>
+            <span>{indianNumber(rawEdges?.length || 0)}</span>
             <small>links</small>
           </div>
           <div>
@@ -129,6 +133,8 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
           <Search size={15} style={{ color: "var(--text-muted)" }} />
           <input
             className="intel-search-input"
+            type="search"
+            aria-label="Search events and policy history"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search policies, events, CMs, fallout, domains..."
@@ -139,15 +145,18 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
             </button>
           )}
         </div>
+        <details className="filter-disclosure">
+          <summary>Filter the timeline <span>{typeFilter === "all" ? "All event types" : typeFilter}</span></summary>
         <div className="category-pills-row">
           {typeOptions.map(option => (
             <button
               key={option}
               type="button"
               className={`category-pill ${typeFilter === option ? "active" : ""}`}
+              aria-pressed={typeFilter === option}
               onClick={() => setTypeFilter(option)}
             >
-              {option === "all" ? "All Nodes" : option}
+              {option === "all" ? "All events" : option}
             </button>
           ))}
         </div>
@@ -171,6 +180,7 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
             </select>
           </label>
         </div>
+        </details>
       </div>
 
       <div className="time-fabric-grid">
@@ -183,10 +193,14 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
                 key={node.id}
                 type="button"
                 className={`time-fabric-card ${active ? "active" : ""} ${node.type === "policy" ? "policy-node" : ""}`}
-                onClick={() => setSelectedId(node.id)}
+                onClick={() => {
+                  setSelectedId(node.id);
+                  setDetailOpen(true);
+                  if (matchMedia("(max-width: 768px)").matches) requestAnimationFrame(() => document.querySelector(".time-fabric-selection")?.scrollIntoView({ block: "start" }));
+                }}
               >
                 <span className="time-fabric-year">
-                  {node.occurredAt || node.year}
+                  {node.occurredAt || node.year ? formatDate(node.occurredAt || node.year) : "Undated"}
                   {node.evidenceCount > 0 && <small>{node.evidenceCount} sources</small>}
                 </span>
                 <span className="time-fabric-card-body">
@@ -196,8 +210,9 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
                     {node.verificationStatus && <span>{humanize(node.verificationStatus)}</span>}
                     <span>{node.isCurated ? "Curated" : "Extracted"}</span>
                   </span>
-                  <strong>{getEventLabel(node)}</strong>
-                  <small>{node.description}</small>
+                  <strong lang={textLanguage(getEventLabel(node))}>{getEventLabel(node)}</strong>
+                  <small lang={textLanguage(node.description)}>{node.description}</small>
+                  <Provenance linked={false} item={node} sources={node.evidence?.length ? node.evidence : node.sourceLinks} status={node.verificationStatus || "curated"} date={node.occurredAt || node.year} />
                 </span>
                 <ArrowRight size={15} />
               </button>
@@ -211,19 +226,22 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
           )}
         </div>
 
+        <details className="time-fabric-selection" open={detailOpen} onToggle={event => setDetailOpen(event.currentTarget.open)}>
+          <summary>Selected record <span>{selectedEvent ? getEventLabel(selectedEvent) : "Choose an event"}</span></summary>
         <aside className="time-fabric-detail-panel">
           {selectedEvent ? (
             <>
               <div className="time-fabric-detail-header">
                 <span className="time-fabric-detail-year">
                   <CalendarDays size={15} />
-                  {selectedEvent.occurredAt || selectedEvent.year}
+                  {formatDate(selectedEvent.occurredAt || selectedEvent.year)}
                 </span>
                 <span className={`time-fabric-type ${getEventType(selectedEvent).toLowerCase().replace(/\s+/g, "-")}`}>
                   {getEventType(selectedEvent)}
                 </span>
               </div>
-              <h2>{getEventLabel(selectedEvent)}</h2>
+              <h2 lang={textLanguage(getEventLabel(selectedEvent))}>{getEventLabel(selectedEvent)}</h2>
+              <Provenance item={selectedEvent} sources={selectedEvent.evidence?.length ? selectedEvent.evidence : selectedEvent.sourceLinks} status={selectedEvent.verificationStatus || "curated"} date={selectedEvent.occurredAt || selectedEvent.year} />
               {selectedEvent.startedBy && <p className="time-fabric-origin">{selectedEvent.startedBy}</p>}
               <div className="time-fabric-verification-row">
                 <span>{humanize(selectedEvent.verificationStatus || "curated")}</span>
@@ -231,7 +249,7 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
                 <span>{selectedEvent.evidenceCount || 0} evidence items</span>
                 <span>{selectedEvent.independentSourceCount || 0} independent sources</span>
               </div>
-              <p>{selectedEvent.description}</p>
+              <p lang={textLanguage(selectedEvent.description)}>{selectedEvent.description}</p>
 
               <div className="time-fabric-impact-box">
                 <span>Impact / Fallout</span>
@@ -301,7 +319,7 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
                   {selectedEvent.evidence.map(item => (
                     <a key={item.id} href={item.url} target="_blank" rel="noreferrer">
                       <span>{item.source || "Source"}</span>
-                      <strong>{item.title}</strong>
+                      <strong lang={textLanguage(item.title)}>{item.title}</strong>
                       <small>{humanize(item.role || "evidence")}</small>
                     </a>
                   ))}
@@ -323,6 +341,7 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
             <div className="time-fabric-empty">Select a node to inspect its timeline record.</div>
           )}
         </aside>
+        </details>
       </div>
     </section>
   );

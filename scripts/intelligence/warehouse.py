@@ -55,20 +55,31 @@ class IntelligenceWarehouse:
         self.connection.commit()
 
     def _normalize_published_dates(self) -> None:
-        if self.connection.execute(
-            "SELECT 1 FROM schema_meta WHERE key = 'sortable_published_at'"
-        ).fetchone():
+        version = self.connection.execute(
+            "SELECT value FROM schema_meta WHERE key = 'sortable_published_at'"
+        ).fetchone()
+        if version and version["value"] == "2":
             return
         with self.connection:
             rows = self.connection.execute(
-                "SELECT id, published_at FROM raw_items WHERE published_at IS NOT NULL"
+                "SELECT id, published_at, raw_metadata_json FROM raw_items"
             ).fetchall()
+            dates = []
+            for row in rows:
+                metadata = json.loads(row["raw_metadata_json"])
+                # Older upserts changed metadata without refreshing the SQL sort date.
+                value = (
+                    metadata.get("publishedAtRaw") or metadata.get("publishedAt") or metadata.get("date")
+                    if any(key in metadata for key in ("publishedAtRaw", "publishedAt", "date"))
+                    else row["published_at"]
+                )
+                dates.append((to_sortable_timestamp(value), row["id"]))
             self.connection.executemany(
                 "UPDATE raw_items SET published_at = ? WHERE id = ?",
-                [(to_sortable_timestamp(row["published_at"]), row["id"]) for row in rows],
+                dates,
             )
             self.connection.execute(
-                "INSERT INTO schema_meta (key, value) VALUES ('sortable_published_at', '1')"
+                "INSERT OR REPLACE INTO schema_meta (key, value) VALUES ('sortable_published_at', '2')"
             )
 
     def close(self) -> None:
@@ -154,6 +165,9 @@ class IntelligenceWarehouse:
         collector = str(item.get("collector") or item.get("sourceType") or "legacy")
         item_id = _raw_item_id(collector, external_id, canonical_url or f"{title}|{body}")
         retrieved_at = item.get("retrievedAt") or now_utc_iso()
+        published_at = to_sortable_timestamp(
+            item.get("publishedAtRaw") or item.get("publishedAt") or item.get("date")
+        )
         existing = None
         if check_existing:
             existing = self.connection.execute(
@@ -177,15 +191,12 @@ class IntelligenceWarehouse:
             self.connection.execute(
                 """
                 UPDATE raw_items
-                SET last_seen_at = ?, raw_metadata_json = ?
+                SET last_seen_at = ?, published_at = ?, raw_metadata_json = ?
                 WHERE id = ?
                 """,
-                (retrieved_at, json.dumps(item, ensure_ascii=False), existing["id"]),
+                (retrieved_at, published_at, json.dumps(item, ensure_ascii=False), existing["id"]),
             )
             return False
-        published_at = to_sortable_timestamp(
-            item.get("publishedAtRaw") or item.get("publishedAt") or item.get("date")
-        )
         item_hash = content_hash(title, body)
         is_social = bool(item.get("isSocial") or item.get("platform") or item.get("category") == "social_media")
         self.connection.execute(
@@ -198,6 +209,7 @@ class IntelligenceWarehouse:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 last_seen_at = excluded.last_seen_at,
+                published_at = excluded.published_at,
                 raw_metadata_json = excluded.raw_metadata_json
             """,
             (

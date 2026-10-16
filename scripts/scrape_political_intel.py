@@ -22,8 +22,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 if __package__:
     from .intelligence.classify import classify_category
+    from .intelligence.source_config import RECENT_NEWS_QUERIES
+    from .intelligence.snapshots import news_sort_key
 else:
     from intelligence.classify import classify_category
+    from intelligence.source_config import RECENT_NEWS_QUERIES
+    from intelligence.snapshots import news_sort_key
 
 # ─────────────────────────────────────────────────────────────────────
 # CONFIGURATION: Politicians + Search Query Expansion
@@ -667,6 +671,10 @@ TOPIC_QUERIES = [
 ]
 
 SOCIAL_QUERIES = [
+    "Tamil Nadu",
+    "தமிழ்நாடு",
+    "திமுக",
+    "தவெக",
     "Tamil Nadu politics",
     "Tamil Nadu election 2026",
     "Tamil Nadu MLA",
@@ -795,12 +803,12 @@ def bluesky_post_url(post):
     return f"https://bsky.app/profile/{handle}/post/{post_id}"
 
 
-def fetch_bluesky(query, pol_id, pol_name, limit=25):
+def fetch_bluesky(query, pol_id, pol_name, limit=25, *, raise_errors=False):
     """Fetch public Bluesky posts via app.bsky.feed.searchPosts."""
     encoded_query = urllib.parse.quote(query)
     url = (
-        "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
-        f"?q={encoded_query}&sort=latest&limit={limit}&lang=en"
+        "https://api.bsky.app/xrpc/app.bsky.feed.searchPosts"
+        f"?q={encoded_query}&sort=latest&limit={limit}"
     )
 
     items = []
@@ -847,6 +855,8 @@ def fetch_bluesky(query, pol_id, pol_name, limit=25):
                 "verificationStatus": "unverified_chatter",
             })
     except Exception as e:
+        if raise_errors:
+            raise
         print(f"[bluesky] {query!r}: {type(e).__name__}: {e}", file=sys.stderr)
         with lock:
             stats["errors"] += 1
@@ -899,14 +909,14 @@ def reddit_submission_to_item(data, query, pol_id):
     }
 
 
-def fetch_reddit(query, pol_id, pol_name, limit=25):
+def fetch_reddit(query, pol_id, pol_name, limit=25, *, raise_errors=False):
     """Fetch public Reddit submissions through PullPush, with Reddit JSON as a fallback."""
     encoded_query = urllib.parse.quote(query)
     items = []
 
     pullpush_url = (
         "https://api.pullpush.io/reddit/search/submission/"
-        f"?q={encoded_query}&size={limit}"
+        f"?q={encoded_query}&size={limit}&sort=desc&sort_type=created_utc"
     )
     try:
         payload = load_json_url(pullpush_url, timeout=20)
@@ -933,6 +943,8 @@ def fetch_reddit(query, pol_id, pol_name, limit=25):
             if item:
                 items.append(item)
     except Exception as e:
+        if raise_errors:
+            raise
         print(f"[reddit] {query!r}: {type(e).__name__}: {e}", file=sys.stderr)
 
     if items:
@@ -960,10 +972,29 @@ def fetch_social(query, pol_id, pol_name, limit=25):
     return items
 
 
-def fetch_rss(query, pol_id, pol_name):
-    """Fetch a single Google News RSS feed and return parsed articles."""
-    encoded_query = urllib.parse.quote(query)
-    url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-IN&gl=IN&ceid=IN:en"
+def build_rss_jobs():
+    # Keep the historical warehouse, but spend each refresh on the current week.
+    jobs = [(query, "general", "Tamil Nadu Politics") for query in RECENT_NEWS_QUERIES]
+    jobs.extend(
+        (data["queries"][0], politician_id, data["name"])
+        for politician_id, data in POLITICIANS.items()
+    )
+    return [(f"{query} when:7d", politician_id, name) for query, politician_id, name in jobs]
+
+
+def fetch_direct_rss(url, pol_id, source_name):
+    return fetch_rss(source_name, pol_id, source_name, feed_url=url,
+                     source_name=source_name, raise_errors=True)
+
+
+def fetch_rss(query, pol_id, pol_name, *, feed_url=None, source_name=None, raise_errors=False):
+    """Fetch Google News search or a publisher RSS feed and return parsed articles."""
+    language = "ta" if re.search(r"[\u0b80-\u0bff]", query) else "en"
+    parameters = urllib.parse.urlencode({
+        "q": query, "hl": "ta" if language == "ta" else "en-IN",
+        "gl": "IN", "ceid": f"IN:{language}",
+    })
+    url = feed_url or f"https://news.google.com/rss/search?{parameters}"
 
     items = []
     try:
@@ -978,14 +1009,16 @@ def fetch_rss(query, pol_id, pol_name):
             desc_el = item.find("description")
             source_el = item.find("source")
 
-            raw_title = title_el.text if title_el is not None else ""
-            link = link_el.text if link_el is not None else ""
+            raw_title = (title_el.text or "") if title_el is not None else ""
+            link = (link_el.text or "") if link_el is not None else ""
+            if not raw_title.strip() or not link.startswith(("https://", "http://")):
+                continue
             pub_date = pub_date_el.text if pub_date_el is not None else ""
             desc = desc_el.text if desc_el is not None else ""
-            source_name = source_el.text if source_el is not None else "Google News"
+            item_source = (source_el.text if source_el is not None else None) or source_name or "Google News"
 
             clean_title = raw_title
-            if " - " in raw_title:
+            if not feed_url and " - " in raw_title:
                 clean_title = " - ".join(raw_title.split(" - ")[:-1])
 
             hash_object = hashlib.md5(link.encode("utf-8"))
@@ -993,7 +1026,7 @@ def fetch_rss(query, pol_id, pol_name):
 
             snippet = clean_html(desc)
             if not snippet or len(snippet) < 10:
-                snippet = f"News coverage regarding {pol_name} from {source_name}."
+                snippet = f"News coverage regarding {pol_name} from {item_source}."
 
             category = classify_category(raw_title + " " + query)
 
@@ -1003,13 +1036,13 @@ def fetch_rss(query, pol_id, pol_name):
                 "id": article_id,
                 "politicianId": pol_id,
                 "title": clean_title,
-                "source": source_name,
+                "source": item_source,
                 "date": parse_date(pub_date),
                 "publishedAtRaw": pub_date,
                 "snippet": snippet,
                 "url": link,
                 "category": category,
-                "sourceType": "google_news_rss",
+                "sourceType": "publisher_rss" if feed_url else "google_news_rss",
                 "query": query,
                 "retrievedAt": now_utc_iso(),
                 "isRumor": is_unverified_signal,
@@ -1026,6 +1059,8 @@ def fetch_rss(query, pol_id, pol_name):
                 print(f"  ▸ Progress: {done}/{total} queries | {fetched} articles fetched")
 
     except Exception as e:
+        if raise_errors:
+            raise
         print(f"[rss] {query!r}: {type(e).__name__}: {e}", file=sys.stderr)
         with lock:
             stats["errors"] += 1
@@ -1037,7 +1072,8 @@ def fetch_rss(query, pol_id, pol_name):
 
 
 def build_social_jobs(db, max_queries):
-    jobs = []
+    # Broad searches must survive the cap; long exact-name queries often return no posts.
+    jobs = [(query, "general", "Tamil Nadu Politics") for query in SOCIAL_QUERIES]
 
     for pol_id, pol_data in POLITICIANS.items():
         name = pol_data["name"]
@@ -1115,14 +1151,7 @@ def main():
         os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
     # Build the job lists: (query, politician_id, politician_name)
-    rss_jobs = []
-    if not args.social_only:
-        for pol_id, pol_data in POLITICIANS.items():
-            for q in pol_data["queries"]:
-                rss_jobs.append((q, pol_id, pol_data["name"]))
-
-        for q in TOPIC_QUERIES:
-            rss_jobs.append((q, "general", "Tamil Nadu Politics"))
+    rss_jobs = [] if args.social_only else build_rss_jobs()
 
     social_jobs = []
     if not args.skip_social:
@@ -1186,10 +1215,10 @@ def main():
             except Exception as e:
                 print(f"[social] {futures[future][0]!r}: {type(e).__name__}: {e}", file=sys.stderr)
 
-    # Prepend new items
+    # Use the same dated-first ordering as the warehouse and mobile snapshots.
     if "news" not in db:
         db["news"] = []
-    db["news"] = all_new_items + db["news"]
+    db["news"] = sorted(all_new_items + db["news"], key=news_sort_key, reverse=True)
 
     # Preserve existing evidence only. MLA affidavits, assets, and criminal
     # filings must come from a real affidavit ingestion step, not this news crawl.

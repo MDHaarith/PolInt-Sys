@@ -20,7 +20,7 @@ class RedditCollector:
         def fetch_job(job):
             return list(self.fetcher(*job, self.limit))
 
-        self.health.update(status="ready", failed_jobs=0)
+        self.health = {"status": "ready", "failed_jobs": 0, "total_jobs": len(self.jobs), "empty_jobs": 0}
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {executor.submit(fetch_job, job): job for job in self.jobs}
             for future in as_completed(futures):
@@ -29,8 +29,15 @@ class RedditCollector:
                 except Exception as exc:
                     self.health["failed_jobs"] += 1
                     self.health["status"] = "degraded"
+                    self.health["reason"] = f"{type(exc).__name__}: {exc}"
                     query = futures[future][0]
                     print(f"[reddit] {query!r}: {type(exc).__name__}: {exc}", file=sys.stderr)
                     continue
+                if not items:
+                    self.health["empty_jobs"] += 1
                 for item in items:
                     yield CollectedItem.from_legacy(item)
+        if self.jobs and self.health["failed_jobs"] == len(self.jobs):
+            self.health["status"] = "unavailable"
+        elif self.jobs and self.health["empty_jobs"] == len(self.jobs):
+            self.health.update(status="no_results", reason="No matching items returned")

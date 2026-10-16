@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
 import { Landmark, FileText, ChevronRight, CheckCircle } from "lucide-react";
 
+import { textLanguage, croreAmount } from "./dateLabels";
+import Provenance from "./Provenance";
+
 const PARTY_LABELS = {
   tvk: "Tamilaga Vettri Kazhagam (TVK)",
   dmk: "Dravida Munnetra Kazhagam (DMK)",
@@ -33,6 +36,15 @@ const PARTY_COLORS = {
   bjp: "#ff8000",
   tdk: "#f97316",
   ind: "#94a3b8"
+};
+
+const partyTextColor = (color) => {
+  const channels = color.slice(1).match(/../g).map(channel => {
+    const value = parseInt(channel, 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  return luminance > 0.179 ? "#000000" : "#ffffff";
 };
 
 const RULING_ALLIANCE_PARTIES = ["tvk", "inc", "cpi", "cpm", "iuml", "vck"];
@@ -344,7 +356,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
 
   const formatNumber = (value) => typeof value === "number" ? value.toLocaleString("en-IN") : "Not sourced yet";
   const formatPercent = (value) => typeof value === "number" ? `${value.toFixed(2)}%` : "Not sourced yet";
-  const formatAssets = (seat) => typeof seat?.assets === "number" ? `₹${seat.assets} Crore` : "Not sourced yet";
+  const formatAssets = (seat) => typeof seat?.assets === "number" ? croreAmount(seat.assets) : "Not sourced yet";
   const formatCases = (seat) => {
     if (!seat || typeof seat.hasCases !== "boolean") return "Not sourced yet";
     return seat.hasCases ? `${seat.casesCount || "Declared"} pending` : "None declared in source";
@@ -396,7 +408,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
             <div>
               <h1 className="assembly-command-title">17th Legislative Assembly</h1>
               <div className="assembly-command-badges">
-                <span className="party-badge-pill" style={{ backgroundColor: "var(--accent-color)", color: "white", fontSize: "0.65rem", padding: "2px 8px" }}>
+                <span className="party-badge-pill assembly-roster-badge">
                   {stats.occupiedCount} occupied / {seats.length} ECI
                 </span>
                 {stats.vacancyCount > 0 && (
@@ -405,7 +417,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                   </span>
                 )}
                 <span className={`source-status-pill ${stats.rosterComplete ? "verified" : ""}`} style={{ fontSize: "0.65rem", padding: "2px 7px" }}>
-                  {stats.rosterComplete ? "ECI ✓" : `${seats.length} loaded`}
+                  {stats.rosterComplete ? "ECI record" : `${seats.length} loaded`}
                 </span>
               </div>
             </div>
@@ -483,7 +495,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                     </div>
                     <div className="assembly-seat-cluster">
                       {chamberLayout.treasuryBenches.map(s => {
-                        const color = PARTY_COLORS[s.party] || "var(--color-ind)";
+                        const color = PARTY_COLORS[s.party] || PARTY_COLORS.ind;
                         const isSelected = selectedSeatId === s.id;
                         return (
                           <button
@@ -492,13 +504,15 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                             className={`assembly-seat-cell chamber-seat ${isSelected ? "selected" : ""} ${s.isDetailed ? "has-profile" : ""}`}
                             style={{
                               backgroundColor: color,
-                              boxShadow: isSelected ? `0 0 12px ${color}` : "none",
-                              opacity: isSelected ? 1 : 0.88
+                              color: partyTextColor(color),
+                              boxShadow: "none",
                             }}
                             onClick={() => setSelectedSeatId(s.id)}
                             title={`${s.chamberSide}, Row ${s.chamberRow}, Seat ${s.chamberSeat}: ${s.constituency} - ${s.mlaName} (${s.party.toUpperCase()})`}
+                            aria-label={`Seat ${s.id}: ${s.constituency}, ${s.mlaName}, ${s.party.toUpperCase()}`}
+                            aria-pressed={isSelected}
                           >
-                            <span className="cell-number-inner">{s.id}</span>
+                            <span className="cell-number-inner">{s.id}<small>{s.party?.toUpperCase() || "Vacant"}</small></span>
                           </button>
                         );
                       })}
@@ -516,7 +530,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                     </div>
                     <div className="assembly-seat-cluster">
                       {chamberLayout.oppositionBenches.map(s => {
-                        const color = PARTY_COLORS[s.party] || "var(--color-ind)";
+                        const color = PARTY_COLORS[s.party] || PARTY_COLORS.ind;
                         const isSelected = selectedSeatId === s.id;
                         return (
                           <button
@@ -525,13 +539,15 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                             className={`assembly-seat-cell chamber-seat ${isSelected ? "selected" : ""} ${s.isDetailed ? "has-profile" : ""}`}
                             style={{
                               backgroundColor: color,
-                              boxShadow: isSelected ? `0 0 12px ${color}` : "none",
-                              opacity: isSelected ? 1 : 0.88
+                              color: partyTextColor(color),
+                              boxShadow: "none",
                             }}
                             onClick={() => setSelectedSeatId(s.id)}
                             title={`${s.chamberSide}, Row ${s.chamberRow}, Seat ${s.chamberSeat}: ${s.constituency} - ${s.mlaName} (${s.party.toUpperCase()})`}
+                            aria-label={`Seat ${s.id}: ${s.constituency}, ${s.mlaName}, ${s.party.toUpperCase()}`}
+                            aria-pressed={isSelected}
                           >
-                            <span className="cell-number-inner">{s.id}</span>
+                            <span className="cell-number-inner">{s.id}<small>{s.party?.toUpperCase() || "Vacant"}</small></span>
                           </button>
                         );
                       })}
@@ -552,7 +568,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                           onClick={() => setSelectedSeatId(s.id)}
                           title={`${s.constituency}: vacant after ${s.vacatedBy} resignation`}
                         >
-                          <span className="cell-number-inner">{s.id}</span>
+                          <span className="cell-number-inner">{s.id}<small>{s.party?.toUpperCase() || "Vacant"}</small></span>
                         </button>
                       );
                     })}
@@ -584,10 +600,11 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
               </h4>
 
               <div className="inspector-head">
-                <span className="inspector-constituency">{selectedSeat.constituency}</span>
+                <span lang={textLanguage(selectedSeat.constituency)} className="inspector-constituency">{selectedSeat.constituency}</span>
                 <span className="inspector-number">Seat #{selectedSeat.id}</span>
               </div>
 
+              <Provenance item={{ source: selectedSeat.sourceType === "official_eci" ? "Election Commission of India" : "Assembly reference" }} sources={selectedSeat.sources || []} status={selectedSeat.sourceType || "curated"} />
               <div className="inspector-body" style={{ marginTop: "16px" }}>
                 <div className="inspector-detail-row">
                   <span className="detail-label">Chamber Placement</span>
@@ -605,11 +622,11 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                 )}
                 <div className="inspector-detail-row">
                   <span className="detail-label">MLA Representative</span>
-                  <span className="detail-val">{selectedSeat.isVacant ? "Vacant" : selectedSeat.mlaName}</span>
+                  <span lang={textLanguage(selectedSeat.mlaName)} className="detail-val">{selectedSeat.isVacant ? "Vacant" : selectedSeat.mlaName}</span>
                 </div>
                 <div className="inspector-detail-row">
                   <span className="detail-label">Political Party</span>
-                  <span className="detail-val" style={{ color: PARTY_COLORS[selectedSeat.party] }}>
+                  <span className="detail-val"><span className="party-badge-dot" style={{ backgroundColor: PARTY_COLORS[selectedSeat.party] }} />
                     {PARTY_LABELS[selectedSeat.party] || selectedSeat.party.toUpperCase()}
                   </span>
                 </div>
@@ -665,7 +682,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                 <button
                   className="inspector-action-btn pulse-glow"
                   onClick={() => onSelectPolitician(selectedSeat.politicianId)}
-                  style={{ backgroundColor: PARTY_COLORS[selectedSeat.party] }}
+                  
                 >
                   <FileText size={14} />
                   Open Full Intel Dossier
@@ -737,7 +754,7 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
             {HISTORICAL_DATA.map(asm => {
               const rulingColor = getPartyColor(asm.rulingParty);
               return (
-                <div key={asm.id} className="historical-asm-card glass-card" style={{ padding: "16px", borderLeft: `4px solid ${rulingColor}`, backgroundColor: "rgba(255,255,255,0.01)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.04)" }}>
+                <div key={asm.id} className="historical-asm-card glass-card" >
                   <div className="historical-asm-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px" }}>
                     <div>
                       <h4 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--text-primary)" }}>{asm.name} <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginLeft: "6px" }}>({asm.years})</span></h4>
@@ -745,11 +762,12 @@ export default function AssemblyDashboard({ seats, parties, onSelectPolitician }
                         <span>Chief Minister: <strong>{asm.chiefMinisters}</strong></span>
                       </div>
                     </div>
-                    <span className="party-badge-pill" style={{ backgroundColor: rulingColor, color: "white", fontSize: "0.7rem", padding: "3px 8px" }}>
-                      Ruling: {asm.rulingParty}
+                    <span className="party-badge-pill" >
+                      <span className="party-badge-dot" style={{ backgroundColor: rulingColor }} />Ruling: {asm.rulingParty}
                     </span>
                   </div>
 
+                  <Provenance item={{ source: "Curated assembly history" }} date={asm.years?.slice(0, 4)} status="curated" />
                   <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "10px", lineHeight: 1.5 }}>
                     {asm.shifts}
                   </p>

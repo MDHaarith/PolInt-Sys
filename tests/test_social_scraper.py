@@ -50,7 +50,7 @@ if __name__ == "__main__":
     unittest.main()
 
 
-def test_rss_preserves_raw_date_uses_classifier_and_keeps_partial_results(monkeypatch, capsys):
+def test_rss_preserves_raw_date_uses_classifier_and_skips_malformed_items(monkeypatch, capsys):
     xml = b"""<rss><channel><item>
         <title>Stanley first govt medical college - Example</title>
         <link>https://example.test/story</link>
@@ -66,9 +66,9 @@ def test_rss_preserves_raw_date_uses_classifier_and_keeps_partial_results(monkey
     assert len(items) == 1
     assert items[0]["category"] == "news"
     assert items[0]["publishedAtRaw"] == "Wed, 10 Jun 2026 08:30:00 GMT"
-    assert legacy.stats["errors"] == 1
+    assert legacy.stats["errors"] == 0
     assert legacy.stats["queries_done"] == 1
-    assert "[rss] 'Tamil Nadu': TypeError:" in capsys.readouterr().err
+    assert capsys.readouterr().err == ""
 
 
 def test_social_fetcher_errors_are_logged_and_return_empty(monkeypatch, capsys):

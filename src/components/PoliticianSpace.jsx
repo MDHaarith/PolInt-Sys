@@ -1,11 +1,14 @@
 import { useState, useMemo } from "react";
 import {
-  User, GitCommit, Award, AlertTriangle, DollarSign,
-  Calendar, Landmark, Info, Search, Newspaper, MessageSquare,
+  User, GitCommit, Award, AlertTriangle,
+  Calendar, Landmark, Info, Search, Newspaper,
   Scale, Vote, TrendingUp, ExternalLink, BarChart3,
-  Zap, Eye, FileWarning, Gavel, Briefcase,
+  Zap, FileWarning, Gavel, Briefcase,
   MessageCircle, Repeat, Heart, Share2
 } from "lucide-react";
+
+import { formatDate, textLanguage, indianNumber, shareEvidence, formatMoneyText } from "./dateLabels";
+import Provenance from "./Provenance";
 
 const EMPTY_NEWS = [];
 
@@ -73,7 +76,7 @@ const POLITICIAN_HANDLES = {
 
 const CATEGORY_CONFIG = {
   all:           { label: "All Stories",       icon: Newspaper,     color: "var(--text-secondary)" },
-  social_media:  { label: "𝕏 Social Media",   icon: XIcon,         color: "#1d9bf0" },
+  social_media:  { label: "𝕏 Social Media",   icon: XIcon,         color: "var(--accent-color)" },
   investigation: { label: "Investigations",    icon: FileWarning,   color: "var(--danger)" },
   election:      { label: "Elections",         icon: Vote,          color: "var(--accent-color)" },
   news:          { label: "News",              icon: Newspaper,     color: "var(--info)" },
@@ -109,7 +112,7 @@ const renderFormattedPostText = (text, onHashtagClick) => {
             onHashtagClick(part);
           }}
           style={{
-            color: "#1d9bf0",
+            color: "var(--accent-color)",
             cursor: "pointer",
             fontWeight: "600",
             textDecoration: "none"
@@ -172,6 +175,7 @@ const getPostingTrend = (posts) => {
 };
 
 export default function PoliticianSpace({ politician, parties, events = [], onSelectEvent }) {
+  const [shareStatus, setShareStatus] = useState("");
   const [activeTab, setActiveTab] = useState("dossier");
   const [newsSearch, setNewsSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -197,7 +201,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
       list = list.filter(n =>
         n.title.toLowerCase().includes(q) ||
         (n.snippet && n.snippet.toLowerCase().includes(q)) ||
-        n.source.toLowerCase().includes(q)
+        (n.source || "").toLowerCase().includes(q)
       );
     }
     return list;
@@ -249,25 +253,25 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
 
   const tabs = [
     { id: "dossier", label: "Dossier", icon: Briefcase },
-    { id: "cases", label: "Criminal Record", icon: Gavel },
+    { id: "cases", label: "Legal record", icon: Gavel },
     { id: "shifts", label: "Party Shifts", icon: GitCommit },
     { id: "deeds", label: "Impact", icon: Award },
     { id: "events", label: "Timeline", icon: Calendar, badge: events.length },
-    { id: "intel", label: "Live Intel", icon: Zap, badge: allNews.length },
+    { id: "intel", label: "Coverage", icon: Zap, badge: allNews.length },
   ];
 
   return (
     <div className="politician-space-container">
       {/* Header */}
-      <div className="politician-space-header" style={{ borderLeft: `6px solid ${party.color}` }}>
+      <div className="politician-space-header" >
         <div className="profile-identity-group">
-          <div className="profile-avatar-placeholder" style={{ color: party.color, borderColor: party.color }}>
+          <div className="profile-avatar-placeholder" >
             <User size={28} />
           </div>
           <div>
-            <h1 className="profile-name-title">{politician.name}</h1>
-            <span className="party-badge-pill" style={{ backgroundColor: party.color, color: "white" }}>
-              {party.name}
+            <h1 lang={textLanguage(politician.name)} className="profile-name-title">{politician.name}</h1>
+            <span className="party-badge-pill" style={{ "--party-color": party.color }}>
+              <span className="party-badge-dot" style={{ backgroundColor: party.color }} />{party.name}
             </span>
           </div>
         </div>
@@ -292,11 +296,13 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
           <div className="header-stat-divider" />
           <div className="header-stat-chip">
             <span className="info-card-label">Intel</span>
-            <span className="header-stat-value" style={{ color: "var(--info)" }}>{allNews.length}</span>
+            <span className="header-stat-value" style={{ color: "var(--info)" }}>{indianNumber(allNews.length)}</span>
           </div>
         </div>
       </div>
 
+      <Provenance item={politician} sources={politician.officialRoster?.sources || []} status={politician.officialRoster ? "official_eci" : "curated"} />
+      {shareStatus && <p role="status">{shareStatus}</p>}
       {/* Tabs */}
       <div className="profile-tabs-selector">
         {tabs.map(tab => {
@@ -305,12 +311,13 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
             <button
               key={tab.id}
               className={`profile-tab-btn ${activeTab === tab.id ? "active" : ""}`}
+              aria-pressed={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
             >
               <Icon size={14} />
               {tab.label}
               {tab.badge > 0 && (
-                <span className="tab-badge-count">{tab.badge > 999 ? `${(tab.badge/1000).toFixed(1)}k` : tab.badge}</span>
+                <span className="tab-badge-count">{indianNumber(tab.badge)}</span>
               )}
             </button>
           );
@@ -325,20 +332,22 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
             <div className="profile-cards-grid">
               <div className="info-card glass-card">
                 <span className="info-card-label">Portfolio & Office</span>
-                <span className="info-card-value">{politician.mlaDetails.portfolio.replace(/Present/g, new Date().getFullYear())}</span>
+                <span lang={textLanguage(politician.mlaDetails.portfolio)} className="info-card-value">{politician.mlaDetails.portfolio.replace(/Present/g, new Date().getFullYear())}</span>
               </div>
               <div className="info-card glass-card">
                 <span className="info-card-label">Declared Net Worth</span>
                 <span className="info-card-value" style={{ color: "var(--success)", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
-                  <DollarSign size={16} /> {politician.mlaDetails.assetsText}
+                  {formatMoneyText(politician.mlaDetails.assetsText)}
                 </span>
+                <Provenance item={{ source: politician.evidenceSheet?.sources || "Profile reference" }} status="curated" />
               </div>
             </div>
             <div className="info-card glass-card">
               <span className="info-card-label">Political History & Bio</span>
-              <p className="dossier-value-text" style={{ fontSize: "0.92rem", lineHeight: 1.6, color: "var(--text-secondary)" }}>
+              <p lang={textLanguage(politician.mlaDetails.history)} className="dossier-value-text" style={{ fontSize: "0.92rem", lineHeight: 1.6, color: "var(--text-secondary)" }}>
                 {politician.mlaDetails.history}
               </p>
+              <Provenance item={politician} sources={politician.officialRoster?.sources || []} status="curated" />
             </div>
           </div>
         )}
@@ -346,7 +355,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
         {/* TAB 2: Criminal Record */}
         {activeTab === "cases" && (
           <div className="tab-content-animate" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            <div className="info-card glass-card" style={{ borderLeft: `4px solid ${caseStatusColor}` }}>
+            <div className="info-card glass-card" >
               <span className="info-card-label" style={{ color: caseStatusColor }}>
                 Incarceration Summary
               </span>
@@ -360,7 +369,8 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                 <div className="criminal-cases-list">
                   {politician.criminalProfile.majorCharges.map((c, i) => (
                     <div key={i} className={`criminal-case-card ${c.severity === "high" ? "high-severity" : ""}`}>
-                      <h4 className="criminal-case-charge">{c.charge}</h4>
+                      <h4 lang={textLanguage(c.charge)} className="criminal-case-charge">{c.charge}</h4>
+                      <Provenance item={c} status="curated" />
                       <p className="criminal-case-status">
                         Status: <strong>{c.status}</strong> | Severity: <strong style={{ color: c.severity === 'high' ? 'var(--danger)' : 'var(--warning)' }}>{c.severity.toUpperCase()}</strong>
                       </p>
@@ -427,14 +437,14 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                   
                   return (
                     <div className="shift-timeline-node" key={i}>
-                      <div className="shift-timeline-dot" style={{ backgroundColor: pt.color }} />
-                      <div className="shift-timeline-year" style={{ color: pt.color }}>
+                      <div className="shift-timeline-dot"  />
+                      <div className="shift-timeline-year" >
                         {m.startYear} – {m.endYear}
                         {duration && <span className="shift-duration-badge" style={{ marginLeft: "8px", fontSize: "0.75rem", opacity: 0.8 }}>({duration})</span>}
                       </div>
                       <div className="shift-timeline-details">
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          Active in <span className="shift-party-badge" style={{ backgroundColor: pt.color, color: "white" }}>{pt.name}</span>
+                          Active in <span className="shift-party-badge"><span className="party-badge-dot" style={{ backgroundColor: pt.color }} />{pt.name}</span>
                         </div>
                         <p style={{ marginTop: "6px", color: "var(--text-secondary)", fontStyle: "italic", fontSize: "0.88rem" }}>
                           "{m.reason}"
@@ -457,8 +467,9 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
               </span>
               {politician.goodDeeds.map((deed, i) => (
                 <div className="deed-item-card good-deed" key={i}>
-                  <h4 className="deed-item-title">{deed.title}</h4>
-                  <p className="deed-item-desc">{deed.description}</p>
+                  <h4 lang={textLanguage(deed.title)} className="deed-item-title">{deed.title}</h4>
+                  <p lang={textLanguage(deed.description)} className="deed-item-desc">{deed.description}</p>
+                  <Provenance item={deed} status="curated" />
                 </div>
               ))}
               {politician.goodDeeds.length === 0 && (
@@ -471,8 +482,9 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
               </span>
               {politician.badDeeds.map((deed, i) => (
                 <div className="deed-item-card bad-deed" key={i}>
-                  <h4 className="deed-item-title">{deed.title}</h4>
-                  <p className="deed-item-desc">{deed.description}</p>
+                  <h4 lang={textLanguage(deed.title)} className="deed-item-title">{deed.title}</h4>
+                  <p lang={textLanguage(deed.description)} className="deed-item-desc">{deed.description}</p>
+                  <Provenance item={deed} status="curated" />
                 </div>
               ))}
               {politician.badDeeds.length === 0 && (
@@ -487,7 +499,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
           <div className="tab-content-animate politician-event-history">
             <div className="intel-section-header">
               <div>
-                <h3>Event Time Fabric</h3>
+                <h3>Political timeline</h3>
                 <span className="feed-submeta">
                   Curated and extracted events linked to {politician.name}.
                 </span>
@@ -505,7 +517,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                       className="politician-event-row"
                       onClick={() => onSelectEvent?.(event.id)}
                     >
-                      <span>{event.occurredAt || event.year}</span>
+                      <span>{formatDate(event.occurredAt || event.year)}</span>
                       <strong>{event.title?.replace(/^\d{4}:\s*/, "")}</strong>
                       <small>{event.verificationStatus || (event.isCurated ? "curated" : "reported")}</small>
                     </button>
@@ -524,36 +536,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
           <div className="tab-content-animate intel-tab-layout">
 
             {/* ── Stats Dashboard Row ── */}
-            <div className="intel-stats-row">
-              <div className="intel-stat-card">
-                <BarChart3 size={20} className="stat-icon" />
-                <div>
-                  <span className="stat-number">{intelStats.totalArticles.toLocaleString()}</span>
-                  <span className="stat-label">Total Articles</span>
-                </div>
-              </div>
-              <div className="intel-stat-card">
-                <Eye size={20} className="stat-icon" />
-                <div>
-                  <span className="stat-number">{intelStats.uniqueSources}</span>
-                  <span className="stat-label">Unique Sources</span>
-                </div>
-              </div>
-              <div className="intel-stat-card danger-glow">
-                <FileWarning size={20} className="stat-icon" />
-                <div>
-                  <span className="stat-number">{intelStats.investigations}</span>
-                  <span className="stat-label">Investigations</span>
-                </div>
-              </div>
-              <div className="intel-stat-card">
-                <MessageSquare size={20} className="stat-icon" />
-                <div>
-                  <span className="stat-number">{intelStats.socialPosts}</span>
-                  <span className="stat-label">Social Posts</span>
-                </div>
-              </div>
-            </div>
+            <p className="archive-summary">{indianNumber(intelStats.totalArticles)} articles · {indianNumber(intelStats.uniqueSources)} sources · {indianNumber(intelStats.investigations)} investigations · {indianNumber(intelStats.socialPosts)} social posts</p>
 
             {/* ── Main Content Split ── */}
             <div className="intel-tab-container">
@@ -563,7 +546,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                   <div className="x-analytics-panel glass-card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "20px" }}>
                     <div className="intel-section-header" style={{ marginBottom: "4px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <TrendingUp size={18} className="intel-header-icon" style={{ color: "#1d9bf0" }} />
+                        <TrendingUp size={18} className="intel-header-icon" style={{ color: "var(--accent-color)" }} />
                         <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>𝕏 Sentiment & Stats</h3>
                       </div>
                     </div>
@@ -580,9 +563,9 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                             <div className="sentiment-bar neg" style={{ width: `${sentiment.negative}%`, backgroundColor: "var(--danger, #ef4444)", transition: "width 0.3s ease" }} title={`Negative: ${sentiment.negative}%`} />
                           </div>
                           <div className="sentiment-labels" style={{ display: "flex", justifyContent: "space-between", marginTop: "6px", fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                            <span style={{ color: "#10b981" }}>Positive: {sentiment.positive}%</span>
+                            <span style={{ color: "var(--accent-color)" }}>Positive: {sentiment.positive}%</span>
                             <span>Neutral: {sentiment.neutral}%</span>
-                            <span style={{ color: "#ef4444" }}>Negative: {sentiment.negative}%</span>
+                            <span style={{ color: "var(--accent-color)" }}>Negative: {sentiment.negative}%</span>
                           </div>
                         </div>
                       );
@@ -608,10 +591,10 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                                     padding: "6px 10px",
                                     borderRadius: "6px",
                                     backgroundColor: selectedHashtag === tag ? "rgba(29, 155, 240, 0.15)" : "rgba(255,255,255,0.03)",
-                                    border: `1px solid ${selectedHashtag === tag ? "#1d9bf0" : "transparent"}`,
+                                    border: `1px solid ${selectedHashtag === tag ? "var(--accent-color)" : "transparent"}`,
                                     fontSize: "0.78rem",
                                     cursor: "pointer",
-                                    color: selectedHashtag === tag ? "#1d9bf0" : "var(--text-secondary)",
+                                    color: selectedHashtag === tag ? "var(--accent-color)" : "var(--text-secondary)",
                                     transition: "all 0.2s ease"
                                   }}
                                 >
@@ -639,25 +622,16 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                         return { x, y };
                       });
                       const pathD = points.reduce((acc, p, i) => acc + `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)} `, "");
-                      const areaD = pathD + `L ${width} ${height} L 0 ${height} Z`;
                       return (
                         <div className="sparkline-section">
                           <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "8px", fontWeight: 500 }}>𝕏 Posting Activity (Trend)</h4>
                           <div style={{ padding: "8px", borderRadius: "8px", backgroundColor: "rgba(255,255,255,0.02)", display: "flex", justifyContent: "center" }}>
                             <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: "visible" }}>
-                              <defs>
-                                <linearGradient id="sparklineGrad" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#1d9bf0" stopOpacity="0.25" />
-                                  <stop offset="100%" stopColor="#1d9bf0" stopOpacity="0.0" />
-                                </linearGradient>
-                              </defs>
-                              {/* Area under curve */}
-                              <path d={areaD} fill="url(#sparklineGrad)" />
                               {/* Curve path */}
-                              <path d={pathD} fill="none" stroke="#1d9bf0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d={pathD} fill="none" stroke="var(--accent-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                               {/* Dots at peaks */}
                               {points.map((p, i) => (
-                                <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 4 : 2} fill="#1d9bf0" />
+                                <circle key={i} cx={p.x} cy={p.y} r={i === points.length - 1 ? 4 : 2} fill="var(--accent-color)" />
                               ))}
                             </svg>
                           </div>
@@ -684,19 +658,19 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                             <div className="asset-stat">
                               <span className="asset-stat-label">Movable Assets</span>
                               <span className="asset-stat-val text-success">
-                                {politician.evidenceSheet.assetsBreakdown ? politician.evidenceSheet.assetsBreakdown.moveable : politician.evidenceSheet.assetsText}
+                                {politician.evidenceSheet.assetsBreakdown ? formatMoneyText(politician.evidenceSheet.assetsBreakdown.moveable) : formatMoneyText(politician.evidenceSheet.assetsText)}
                               </span>
                             </div>
                             <div className="asset-stat">
                               <span className="asset-stat-label">Immovable Assets</span>
                               <span className="asset-stat-val text-accent">
-                                {politician.evidenceSheet.assetsBreakdown ? politician.evidenceSheet.assetsBreakdown.immoveable : "₹0.0 Crore"}
+                                {politician.evidenceSheet.assetsBreakdown ? formatMoneyText(politician.evidenceSheet.assetsBreakdown.immoveable) : "₹0.0 crore"}
                               </span>
                             </div>
                             <div className="asset-stat">
                               <span className="asset-stat-label">Declared Liabilities</span>
                               <span className="asset-stat-val text-danger">
-                                {politician.evidenceSheet.assetsBreakdown ? politician.evidenceSheet.assetsBreakdown.liabilities : "₹0.0 Crore"}
+                                {politician.evidenceSheet.assetsBreakdown ? formatMoneyText(politician.evidenceSheet.assetsBreakdown.liabilities) : "₹0.0 crore"}
                               </span>
                             </div>
                           </div>
@@ -771,7 +745,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                     <span className="live-pulsating-dot" />
                     <h3>Intelligence Newsroom</h3>
                   </div>
-                  <span className="feed-count-badge">{filteredNews.length.toLocaleString()} shown</span>
+                  <span className="feed-count-badge">{filteredNews.length.toLocaleString("en-IN")} shown</span>
                 </div>
 
                 {/* Search + Filter Bar */}
@@ -795,7 +769,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                       borderRadius: "12px",
                       backgroundColor: "rgba(29, 155, 240, 0.15)",
                       border: "1px solid #1d9bf0",
-                      color: "#1d9bf0",
+                      color: "var(--accent-color)",
                       fontSize: "0.75rem",
                       alignSelf: "flex-start"
                     }}>
@@ -805,7 +779,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                         style={{
                           background: "none",
                           border: "none",
-                          color: "#1d9bf0",
+                          color: "var(--accent-color)",
                           cursor: "pointer",
                           fontWeight: "bold",
                           fontSize: "0.85rem",
@@ -838,7 +812,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                       >
                         <Icon size={12} />
                         {cfg.label}
-                        <span className="pill-count">{key === "all" ? allNews.length : count}</span>
+
                       </button>
                     );
                   })}
@@ -850,11 +824,12 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                     filteredNews.map((news) => {
                       const catCfg = CATEGORY_CONFIG[news.category] || CATEGORY_CONFIG.news;
                       const CatIcon = catCfg.icon;
-                      const isExpanded = expandedCard === news.id;
+                      const storyId = news.id || news.url || `${news.date}-${news.title}`;
+                      const isExpanded = expandedCard === storyId;
 
                       if (news.category === "social_media") {
                         const handle = POLITICIAN_HANDLES[news.politicianId] || `@${news.politicianId || 'politician'}`;
-                        const charCodeSum = Array.from(news.id).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+                        const charCodeSum = Array.from(storyId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
                         const mockRetweets = (charCodeSum % 400) + 50;
                         const mockLikes = (charCodeSum % 3000) + 120;
                         const mockReplies = (charCodeSum % 150) + 15;
@@ -863,20 +838,20 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                         return (
                           <div
                             className={`x-post-card ${isExpanded ? "expanded" : ""}`}
-                            key={news.id}
-                            onClick={() => setExpandedCard(isExpanded ? null : news.id)}
+                            key={storyId}
+                            onClick={() => setExpandedCard(isExpanded ? null : storyId)}
                           >
                             <div className="x-post-header">
-                              <div className="x-post-avatar" style={{ color: party.color, borderColor: party.color }}>
+                              <div className="x-post-avatar" >
                                 <User size={16} />
                               </div>
                               <div className="x-post-author-info">
                                 <div className="x-post-name-row">
                                   <span className="x-post-author-name">{politician.name}</span>
-                                  <span className="x-post-verified-badge" title="Verified Public Figure">✓</span>
+  
                                   <span className="x-post-handle">{handle}</span>
                                   <span className="x-post-dot">·</span>
-                                  <span className="x-post-date">{news.date}</span>
+                                  <span className="x-post-date">{formatDate(news.publishedAt || news.date)}</span>
                                 </div>
                               </div>
                               <div className="x-logo-badge">
@@ -884,8 +859,9 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                               </div>
                             </div>
 
+                            <Provenance item={news} />
                             <div className="x-post-content">
-                              <p className="x-post-text">
+                              <p lang={textLanguage(news.title)} className="x-post-text">
                                 {renderFormattedPostText(news.title, (tag) => {
                                   setActiveCategory("social_media");
                                   setSelectedHashtag(tag);
@@ -893,7 +869,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                               </p>
                               {isExpanded && news.snippet && (
                                 <div className="x-post-expanded-content">
-                                  <p className="x-post-snippet">{news.snippet}</p>
+                                  <p lang={textLanguage(news.snippet)} className="x-post-snippet">{news.snippet}</p>
                                   <a
                                     href={news.url}
                                     target="_blank"
@@ -909,6 +885,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                               )}
                             </div>
 
+                            <p className="simulation-note">Illustrative interaction counts · actions below are simulated</p>
                             <div className="x-post-actions">
                               <button className="x-action-btn hover-blue" onClick={(e) => { e.stopPropagation(); alert("Replied (simulation)"); }}>
                                 <MessageCircle size={14} />
@@ -926,7 +903,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                                 <BarChart3 size={14} />
                                 <span>{mockViews}</span>
                               </button>
-                              <button className="x-action-btn hover-blue" onClick={(e) => { e.stopPropagation(); alert("Shared (simulation)"); }}>
+                              <button className="x-action-btn hover-blue" aria-label="Share story with source" onClick={async (e) => { e.stopPropagation(); setShareStatus(await shareEvidence(news)); }}>
                                 <Share2 size={14} />
                               </button>
                             </div>
@@ -937,8 +914,8 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                       return (
                         <div
                           className={`news-feed-card ${isExpanded ? "expanded" : ""}`}
-                          key={news.id}
-                          onClick={() => setExpandedCard(isExpanded ? null : news.id)}
+                          key={storyId}
+                          onClick={() => setExpandedCard(isExpanded ? null : storyId)}
                         >
                           <div className="news-card-header">
                             <div className="news-card-meta-left">
@@ -946,14 +923,14 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
                                 <CatIcon size={10} />
                                 {catCfg.label}
                               </span>
-                              <span className="news-source-tag">{news.source}</span>
+                              <Provenance item={news} />
                             </div>
-                            <span className="news-date-tag">{news.date}</span>
+                            
                           </div>
-                          <h4 className="news-card-title">{news.title}</h4>
+                          <h4 lang={textLanguage(news.title)} className="news-card-title">{news.title}</h4>
                           {isExpanded && (
                             <div className="news-expanded-content">
-                              <p className="news-card-snippet">{news.snippet}</p>
+                              <p lang={textLanguage(news.snippet)} className="news-card-snippet">{news.snippet}</p>
                               <a
                                 href={news.url}
                                 target="_blank"
