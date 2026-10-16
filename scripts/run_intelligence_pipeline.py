@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 import tempfile
+from functools import partial
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +29,7 @@ from scripts.intelligence.events import EventExtractor
 from scripts.intelligence.snapshots import generate_snapshots
 from scripts.intelligence.source_config import (
     DEFAULT_X_QUERIES,
+    NEWS_RSS_FEEDS,
     PUBLIC_WEB_ALLOWED_DOMAINS,
     PUBLIC_WEB_START_URLS,
     instagram_profiles,
@@ -59,18 +61,11 @@ def build_default_collectors(
     max_social_queries: int,
     social_limit: int,
     include_extended_public: bool,
+    collector_names: list[str] | None = None,
 ):
     from scripts import scrape_political_intel as legacy
 
-    rss_jobs = [
-        (query, politician_id, data["name"])
-        for politician_id, data in legacy.POLITICIANS.items()
-        for query in data["queries"]
-    ]
-    rss_jobs.extend(
-        (query, "general", "Tamil Nadu Politics")
-        for query in legacy.TOPIC_QUERIES
-    )
+    rss_jobs = legacy.build_rss_jobs()
     if max_rss_queries is not None:
         rss_jobs = rss_jobs[:max_rss_queries]
 
@@ -78,9 +73,13 @@ def build_default_collectors(
         database_document, max_queries=max_social_queries
     )
     collectors = [
-        RssCollector(rss_jobs, legacy.fetch_rss),
-        RedditCollector(social_jobs, legacy.fetch_reddit, limit=social_limit),
-        BlueskyCollector(social_jobs, legacy.fetch_bluesky, limit=social_limit),
+        RssCollector(rss_jobs, partial(legacy.fetch_rss, raise_errors=True)),
+        RssCollector(
+            [(url, "general", name) for url, name in NEWS_RSS_FEEDS],
+            legacy.fetch_direct_rss, name="rss_direct",
+        ),
+        RedditCollector(social_jobs, partial(legacy.fetch_reddit, raise_errors=True), limit=social_limit),
+        BlueskyCollector(social_jobs, partial(legacy.fetch_bluesky, raise_errors=True), limit=social_limit),
     ]
     if include_extended_public:
         discovery = ScrapyDiscoveryCollector(
@@ -93,6 +92,13 @@ def build_default_collectors(
                 InstagramCollector(instagram_profiles(), max_posts_per_profile=10),
                 XPublicCollector(DEFAULT_X_QUERIES, limit_per_query=10),
             ]
+        )
+    if collector_names is not None:
+        collectors = [collector for collector in collectors if collector.name in collector_names]
+    with legacy.lock:
+        legacy.stats.update(
+            fetched=0, queries_done=0,
+            total_queries=sum(len(collector.jobs) for collector in collectors if collector.name in {"rss", "rss_direct"}),
         )
     return collectors
 
@@ -159,6 +165,11 @@ def main() -> None:
     parser.add_argument("--max-social-queries", type=int, default=80)
     parser.add_argument("--social-limit", type=int, default=15)
     parser.add_argument("--extended-public", action="store_true")
+    parser.add_argument(
+        "--collectors", nargs="+",
+        choices=("rss", "rss_direct", "reddit", "bluesky", "scrapy_newspaper", "instagram", "x_public"),
+        help="Run only these collectors (extended collectors also need --extended-public).",
+    )
     args = parser.parse_args()
 
     project_root = PROJECT_ROOT
@@ -176,6 +187,7 @@ def main() -> None:
             max_social_queries=args.max_social_queries,
             social_limit=args.social_limit,
             include_extended_public=args.extended_public,
+            collector_names=args.collectors,
         )
         if args.collect or run_all
         else []

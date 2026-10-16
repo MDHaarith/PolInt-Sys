@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { ArrowUpRight, ClipboardList, GitBranch, Search, ShieldCheck, UserRoundCheck } from "lucide-react";
+import { formatDate, textLanguage, indianNumber } from "./dateLabels";
+import Provenance from "./Provenance";
 import { chiefMinisterPolicyIndex, policyImpactRecords } from "../data/policyImpactDatabase";
 
 const domains = ["all", ...Array.from(new Set(policyImpactRecords.map(item => item.domain)))];
@@ -33,12 +35,11 @@ export default function PolicyImpactDashboard() {
         <div>
           <div className="workspace-eyebrow">
             <ClipboardList size={14} />
-            Policy impact intelligence
+            Public policy
           </div>
-          <h1>Scheme Lineage and Daily Follow-Up</h1>
+          <h1>Policies, over time</h1>
           <p>
-            Policies are separated from filler headlines. Each record tracks who started it,
-            what it converted into, what to measure, and what needs repeated follow-up.
+            Trace the schemes, people and decisions behind public policy. Track what changed and what to watch next.
           </p>
         </div>
       </div>
@@ -48,30 +49,37 @@ export default function PolicyImpactDashboard() {
           <Search size={15} style={{ color: "var(--text-muted)" }} />
           <input
             className="intel-search-input"
+            type="search"
+            aria-label="Search policies"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search schemes, departments, impacts..."
           />
         </div>
+        <details className="filter-disclosure">
+          <summary>Policy domains <span>{domain === "all" ? "All domains" : domain}</span></summary>
         <div className="category-pills-row">
           {domains.map(item => (
             <button
               key={item}
               type="button"
               className={`category-pill ${domain === item ? "active" : ""}`}
+              aria-pressed={domain === item}
               onClick={() => setDomain(item)}
             >
               {item === "all" ? "All Domains" : item}
             </button>
           ))}
         </div>
+        </details>
       </div>
 
-      <div className="cm-policy-index-panel">
+      <details className="cm-policy-index-panel">
+        <summary className="cm-policy-summary">Chief Minister policy map <span>{chiefMinisterPolicyIndex.length} lineage records · expand to explore</span></summary>
         <div className="cm-policy-index-header">
           <div>
             <span className="policy-domain">Chief Minister policy map</span>
-            <h2>Every CM Has a Lineage Record</h2>
+            <h2>Policy across administrations</h2>
           </div>
           <span className="verification-pill">{chiefMinisterPolicyIndex.length} CMs / acting CMs</span>
         </div>
@@ -86,26 +94,30 @@ export default function PolicyImpactDashboard() {
                 <span>{item.party}</span>
                 <span>{item.tenure}</span>
               </div>
-              <p>{item.intelligenceNote}</p>
+              <p lang={textLanguage(item.intelligenceNote)}>{item.intelligenceNote}</p>
+              <Provenance item={item} status="curated" />
               <div className="cm-policy-tags">
                 {item.headlinePolicies.slice(0, 4).map(policy => <span key={policy}>{policy}</span>)}
               </div>
             </article>
           ))}
         </div>
-      </div>
+      </details>
 
+      <div className="policy-results-count" role="status">{indianNumber(filteredPolicies.length)} policies{domain !== "all" ? ` · ${domain}` : " across all domains"}</div>
       <div className="policy-impact-grid">
+        {filteredPolicies.length === 0 && <div className="no-news-fallback"><ClipboardList size={28} /><h3>No matching policies</h3><p>Try another scheme or explore all domains.</p><button type="button" className="load-more-intel-btn" onClick={() => { setQuery(""); setDomain("all"); }}>Clear filters</button></div>}
         {filteredPolicies.map(policy => (
           <article key={policy.id} className="policy-impact-card">
             <div className="policy-card-header">
               <div>
                 <span className="policy-domain">{policy.domain}</span>
-                <h2>{policy.title}</h2>
+                <h2 lang={textLanguage(policy.title)}>{policy.title}</h2>
               </div>
-              <span className="verification-pill">Tracked</span>
+              <span className="verification-pill">Curated record</span>
             </div>
 
+            <Provenance item={policy} sources={policy.sourceLinks} status="curated" />
             <div className="policy-lineage">
               <div>
                 <span>Started by</span>
@@ -120,7 +132,7 @@ export default function PolicyImpactDashboard() {
               </div>
             </div>
 
-            <p className="policy-impact-summary">{policy.impactSummary}</p>
+            <p lang={textLanguage(policy.impactSummary)} className="policy-impact-summary">{policy.impactSummary}</p>
 
             <div className="policy-section">
               <h3>Converted Into</h3>
@@ -140,7 +152,7 @@ export default function PolicyImpactDashboard() {
               {policy.followUps.map(item => (
                 <div key={`${policy.id}-${item.date}`} className="policy-followup-row">
                   <ShieldCheck size={14} />
-                  <span>{item.date}</span>
+                  <span>{formatDate(item.date)}</span>
                   <p>{item.note}</p>
                 </div>
               ))}

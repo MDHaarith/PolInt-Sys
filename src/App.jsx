@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import PoliticianSpace from "./components/PoliticianSpace";
 import EventGraph from "./components/EventGraph";
 import AssemblyDashboard from "./components/AssemblyDashboard";
@@ -8,8 +8,10 @@ import {
   seedPoliticians, seedParties, generateEventGraphData, seedAdministrations, generateAssemblySeats 
 } from "./data/politicalDatabase";
 import { mergeTimeFabricData } from "./data/timeFabricData";
+import { intelFile, isMobileBuild, loadData } from "./dataSource";
+import { relativeTime, formatDateTime, textLanguage, indianNumber } from "./components/dateLabels";
 import { 
-  Users, GitBranch, Search, ChevronRight, LayoutDashboard, Newspaper, ClipboardList
+  Users, GitBranch, Search, ChevronRight, LayoutDashboard, Newspaper, ClipboardList, RefreshCw, ChevronDown
 } from "lucide-react";
 
 // Helper to determine deceased politician end year of political activity
@@ -283,28 +285,57 @@ export default function App() {
       seats: generateAssemblySeats(seedPoliticians),
       news: [],
       rosterMeta: null,
+      intelUpdatedAt: null,
       lastIntelSync: null
     };
   });
 
-  const [workspaceMode, setWorkspaceMode] = useState("dashboard"); // "dashboard" | "intelligence" | "policies" | "politician" | "events"
+  const [workspaceMode, setWorkspaceMode] = useState("intelligence"); // "dashboard" | "intelligence" | "policies" | "politician" | "events"
+  const [theme, setTheme] = useState(() => {
+    try { return ["light", "dark", "system"].includes(localStorage.getItem("polint-theme")) ? localStorage.getItem("polint-theme") : "light"; }
+    catch { return "light"; }
+  });
+  useEffect(() => {
+    const preference = matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      const mode = theme === "system" ? (preference.matches ? "dark" : "light") : theme;
+      document.documentElement.dataset.theme = mode;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", mode === "dark" ? "#211e1a" : "#fbf6ed");
+    };
+    apply();
+    try { localStorage.setItem("polint-theme", theme); } catch { /* Storage may be disabled. */ }
+    preference.addEventListener("change", apply);
+    return () => preference.removeEventListener("change", apply);
+  }, [theme]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAdminId, setSelectedAdminId] = useState("all");
   const [selectedPoliticianId, setSelectedPoliticianId] = useState("mk_stalin");
   const [timeFabricSnapshot, setTimeFabricSnapshot] = useState(null);
   const [focusedEventId, setFocusedEventId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+  const [directoryOpen, setDirectoryOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(true);
+  const [intelLoadState, setIntelLoadState] = useState("loading");
+  const [offline, setOffline] = useState(() => !navigator.onLine);
+  const [now, setNow] = useState(() => Date.now());
+  const refreshingRef = useRef(false);
 
-  const showToast = (message, type = "info") => {
+  useEffect(() => {
+    document.querySelector("#main-content")?.scrollTo(0, 0);
+  }, [workspaceMode, selectedPoliticianId, focusedEventId]);
+
+
+  const showToast = useCallback((message, type = "info") => {
     setToast({ show: true, message, type });
     setTimeout(() => {
       setToast(prev => prev.message === message ? { ...prev, show: false } : prev);
     }, 4000);
-  };
+  }, []);
 
   const latestNewsCountRef = useRef(0);
+  const latestSnapshotTimeRef = useRef(0);
 
-  const applyFreshIntel = (freshIntel) => {
+  const applyFreshIntel = useCallback((freshIntel, updatedAt) => {
     const aliases = buildPoliticianIdAliases(freshIntel.mlas || []);
     const merged = mergeIntelAndRoster(freshIntel, seedPoliticians);
     latestNewsCountRef.current = freshIntel.news?.length || 0;
@@ -314,52 +345,88 @@ export default function App() {
       seats: generateAssemblySeats(merged),
       news: normalizeIntelRecords(freshIntel.news || [], aliases),
       rosterMeta: freshIntel.rosterMeta || null,
+      intelUpdatedAt: updatedAt,
       lastIntelSync: new Date().toISOString()
     }));
-  };
-
-  // Fetch initial scraped intel from public static storage at mount
-  useEffect(() => {
-    const loadInitialIntel = async () => {
-      try {
-        const res = await fetch(`/scrapedIntel.json?t=${Date.now()}`);
-        if (!res.ok) throw new Error("Failed to load initial intel database");
-        const freshIntel = await res.json();
-        
-        applyFreshIntel(freshIntel);
-      } catch (err) {
-        console.error("Error loading initial assembly intelligence:", err);
-      }
-    };
-    loadInitialIntel();
   }, []);
 
-  useEffect(() => {
-    const loadTimeFabric = async () => {
-      try {
-        const response = await fetch(`/timeFabric.json?t=${Date.now()}`);
-        if (!response.ok) return;
-        setTimeFabricSnapshot(await response.json());
-      } catch (error) {
-        console.error("Error loading extracted Time Fabric:", error);
+  const refreshIntel = useCallback(async () => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    setRefreshing(true);
+    try {
+      const [intel, fabric] = await Promise.allSettled([
+        loadData(intelFile),
+        loadData("/timeFabric.json"),
+      ]);
+      if (intel.status === "rejected") throw intel.reason;
+      if (!Array.isArray(intel.value?.news)) throw new Error("The intelligence snapshot has no story list");
+      const freshIntel = intel.value;
+      const updatedAt = freshIntel.coverageMeta?.lastRunAt || freshIntel.coverageMeta?.generatedAt || freshIntel.generatedAt
+        || freshIntel.news.reduce((latest, story) => {
+          const date = story.publishedAt || story.date || story.retrievedAt;
+          return Date.parse(date) > (Date.parse(latest) || 0) ? date : latest;
+        }, null);
+      const snapshotTime = Date.parse(updatedAt) || 0;
+      // The mobile loader can fall back to an older bundled snapshot after a network failure.
+      if (isMobileBuild && snapshotTime < latestSnapshotTimeRef.current) {
+        setOffline(true);
+        return false;
       }
-    };
-    loadTimeFabric();
-  }, [db.lastIntelSync]);
+      if (fabric.status === "fulfilled") setTimeFabricSnapshot(fabric.value);
+      applyFreshIntel(freshIntel, updatedAt);
+      latestSnapshotTimeRef.current = snapshotTime;
+      setIntelLoadState("ready");
+      setOffline(!navigator.onLine || fabric.status === "rejected");
+      setNow(Date.now());
+      return true;
+    } catch (error) {
+      console.warn("Intelligence refresh unavailable; keeping saved data:", error);
+      setIntelLoadState(previous => previous === "ready" ? previous : "error");
+      setOffline(true);
+      return false;
+    } finally {
+      refreshingRef.current = false;
+      setRefreshing(false);
+    }
+  }, [applyFreshIntel]);
 
   useEffect(() => {
+    let active = true;
+    // Deferring also avoids a duplicate launch request during StrictMode's setup check.
+    queueMicrotask(() => {
+      if (active) void refreshIntel();
+    });
+    const refreshVisible = () => {
+      if (document.visibilityState === "visible") void refreshIntel();
+    };
+    const markOffline = () => setOffline(true);
+    const interval = setInterval(refreshVisible, 10 * 60 * 1000);
+    const clock = setInterval(() => setNow(Date.now()), 60 * 1000);
+    document.addEventListener("visibilitychange", refreshVisible);
+    window.addEventListener("online", refreshVisible);
+    window.addEventListener("offline", markOffline);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      clearInterval(clock);
+      document.removeEventListener("visibilitychange", refreshVisible);
+      window.removeEventListener("online", refreshVisible);
+      window.removeEventListener("offline", markOffline);
+    };
+  }, [refreshIntel]);
+
+  useEffect(() => {
+    if (isMobileBuild) return;
     const pollIntelStatus = async () => {
       try {
+        if (document.visibilityState !== "visible") return;
         const res = await fetch(`/api/intel-status?t=${Date.now()}`);
         if (!res.ok) return;
         const status = await res.json();
         const currentCount = latestNewsCountRef.current;
         if (status.newsCount >= currentCount + 10) {
-          const reloadRes = await fetch(`/scrapedIntel.json?t=${Date.now()}`);
-          if (!reloadRes.ok) return;
-          const freshIntel = await reloadRes.json();
-          applyFreshIntel(freshIntel);
-          showToast(`Loaded ${status.newsCount - currentCount} new intelligence items`, "success");
+          if (await refreshIntel()) showToast(`Loaded ${status.newsCount - currentCount} new intelligence items`, "success");
         }
       } catch (err) {
         console.error("Error checking intelligence status:", err);
@@ -368,7 +435,7 @@ export default function App() {
 
     const interval = setInterval(pollIntelStatus, 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshIntel, showToast]);
 
   // 1. Filter Politicians based on Selected Assembly and Search Query
   const filteredPoliticians = useMemo(() => {
@@ -425,6 +492,7 @@ export default function App() {
 
   const handleSelectPolitician = (id) => {
     setSelectedPoliticianId(id);
+    setDirectoryOpen(false);
     setWorkspaceMode("politician"); // Auto shift to profile view
   };
 
@@ -437,14 +505,15 @@ export default function App() {
     const isActive = selectedPoliticianId === p.id;
     const party = db.parties.find(pt => pt.id === p.party) || { color: "var(--color-ind)" };
     return (
-      <div
+      <button
+        type="button"
         key={p.id}
         className={`politician-list-item ${isActive ? "active" : ""}`}
         onClick={() => handleSelectPolitician(p.id)}
       >
-        <span className="party-badge-dot" style={{ backgroundColor: party.color }} />
+        <span className="directory-party" title={party.name}><i className="party-badge-dot" style={{ backgroundColor: party.color }} />{p.party.toUpperCase()}</span>
         <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-          <span className="politician-item-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>
+          <span lang={textLanguage(p.name)} className="politician-item-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>
             {p.name}
           </span>
           <span className="politician-item-meta" style={{ fontSize: "0.7rem", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "2px" }}>
@@ -455,61 +524,94 @@ export default function App() {
           </span>
         </div>
         <ChevronRight size={12} style={{ color: "var(--text-muted)", opacity: isActive ? 1 : 0 }} />
-      </div>
+      </button>
     );
   };
 
   return (
     <div className="app-workspace-layout">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       {/* 1. Left Sidebar: Mode Selector & Politician List Explorer */}
       <aside className="app-sidebar">
         <div className="sidebar-brand-group">
-          <div className="sidebar-logo-icon">I</div>
-          <span className="sidebar-logo-text">Political Intel Vault</span>
+          
+          <div className="sidebar-brand-copy">
+            <span className="sidebar-logo-text">PolInt<span>.</span></span>
+            <span className="brand-tagline">Tamil Nadu, in context</span>
+            <span className={`app-freshness ${offline ? "is-offline" : ""}`} role="status" title={db.intelUpdatedAt ? `Data updated ${formatDateTime(db.intelUpdatedAt)}` : undefined}>
+              
+              {offline ? (db.lastIntelSync ? "Offline · showing saved data" : "Offline · unable to load feed") : refreshing ? "Checking for updates…" : db.intelUpdatedAt ? `Updated ${relativeTime(db.intelUpdatedAt, now)}` : "Saved intelligence snapshot"}
+            </span>
+          </div>
+          <button type="button" className="app-refresh-btn" onClick={refreshIntel} disabled={refreshing} aria-label={refreshing ? "Refreshing intelligence" : "Refresh intelligence"} title="Refresh intelligence">
+            <RefreshCw size={18} className={refreshing ? "spin-icon" : ""} aria-hidden="true" />
+          </button>
         </div>
 
+        <label className="theme-control">Edition
+          <select aria-label="Appearance" value={theme} onChange={event => setTheme(event.target.value)}>
+            <option value="light">Paper</option><option value="dark">Ink</option><option value="system">System</option>
+          </select>
+        </label>
+
         {/* Global Workspace Mode Toggle */}
-        <div className="sidebar-mode-toggle">
-          <button 
-            className={`sidebar-mode-btn ${workspaceMode === "dashboard" ? "active" : ""}`}
-            onClick={() => setWorkspaceMode("dashboard")}
-          >
-            <LayoutDashboard size={16} />
-            Assembly Dashboard
-          </button>
+        <nav className="sidebar-mode-toggle" aria-label="Workspaces">
           <button
             className={`sidebar-mode-btn ${workspaceMode === "intelligence" ? "active" : ""}`}
+            aria-current={workspaceMode === "intelligence" ? "page" : undefined}
+            aria-label="Intelligence Feed"
             onClick={() => setWorkspaceMode("intelligence")}
           >
             <Newspaper size={16} />
-            Intelligence Feed
+            <span className="mode-label-desktop">Feed</span><span className="mode-label-mobile">Feed</span>
           </button>
           <button
             className={`sidebar-mode-btn ${workspaceMode === "policies" ? "active" : ""}`}
+            aria-current={workspaceMode === "policies" ? "page" : undefined}
+            aria-label="Policy Impact"
             onClick={() => setWorkspaceMode("policies")}
           >
             <ClipboardList size={16} />
-            Policy Impact
+            <span className="mode-label-desktop">Policies</span><span className="mode-label-mobile">Policies</span>
           </button>
           <button 
             className={`sidebar-mode-btn ${workspaceMode === "politician" ? "active" : ""}`}
+            aria-current={workspaceMode === "politician" ? "page" : undefined}
+            aria-label="Politician Directory"
             onClick={() => setWorkspaceMode("politician")}
           >
             <Users size={16} />
-            Politician Directory
+            <span className="mode-label-desktop">People</span><span className="mode-label-mobile">People</span>
           </button>
           <button 
             className={`sidebar-mode-btn ${workspaceMode === "events" ? "active" : ""}`}
+            aria-current={workspaceMode === "events" ? "page" : undefined}
+            aria-label="Event Time Fabric"
             onClick={() => setWorkspaceMode("events")}
           >
             <GitBranch size={16} />
-            Event Time Fabric
+            <span className="mode-label-desktop">Timeline</span><span className="mode-label-mobile">Timeline</span>
           </button>
-        </div>
+          <button 
+            className={`sidebar-mode-btn ${workspaceMode === "dashboard" ? "active" : ""}`}
+            aria-current={workspaceMode === "dashboard" ? "page" : undefined}
+            aria-label="Assembly Dashboard"
+            onClick={() => setWorkspaceMode("dashboard")}
+          >
+            <LayoutDashboard size={16} />
+            <span className="mode-label-desktop">Assembly</span><span className="mode-label-mobile">Assembly</span>
+          </button>
+        </nav>
+
+        {workspaceMode === "politician" && (
+          <button type="button" className="directory-toggle" aria-expanded={directoryOpen} aria-controls="politician-directory" onClick={() => setDirectoryOpen(open => !open)}>
+            <Search size={17} /><span>Find a politician <small>{indianNumber(filteredPoliticians.length)} profiles</small></span><ChevronDown size={17} />
+          </button>
+        )}
 
         {/* Workspace Side Panels */}
         {workspaceMode === "politician" ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div id="politician-directory" className={`sidebar-directory-panel ${directoryOpen ? "is-open" : ""}`} style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             {/* Assembly Filter Selector */}
             <span className="sidebar-section-title">Assembly Administration</span>
             <div className="sidebar-admin-selector">
@@ -527,6 +629,7 @@ export default function App() {
                   }
                 }}
                 className="sidebar-select-dropdown"
+                aria-label="Filter directory by assembly"
               >
                 <option value="all">All Administrations (1st - 17th)</option>
                 {db.administrations.map(admin => {
@@ -549,6 +652,7 @@ export default function App() {
               <input 
                 type="text" 
                 className="sidebar-search-field" 
+                aria-label="Search politicians or constituencies"
                 placeholder="Search politicians or constituencies..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -601,30 +705,30 @@ export default function App() {
             </div>
           </div>
         ) : workspaceMode === "dashboard" ? (
-          <div style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="sidebar-overview" style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
             <span className="sidebar-section-title">Overview</span>
-            <p>You are viewing the **Assembly Dashboard**.</p>
-            <p>This panel shows a grid representing all **234 Legislative seats** in Tamil Nadu's 17th Assembly.</p>
+            <p>Explore the Assembly</p>
+            <p>234 constituencies. One view of Tamil Nadu’s 17th Legislative Assembly.</p>
             <p>Click any seat block on the canvas to inspect its MLA representative, party affiliation, assets, and criminal profile.</p>
             <p>For representatives with pre-loaded profiles, click the button in the inspector card to open their full evidence dossier.</p>
           </div>
         ) : workspaceMode === "intelligence" ? (
-          <div style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="sidebar-overview" style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
             <span className="sidebar-section-title">All News</span>
-            <p>You are viewing the **Intelligence Feed**.</p>
-            <p>This workspace exposes the full political archive and watches for new batches automatically.</p>
+            <p>The state of the story</p>
+            <p>Reporting and public signals, brought together in a searchable archive.</p>
             <p>Use search and category filters to cut through live news, public social signals, elections, probes, and policy coverage.</p>
           </div>
         ) : workspaceMode === "policies" ? (
-          <div style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="sidebar-overview" style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
             <span className="sidebar-section-title">Policy Tracker</span>
-            <p>You are viewing the **Policy Impact** workspace.</p>
-            <p>This separates actual schemes and policy lineages from generic headline noise.</p>
+            <p>Follow the impact</p>
+            <p>Discover how public schemes evolve across administrations.</p>
             <p>Each item tracks origin, conversion, current custodian, impact watch points, and follow-up cadence.</p>
           </div>
         ) : (
-          <div style={{ flex: 1, color: "var(--text-muted)", fontSize: "0.82rem", lineHeight: 1.5, marginTop: "20px" }}>
-            <p>You are viewing the **Event Time Fabric** workspace.</p>
+          <div className="sidebar-overview" style={{ flex: 1, color: "var(--text-muted)", fontSize: "0.82rem", lineHeight: 1.5, marginTop: "20px" }}>
+            <p>See the connections</p>
             <p style={{ marginTop: "12px" }}>The timeline combines historical incidents, power shifts, scandals, and CM-wise policy lineage.</p>
             <p style={{ marginTop: "12px" }}>Click any node to inspect fallout, successor policies, source links, and daily follow-up items.</p>
           </div>
@@ -632,7 +736,7 @@ export default function App() {
       </aside>
 
       {/* 2. Center Workspace Panel: Dashboard OR Tabbed Profile Space OR Event Graph Canvas */}
-      <main className="workspace-content-pane">
+      <main className="workspace-content-pane" id="main-content" aria-label="Selected workspace">
         {workspaceMode === "dashboard" ? (
           <AssemblyDashboard 
             seats={db.seats}
@@ -646,6 +750,11 @@ export default function App() {
             parties={db.parties}
             events={eventNodes}
             lastIntelSync={db.lastIntelSync}
+            loading={intelLoadState === "loading"}
+            loadError={intelLoadState === "error"}
+            onRefresh={refreshIntel}
+            refreshing={refreshing}
+            now={now}
             onSelectPolitician={handleSelectPolitician}
             onSelectEvent={handleSelectEvent}
           />

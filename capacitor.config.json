@@ -1,0 +1,9 @@
+{
+  "appId": "com.polint.intelligence",
+  "appName": "PolInt",
+  "webDir": "dist-mobile",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

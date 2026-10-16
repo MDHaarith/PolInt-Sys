@@ -8,15 +8,20 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "export:curated": "node scripts/export_curated_intelligence.mjs"
+    "export:curated": "node scripts/export_curated_intelligence.mjs",
+    "build:mobile": "python3 scripts/build_mobile_data.py && vite build --mode mobile && cap sync android",
+    "apk": "npm run build:mobile && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "reactflow": "^11.11.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

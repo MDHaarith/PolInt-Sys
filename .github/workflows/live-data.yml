@@ -1,0 +1,90 @@
+name: Refresh live intelligence data
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.repository == 'MDHaarith/PolInt-Sys'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # The curated event exporter uses Node; the selected Python collectors use only stdlib.
+      # requirements-intelligence.txt is for the optional authenticated/extended collectors.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore deduplication warehouse
+        uses: actions/cache/restore@v4
+        with:
+          path: data/intelligence.db
+          key: ${{ runner.os }}-intel-warehouse-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ${{ runner.os }}-intel-warehouse-v1-
+
+      - name: Collect current public news and posts
+        run: >-
+          python3 scripts/run_intelligence_pipeline.py --all
+          --collectors rss rss_direct reddit bluesky
+          --max-social-queries 18 --social-limit 15
+
+      - name: Validate data before publishing
+        run: |
+          python3 - <<'PY'
+          import json
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          from scripts.intelligence.models import to_sortable_timestamp
+
+          for name in ('scrapedIntel.mobile.json', 'timeFabric.json', 'policyUpdates.json', 'intelStatus.json'):
+              path = Path('public') / name
+              assert path.stat().st_size < 95_000_000, f'{name} is too large for GitHub'
+              json.loads(path.read_text(encoding='utf-8'))
+          news = json.loads(Path('public/scrapedIntel.mobile.json').read_text(encoding='utf-8'))['news']
+          cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+          assert any((to_sortable_timestamp(item.get('publishedAtRaw') or item.get('publishedAt') or item.get('date')) or '') >= cutoff for item in news), 'No current dated news; keeping the last published data'
+          status = json.loads(Path('public/intelStatus.json').read_text(encoding='utf-8'))
+          assert any(item['items_seen'] > 0 for item in status['collectorHealth'] if item['collector'] in ('rss', 'rss_direct')), 'RSS collection failed; keeping the last published data'
+          PY
+
+      # Unique keys keep the latest successful warehouse restorable. If evicted, --all
+      # reseeds historical records from public/scrapedIntel.json on the source branch.
+      - name: Persist warehouse
+        uses: actions/cache/save@v4
+        with:
+          path: data/intelligence.db
+          key: ${{ runner.os }}-intel-warehouse-v1-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Publish four app snapshots with a single-commit history
+        shell: bash
+        run: |
+          publish_dir=$(mktemp -d "$RUNNER_TEMP/live-data.XXXXXX")
+          for name in scrapedIntel.mobile.json timeFabric.json policyUpdates.json intelStatus.json; do
+            cp "public/$name" "$publish_dir/$name"
+          done
+          git init --initial-branch=live-data "$publish_dir"
+          git -C "$publish_dir" config user.name 'github-actions[bot]'
+          git -C "$publish_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$publish_dir" add scrapedIntel.mobile.json timeFabric.json policyUpdates.json intelStatus.json
+          git -C "$publish_dir" commit -m "Refresh intelligence snapshots $(date -u +%FT%TZ)"
+          # Reuse checkout's credential without embedding the token in a remote URL.
+          checkout_auth_header=$(git config --get http.https://github.com/.extraheader)
+          GIT_CONFIG_COUNT=1 \
+          GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+          GIT_CONFIG_VALUE_0="$checkout_auth_header" \
+            git -C "$publish_dir" push --force "https://github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/live-data

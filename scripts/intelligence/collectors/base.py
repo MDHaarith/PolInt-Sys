@@ -31,7 +31,8 @@ class CollectorRunner:
                     seen += 1
                     if self.warehouse.upsert_raw_item(item.to_warehouse_dict()):
                         added += 1
-                status = "completed"
+                errors = getattr(collector, "health", {}).get("failed_jobs", 0)
+                status = "degraded" if errors else "completed"
             except Exception as exc:
                 print(f"[collector:{collector.name}] failed: {type(exc).__name__}: {exc}", file=sys.stderr)
                 errors = 1

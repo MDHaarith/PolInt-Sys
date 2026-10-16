@@ -2,6 +2,8 @@
 
 Tamil Nadu political intelligence dashboard built with React and Vite.
 
+**Android app:** [Download PolInt.apk](https://github.com/MDHaarith/PolInt-Sys/releases/download/apk-latest/PolInt.apk), rebuilt automatically on every app update to `main`.
+
 ## Data Workflow
 
 Build the official MLA roster first:

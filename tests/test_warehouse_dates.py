@@ -76,7 +76,7 @@ def test_upsert_normalizes_dates_and_snapshots_preserve_raw_items(tmp_path):
         news = _legacy_news(warehouse, 10)
         assert {item["id"]: item for item in news} == {item["id"]: item for item in items}
         assert {item["id"] for item in news[:2]} == {"iso", "friday"}
-        assert [item["id"] for item in news[2:]] == ["invalid", "wednesday", "display"]
+        assert [item["id"] for item in news[2:]] == ["wednesday", "display", "invalid"]
         assert {item["id"] for item in _legacy_news(warehouse, 2)} == {"iso", "friday"}
     finally:
         warehouse.close()
@@ -119,6 +119,39 @@ def test_existing_dates_are_backfilled_once_without_changing_other_columns(tmp_p
             assert after == {**before, "published_at": expected}
             assert warehouse.connection.execute(
                 "SELECT value FROM schema_meta WHERE key = 'sortable_published_at'"
-            ).fetchone()[0] == "1"
+            ).fetchone()[0] == "2"
         finally:
             warehouse.close()
+
+
+@pytest.mark.parametrize("old_date", [None, "2020-01-01"])
+def test_duplicate_date_corrections_update_the_sql_sort_date(tmp_path, old_date):
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    try:
+        story = {"id": "revised", "url": "https://example.test/revised", "publishedAtRaw": old_date}
+        assert warehouse.upsert_raw_item(story)
+        assert warehouse.upsert_raw_item({"id": "older", "publishedAtRaw": "2026-10-15"})
+        revised = {**story, "publishedAtRaw": "Fri, 16 Oct 2026 07:00:00 GMT"}
+        assert warehouse.upsert_raw_item(revised) is False
+        assert _legacy_news(warehouse, 1) == [revised]
+        assert warehouse.count("raw_items") == 2
+    finally:
+        warehouse.close()
+
+
+def test_existing_warehouse_repairs_dates_revised_after_old_normalization(tmp_path):
+    path = tmp_path / "intel.db"
+    warehouse = IntelligenceWarehouse(path)
+    story = {"id": "revised", "publishedAtRaw": "Fri, 16 Oct 2026 07:00:00 GMT"}
+    warehouse.upsert_raw_item(story)
+    warehouse.connection.execute("UPDATE raw_items SET published_at = '2020-01-01'")
+    warehouse.connection.execute("UPDATE schema_meta SET value = '1' WHERE key = 'sortable_published_at'")
+    warehouse.connection.commit()
+    warehouse.close()
+
+    repaired = IntelligenceWarehouse(path)
+    try:
+        assert repaired.connection.execute("SELECT published_at FROM raw_items").fetchone()[0] == "2026-10-16T07:00:00Z"
+        assert _legacy_news(repaired, 1) == [story]
+    finally:
+        repaired.close()

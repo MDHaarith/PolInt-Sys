@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PolInt</string>
+    <string name="title_activity_main">PolInt</string>
+    <string name="package_name">com.polint.intelligence</string>
+    <string name="custom_url_scheme">com.polint.intelligence</string>
+</resources>

@@ -77,7 +77,10 @@ const launchScraper = (reason = 'scheduled') => {
   return true;
 };
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // Android build bundles the trimmed snapshot from mobile-public/ instead of the 56 MB public/ folder.
+  publicDir: mode === 'mobile' ? 'mobile-public' : 'public',
+  build: { outDir: mode === 'mobile' ? 'dist-mobile' : 'dist' },
   plugins: [
     react(),
     {
@@ -131,4 +134,4 @@ export default defineConfig({
       }
     }
   ]
-})
+}))

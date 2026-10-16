@@ -1,15 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
+import { textLanguage, shareEvidence } from "./dateLabels";
+import Provenance from "./Provenance";
 import {
   AlertTriangle,
   ArrowUpRight,
-  Database,
   Filter,
   GitBranch,
   Newspaper,
-  Radio,
   Search,
-  ShieldAlert,
-  UserRoundSearch,
 } from "lucide-react";
 
 const INITIAL_LIMIT = 350;
@@ -32,13 +30,13 @@ const RUMOR_TERMS = [
 ];
 
 const CATEGORY_CONFIG = {
-  all: { label: "All", color: "#94a3b8" },
-  news: { label: "News", color: "#38bdf8" },
-  social_media: { label: "Social", color: "#22c55e" },
-  investigation: { label: "Probe", color: "#ef4444" },
-  election: { label: "Election", color: "#a78bfa" },
-  policy: { label: "Policy", color: "#f59e0b" },
-  rumor: { label: "Rumor Watch", color: "#fb7185" },
+  all: { label: "All" },
+  news: { label: "News" },
+  social_media: { label: "Social" },
+  investigation: { label: "Probe" },
+  election: { label: "Election" },
+  policy: { label: "Policy" },
+  rumor: { label: "Rumor Watch" },
 };
 
 const formatNumber = (value) => Number(value || 0).toLocaleString("en-IN");
@@ -68,27 +66,25 @@ const getStoryKey = (story) => story.url || story.id || `${story.politicianId ||
 export default function IntelligenceFeed({
   news = [],
   politicians = [],
-  parties = [],
   events = [],
   onSelectPolitician,
   onSelectEvent,
-  lastIntelSync = null,
+  loading = false,
+  loadError = false,
+  onRefresh,
+  refreshing = false,
 }) {
+  const [shareStatus, setShareStatus] = useState("");
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_LIMIT);
+  const touchStart = useRef(null);
 
   const politicianById = useMemo(() => {
     const map = new Map();
     politicians.forEach(p => map.set(p.id, p));
     return map;
   }, [politicians]);
-
-  const partyById = useMemo(() => {
-    const map = new Map();
-    parties.forEach(party => map.set(party.id, party));
-    return map;
-  }, [parties]);
 
   const eventByEvidenceId = useMemo(() => {
     const map = new Map();
@@ -142,103 +138,68 @@ export default function IntelligenceFeed({
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [news, politicians, politicianById]);
 
-  const categoryCounts = useMemo(() => {
-    const counts = Object.fromEntries(Object.keys(CATEGORY_CONFIG).map(key => [key, 0]));
-    counts.all = allStories.length;
-    allStories.forEach(story => {
-      const key = story.category in CATEGORY_CONFIG ? story.category : "news";
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    return counts;
-  }, [allStories]);
-
   const filteredStories = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return allStories.filter(story => {
+    const matches = allStories.filter(story => {
       if (activeCategory !== "all" && story.category !== activeCategory) return false;
       if (!needle) return true;
       const searchable = `${story.title || ""} ${story.snippet || ""} ${story.source || ""} ${story.politicianName || ""}`.toLowerCase();
       return searchable.includes(needle);
     });
+    // The first card is styled as the lead story; never lead with an unverified social post.
+    const lead = matches.findIndex(story => !story.isRumor && !story.platform);
+    return lead > 0 ? [matches[lead], ...matches.slice(0, lead), ...matches.slice(lead + 1)] : matches;
   }, [activeCategory, allStories, query]);
 
   const visibleStories = filteredStories.slice(0, visibleLimit);
   const sourceCount = useMemo(() => new Set(allStories.map(story => story.source).filter(Boolean)).size, [allStories]);
-  const coveredPoliticians = useMemo(() => new Set(allStories.filter(story => !story.isGeneral).map(story => story.politicianId)).size, [allStories]);
-  const directSocialCount = useMemo(() => allStories.filter(story => ["bluesky", "reddit"].includes(story.platform)).length, [allStories]);
-  const rumorCount = categoryCounts.rumor || 0;
-  const latestDate = allStories.find(story => story.date)?.date || "Not available";
 
   return (
-    <section className="global-intel-workspace">
+    <section className="global-intel-workspace"
+      onTouchStart={event => {
+        touchStart.current = event.currentTarget.closest(".workspace-content-pane").scrollTop <= 0 && event.touches.length === 1
+          ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+      }}
+      onTouchEnd={event => {
+        const start = touchStart.current;
+        const end = event.changedTouches[0];
+        touchStart.current = null;
+        if (start && end && !refreshing && event.currentTarget.closest(".workspace-content-pane").scrollTop <= 0
+          && end.clientY - start.y > 90 && Math.abs(end.clientX - start.x) < 50) onRefresh?.();
+      }}
+    >
       <div className="global-intel-header">
         <div>
-          <div className="workspace-eyebrow">
-            <Radio size={14} />
-            Live political intelligence
-          </div>
-          <h1>Top-to-Bottom Political Feed</h1>
+          <div className="workspace-eyebrow">The Tamil Nadu edition</div>
+          <h1>The state of the story</h1>
           <p>
-            Every scraped political story is searchable here, including general state coverage,
-            politician-specific reports, social chatter, investigations, election news, and policy items.
+            Reporting, policy and public signals from Tamil Nadu.
           </p>
         </div>
-        <div className="auto-sync-status">
-          <div>
-            <strong>Auto-watch enabled</strong>
-            <small>{lastIntelSync ? `Last reload ${new Date(lastIntelSync).toLocaleTimeString()}` : "Waiting for first feed load"}</small>
-          </div>
-        </div>
+
       </div>
 
-      <div className="intel-stats-row global-intel-stats">
-        <div className="intel-stat-card">
-          <Database size={22} className="stat-icon" />
-          <div>
-            <span className="stat-number">{formatNumber(allStories.length)}</span>
-            <span className="stat-label">Total stories / 100k target</span>
-          </div>
-        </div>
-        <div className="intel-stat-card">
-          <Newspaper size={22} className="stat-icon" />
-          <div>
-            <span className="stat-number">{formatNumber(sourceCount)}</span>
-            <span className="stat-label">Sources</span>
-          </div>
-        </div>
-        <div className="intel-stat-card">
-          <UserRoundSearch size={22} className="stat-icon" />
-          <div>
-            <span className="stat-number">{formatNumber(coveredPoliticians)}</span>
-            <span className="stat-label">People covered</span>
-          </div>
-        </div>
-        <div className="intel-stat-card danger-glow">
-          <ShieldAlert size={22} className="stat-icon" />
-          <div>
-            <span className="stat-number">{formatNumber(directSocialCount || rumorCount)}</span>
-            <span className="stat-label">Social/Rumor items</span>
-          </div>
-        </div>
-      </div>
-
+      {shareStatus && <p role="status" className="share-status">{shareStatus}</p>}
       <div className="global-feed-shell">
         <div className="intel-section-header global-feed-toolbar">
           <div>
-            <h3>All Political News</h3>
+            <h3>Latest coverage</h3>
             <span className="feed-submeta">
-              Showing {formatNumber(visibleStories.length)} of {formatNumber(filteredStories.length)} matches.
-              Latest indexed date: {latestDate}
+              {formatNumber(filteredStories.length)} stories{query || activeCategory !== "all" ? " match your filters" : " in the archive"}
+               · {formatNumber(sourceCount)} sources
             </span>
           </div>
-          <span className="feed-count-badge">{formatNumber(allStories.length)} archived</span>
+          
         </div>
 
+        <div className="feed-controls">
         <div className="intel-search-filter-bar global-search-row">
           <div className="intel-search-box">
             <Search size={15} style={{ color: "var(--text-muted)" }} />
             <input
               className="intel-search-input"
+              type="search"
+              aria-label="Search intelligence stories"
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
@@ -259,53 +220,46 @@ export default function IntelligenceFeed({
               key={key}
               type="button"
               className={`category-pill ${activeCategory === key ? "active" : ""}`}
+              aria-pressed={activeCategory === key}
               onClick={() => {
                 setActiveCategory(key);
                 setVisibleLimit(INITIAL_LIMIT);
               }}
-              style={activeCategory === key ? { borderColor: config.color, color: config.color } : undefined}
             >
               <span>{config.label}</span>
-              <span className="pill-count">{formatNumber(categoryCounts[key] || 0)}</span>
+
             </button>
           ))}
         </div>
+        </div>
 
-        <div className="intel-news-scroll-container global-news-list">
+        <div className="intel-news-scroll-container global-news-list" aria-busy={loading}>
+          {loading && allStories.length === 0 && (
+            <div className="feed-loading-state" role="status">
+              <span>Loading intelligence…</span>
+              {[0, 1, 2].map(item => <div className="story-skeleton" key={item} aria-hidden="true"><i /><i /><i /></div>)}
+            </div>
+          )}
           {visibleStories.map(story => {
+            const storyUrl = story.url || story.canonicalUrl;
             const config = CATEGORY_CONFIG[story.category] || CATEGORY_CONFIG.news;
-            const party = partyById.get(story.partyId);
-            const socialPlatform = story.platform ? story.platform.toUpperCase() : null;
+            const socialPlatform = story.platform ? story.platform.charAt(0).toUpperCase() + story.platform.slice(1) : null;
             const clusteredEvent = eventByEvidenceId.get(story.id);
             return (
               <article key={story.id} className={`news-feed-card global-news-card ${story.isRumor ? "rumor-card" : ""}`}>
                 <div className="news-card-header">
-                  <div className="news-card-meta-left">
-                    <span
-                      className="news-category-chip"
-                      style={{ color: config.color, borderColor: `${config.color}55`, background: `${config.color}10` }}
-                    >
-                      {story.isRumor && <AlertTriangle size={11} />}
-                      {config.label}
-                    </span>
-                    {socialPlatform && <span className="platform-chip">{socialPlatform}</span>}
-                    <span className="news-source-tag">{story.source || "Unknown source"}</span>
-                    <span className="news-date-tag">{story.date || "Undated"}</span>
-                  </div>
-                  <span className="verification-pill">
-                    {story.verificationStatus === "unverified_chatter" ? "Unverified" : "Reported"}
-                  </span>
+                  <span className="news-category-chip">{story.isRumor && <AlertTriangle size={13} />}{config.label}{socialPlatform ? ` · ${socialPlatform}` : ""}</span>
+                  <Provenance item={story} date={story.timestamp ? new Date(story.timestamp).toISOString() : undefined} />
                 </div>
 
-                <h2 className="news-card-title">{story.title || "Untitled story"}</h2>
+                <h2 lang={textLanguage(story.title)} className="news-card-title">{storyUrl ? <a href={storyUrl} target="_blank" rel="noreferrer">{story.title || "Untitled story"}</a> : (story.title || "Untitled story")}</h2>
                 {story.snippet && story.snippet !== story.title && (
-                  <p className="global-news-snippet">{story.snippet}</p>
+                  <p lang={textLanguage(story.snippet)} className="global-news-snippet">{story.snippet}</p>
                 )}
 
                 <div className="global-card-footer">
                   <div className="story-subject">
-                    {party && <span className="party-badge-dot" style={{ backgroundColor: party.color }} />}
-                    <span>{story.politicianName}</span>
+                    <span lang={textLanguage(story.politicianName)}>{story.politicianName}</span>
                     {story.engagement && (
                       <span className="engagement-mini">
                         {story.platform === "bluesky"
@@ -326,8 +280,9 @@ export default function IntelligenceFeed({
                         Open dossier
                       </button>
                     )}
-                    {story.url && (
-                      <a href={story.url} target="_blank" rel="noreferrer">
+                    {(story.url || story.canonicalUrl) && <button type="button" onClick={async () => setShareStatus(await shareEvidence(story))}>Share with source</button>}
+                    {storyUrl && (
+                      <a href={storyUrl} target="_blank" rel="noreferrer">
                         Source <ArrowUpRight size={12} />
                       </a>
                     )}
@@ -337,10 +292,12 @@ export default function IntelligenceFeed({
             );
           })}
 
-          {filteredStories.length === 0 && (
+          {!loading && filteredStories.length === 0 && (
             <div className="no-news-fallback">
               <Newspaper size={28} />
-              <p>No stories match this filter.</p>
+              <h3>{loadError ? "Feed unavailable" : allStories.length ? "No matching stories" : "Your intelligence feed is getting ready"}</h3>
+              <p>{loadError ? "We couldn’t load the feed. Check your connection and try again." : allStories.length ? "Try another topic or clear your filters." : "Refresh to check for the latest coverage."}</p>
+              {allStories.length ? <button type="button" className="load-more-intel-btn" onClick={() => { setQuery(""); setActiveCategory("all"); }}>Clear filters</button> : <button type="button" className="load-more-intel-btn" disabled={refreshing} onClick={onRefresh}>Try again</button>}
             </div>
           )}
 

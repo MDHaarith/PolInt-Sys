@@ -6,7 +6,27 @@ import tempfile
 from pathlib import Path
 
 from .assembly_status import apply_current_assembly_status
+from .models import to_sortable_timestamp
 from .warehouse import IntelligenceWarehouse, now_utc_iso
+
+MOBILE_NEWS_LIMIT = 3000
+
+
+def news_sort_key(item: dict) -> tuple[str, str, str]:
+    return (
+        to_sortable_timestamp(item.get("publishedAtRaw") or item.get("publishedAt") or item.get("date")) or "",
+        item.get("retrievedAt") or "",
+        item.get("id") or "",
+    )
+
+
+def mobile_intel(document: dict, limit: int = MOBILE_NEWS_LIMIT) -> dict:
+    news = sorted(
+        document.get("news", []),
+        key=news_sort_key,
+        reverse=True,
+    )
+    return {**document, "news": news[:limit]}
 
 
 def atomic_write_json(path: str | Path, value, validator=None) -> None:
@@ -41,7 +61,7 @@ def _legacy_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
         """
         SELECT raw_metadata_json
         FROM raw_items
-        ORDER BY COALESCE(published_at, retrieved_at) DESC, id DESC
+        ORDER BY published_at IS NULL, published_at DESC, retrieved_at DESC, id DESC
         LIMIT ?
         """,
         (limit,),
@@ -126,7 +146,7 @@ def _coverage_gaps(warehouse: IntelligenceWarehouse, collector_health: list[dict
     gaps = []
     for collector in collector_health:
         health = collector["health"]
-        if collector["status"] == "failed" or health.get("status") in {"degraded", "unavailable"}:
+        if collector["status"] == "failed" or health.get("status") in {"degraded", "unavailable", "no_results"}:
             gaps.append(
                 {
                     "collector": collector["collector"],
@@ -156,12 +176,15 @@ def generate_snapshots(
     raw_count = warehouse.count("raw_items")
     event_count = warehouse.count("events")
     generated_at = now_utc_iso()
+    collector_health = _collector_health(warehouse)
+    last_run_at = max((item["completed_at"] or "" for item in collector_health), default=None)
     coverage_meta = warehouse.get_state("coverageMeta", {}) or {}
     coverage_meta = {
         "storyTarget": 100000,
         **coverage_meta,
         "currentStories": raw_count,
         "lastSnapshotAt": generated_at,
+        "lastRunAt": last_run_at or coverage_meta.get("lastRunAt"),
     }
 
     compatibility = {
@@ -194,9 +217,9 @@ def generate_snapshots(
         "generatedAt": generated_at,
         "events": [event for event in events if event["event_type"] == "policy"],
     }
-    collector_health = _collector_health(warehouse)
     status = {
         "generatedAt": generated_at,
+        "lastRunAt": last_run_at,
         "rawItemCount": raw_count,
         "eventCount": event_count,
         "mlaCount": len(compatibility["mlas"]),
@@ -206,6 +229,7 @@ def generate_snapshots(
     }
 
     atomic_write_json(output / "scrapedIntel.json", compatibility)
+    atomic_write_json(output / "scrapedIntel.mobile.json", mobile_intel(compatibility))
     atomic_write_json(output / "timeFabric.json", time_fabric)
     atomic_write_json(output / "policyUpdates.json", policy_updates)
     atomic_write_json(output / "intelStatus.json", status)
