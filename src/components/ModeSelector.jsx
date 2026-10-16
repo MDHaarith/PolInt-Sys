@@ -1,4 +1,3 @@
-import React from "react";
 import { User, ShieldAlert, GitCommit, Award, AlertTriangle } from "lucide-react";
 
 export default function ModeSelector({ 

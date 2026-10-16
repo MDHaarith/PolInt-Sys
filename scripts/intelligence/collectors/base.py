@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import uuid
 
 from ..models import now_utc_iso
@@ -32,6 +33,7 @@ class CollectorRunner:
                         added += 1
                 status = "completed"
             except Exception as exc:
+                print(f"[collector:{collector.name}] failed: {type(exc).__name__}: {exc}", file=sys.stderr)
                 errors = 1
                 status = "failed"
                 self.warehouse.connection.execute(

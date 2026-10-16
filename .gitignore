@@ -17,6 +17,11 @@ data/*.db
 data/*.db-*
 data/quarantine/
 
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

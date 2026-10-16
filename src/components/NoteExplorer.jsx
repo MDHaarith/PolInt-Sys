@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Plus, Search, FileText, Trash2, Folder, FolderOpen } from "lucide-react";
+import { useState } from "react";
+import { Plus, Search, FileText, Trash2, Folder } from "lucide-react";
 
 export default function NoteExplorer({ 
   notes, activeNote, onSelectNote, 

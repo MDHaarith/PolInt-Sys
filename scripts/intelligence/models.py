@@ -2,10 +2,41 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 
 def now_utc_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def to_sortable_timestamp(value: str | None) -> str | None:
+    if not value:
+        return None
+    raw = str(value).strip()
+    for fmt, output in (
+        ("%B %d, %Y", "%Y-%m-%d"),
+        ("%b %d, %Y", "%Y-%m-%d"),
+        ("%Y-%m-%d", "%Y-%m-%d"),
+        ("%Y-%m", "%Y-%m"),
+        ("%Y", "%Y"),
+    ):
+        try:
+            return datetime.strptime(raw, fmt).strftime(output)
+        except ValueError:
+            continue
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        try:
+            parsed = parsedate_to_datetime(raw)
+        except (TypeError, ValueError, OverflowError):
+            return None
+    try:
+        return parsed.replace(tzinfo=parsed.tzinfo or timezone.utc).astimezone(
+            timezone.utc
+        ).isoformat(timespec="seconds").replace("+00:00", "Z")
+    except (ValueError, OverflowError):
+        return None
 
 
 @dataclass

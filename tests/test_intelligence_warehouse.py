@@ -6,6 +6,7 @@ import pytest
 from scripts.intelligence.warehouse import (
     IntelligenceWarehouse,
     recover_json_document,
+    stable_id,
 )
 
 
@@ -107,3 +108,44 @@ def test_state_values_are_stored_as_json(tmp_path):
     ).fetchone()[0]
 
     assert json.loads(raw) == {"nested": [1, 2, 3]}
+
+
+@pytest.mark.parametrize("legacy_import", [False, True])
+def test_external_ids_are_namespaced_and_old_ids_still_deduplicate(tmp_path, legacy_import):
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    first = {"externalId": "123", "collector": "rss", "title": "RSS story"}
+    second = {"externalId": "123", "collector": "reddit", "title": "Reddit story"}
+
+    def add(item):
+        if legacy_import:
+            return warehouse.import_legacy_document({"news": [item]})["raw_items_added"]
+        with warehouse.transaction():
+            return warehouse.upsert_raw_item(item)
+
+    try:
+        assert add(first) == 1
+        assert add(second) == 1
+        assert add(first) == 0
+        assert warehouse.count("raw_items") == 2
+        assert {
+            row[0] for row in warehouse.connection.execute("SELECT id FROM raw_items")
+        } == {stable_id("raw", "rss|123"), stable_id("raw", "reddit|123")}
+        with warehouse.transaction():
+            warehouse.connection.execute(
+                """
+                INSERT INTO raw_items (
+                    id, source_id, collector, external_id, title, retrieved_at,
+                    content_hash, first_seen_at, last_seen_at
+                ) SELECT 'old-id', source_id, 'rss', 'old-id', title, retrieved_at,
+                         content_hash, first_seen_at, last_seen_at
+                  FROM raw_items WHERE collector = 'rss'
+                """
+            )
+        assert add({"externalId": "old-id", "collector": "reddit"}) == 1
+        assert add({"externalId": "old-id", "collector": "rss"}) == 0
+        assert warehouse.count("raw_items") == 4
+        assert warehouse.connection.execute(
+            "SELECT collector FROM raw_items WHERE id = 'old-id'"
+        ).fetchone()[0] == "rss"
+    finally:
+        warehouse.close()

@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from .models import to_sortable_timestamp
 from .schema import SCHEMA_SQL, SCHEMA_VERSION
 
 
@@ -28,6 +29,10 @@ def stable_id(prefix: str, value: str) -> str:
     return f"{prefix}_{digest}"
 
 
+def _raw_item_id(collector: str, external_id: str | None, fallback: str) -> str:
+    return stable_id("raw", f"{collector}|{external_id}" if external_id else fallback)
+
+
 def content_hash(title: str, body: str) -> str:
     normalized = " ".join(f"{title} {body}".lower().split())
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
@@ -42,11 +47,29 @@ class IntelligenceWarehouse:
         self.connection.execute("PRAGMA journal_mode = WAL")
         self.connection.execute("PRAGMA foreign_keys = ON")
         self.connection.executescript(SCHEMA_SQL)
+        self._normalize_published_dates()
         self.connection.execute(
             "INSERT OR REPLACE INTO schema_meta (key, value) VALUES ('schema_version', ?)",
             (str(SCHEMA_VERSION),),
         )
         self.connection.commit()
+
+    def _normalize_published_dates(self) -> None:
+        if self.connection.execute(
+            "SELECT 1 FROM schema_meta WHERE key = 'sortable_published_at'"
+        ).fetchone():
+            return
+        with self.connection:
+            rows = self.connection.execute(
+                "SELECT id, published_at FROM raw_items WHERE published_at IS NOT NULL"
+            ).fetchall()
+            self.connection.executemany(
+                "UPDATE raw_items SET published_at = ? WHERE id = ?",
+                [(to_sortable_timestamp(row["published_at"]), row["id"]) for row in rows],
+            )
+            self.connection.execute(
+                "INSERT INTO schema_meta (key, value) VALUES ('sortable_published_at', '1')"
+            )
 
     def close(self) -> None:
         self.connection.close()
@@ -129,7 +152,7 @@ class IntelligenceWarehouse:
         canonical_url = str(item.get("canonicalUrl") or item.get("url") or "").strip() or None
         external_id = str(item.get("externalId") or item.get("id") or "").strip() or None
         collector = str(item.get("collector") or item.get("sourceType") or "legacy")
-        item_id = external_id or stable_id("raw", canonical_url or f"{title}|{body}")
+        item_id = _raw_item_id(collector, external_id, canonical_url or f"{title}|{body}")
         retrieved_at = item.get("retrievedAt") or now_utc_iso()
         existing = None
         if check_existing:
@@ -160,7 +183,9 @@ class IntelligenceWarehouse:
                 (retrieved_at, json.dumps(item, ensure_ascii=False), existing["id"]),
             )
             return False
-        published_at = item.get("publishedAtRaw") or item.get("publishedAt") or item.get("date")
+        published_at = to_sortable_timestamp(
+            item.get("publishedAtRaw") or item.get("publishedAt") or item.get("date")
+        )
         item_hash = content_hash(title, body)
         is_social = bool(item.get("isSocial") or item.get("platform") or item.get("category") == "social_media")
         self.connection.execute(
@@ -234,8 +259,9 @@ class IntelligenceWarehouse:
                 collector = str(
                     item.get("collector") or item.get("sourceType") or "legacy"
                 )
-                item_id = external_id or stable_id(
-                    "raw",
+                item_id = _raw_item_id(
+                    collector,
+                    external_id,
                     canonical_url
                     or f"{item.get('title') or ''}|{item.get('body') or item.get('snippet') or ''}",
                 )
