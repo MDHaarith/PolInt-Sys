@@ -1,5 +1,4 @@
-import React from "react";
-import { X, Calendar, Shield, DollarSign, Award, AlertTriangle, AlertCircle, FileText, Info } from "lucide-react";
+import { X, DollarSign, Info } from "lucide-react";
 
 export default function DossierCard({ selectedItem, activeMode, onClose, db }) {
   if (!selectedItem) {
@@ -16,7 +15,7 @@ export default function DossierCard({ selectedItem, activeMode, onClose, db }) {
     );
   }
 
-  const { id, type } = selectedItem;
+  const { id } = selectedItem;
   
   // 1. Resolve Politician Profile
   const politician = db.politicians.find(p => p.id === id);

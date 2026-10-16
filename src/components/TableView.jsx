@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { ArrowUpDown, AlertCircle, HelpCircle, Shield } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ArrowUpDown, AlertCircle, Shield } from "lucide-react";
 
 export default function TableView({ db, onSelectItem }) {
   const [sortField, setSortField] = useState("name");

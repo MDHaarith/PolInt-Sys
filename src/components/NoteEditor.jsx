@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Edit3, Eye, FileText, Info } from "lucide-react";
 
 export default function NoteEditor({ 
   note, allNotes, onUpdateNote, onWikiLinkClick 
 }) {
   const [viewMode, setViewMode] = useState("preview"); // "edit" | "preview"
+  const [previousTitle, setPreviousTitle] = useState(note?.title);
 
   // Whenever the active note changes, default to Preview mode for clean reading
-  useEffect(() => {
+  if (note?.title !== previousTitle) {
+    setPreviousTitle(note?.title);
     setViewMode("preview");
-  }, [note?.title]);
+  }
 
   if (!note) {
     return (

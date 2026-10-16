@@ -1,5 +1,4 @@
-import React from "react";
-import { Calendar, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 
 export default function TimelineView({ db, onSelectItem, onSwitchTab }) {
   // Sort events chronologically

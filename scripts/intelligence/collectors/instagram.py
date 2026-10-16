@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 from ..models import CollectedItem, now_utc_iso
 
 
@@ -33,7 +35,15 @@ class InstagramCollector:
             loader = self._loader()
             import instaloader
 
-            for profile_name in self.profiles:
+        except Exception as exc:
+            print(f"[instagram] setup: {type(exc).__name__}: {exc}", file=sys.stderr)
+            self.health.update(
+                status="unavailable", reason=str(exc), last_error=f"{type(exc).__name__}: {exc}",
+                setup_failures=self.health.get("setup_failures", 0) + 1,
+            )
+            return
+        for profile_name in self.profiles:
+            try:
                 profile = instaloader.Profile.from_username(loader.context, profile_name)
                 for index, post in enumerate(profile.get_posts()):
                     if index >= self.max_posts_per_profile:
@@ -60,10 +70,9 @@ class InstagramCollector:
                             "comments": getattr(post, "comments", None),
                         },
                     )
-        except Exception as exc:
-            self.health = {
-                "status": "unavailable",
-                "mode": "anonymous_public_only",
-                "reason": str(exc),
-            }
-            return
+            except Exception as exc:
+                print(f"[instagram] {profile_name!r}: {type(exc).__name__}: {exc}", file=sys.stderr)
+                self.health.update(
+                    status="degraded", last_error=f"{type(exc).__name__}: {exc}",
+                    profile_failures=self.health.get("profile_failures", 0) + 1,
+                )

@@ -112,34 +112,36 @@ def run_pipeline(
     recent_news_limit=25000,
 ) -> dict:
     warehouse = IntelligenceWarehouse(database)
-    result = {}
+    try:
+        result = {}
 
-    if migrate_existing and source.exists():
-        document, trailing = recover_json_document(source)
-        result["migration"] = warehouse.import_legacy_document(document)
-        if trailing.strip():
-            quarantine_dir.mkdir(parents=True, exist_ok=True)
-            quarantine_path = quarantine_dir / f"{source.stem}.trailing.txt"
-            quarantine_path.write_text(trailing, encoding="utf-8")
-            result["migration"]["quarantined_trailing_bytes"] = len(
-                trailing.encode("utf-8")
+        if migrate_existing and source.exists():
+            document, trailing = recover_json_document(source)
+            result["migration"] = warehouse.import_legacy_document(document)
+            if trailing.strip():
+                quarantine_dir.mkdir(parents=True, exist_ok=True)
+                quarantine_path = quarantine_dir / f"{source.stem}.trailing.txt"
+                quarantine_path.write_text(trailing, encoding="utf-8")
+                result["migration"]["quarantined_trailing_bytes"] = len(
+                    trailing.encode("utf-8")
+                )
+
+        if curated_payload is not None:
+            result["curated"] = upsert_curated_payload(warehouse, curated_payload)
+
+        if collect and collectors:
+            result["collection"] = CollectorRunner(warehouse).run(collectors)
+
+        if extract_events:
+            result["events"] = EventExtractor(warehouse).extract_all()
+
+        if snapshot:
+            result["snapshots"] = generate_snapshots(
+                warehouse, output_dir, recent_news_limit=recent_news_limit
             )
-
-    if curated_payload is not None:
-        result["curated"] = upsert_curated_payload(warehouse, curated_payload)
-
-    if collect and collectors:
-        result["collection"] = CollectorRunner(warehouse).run(collectors)
-
-    if extract_events:
-        result["events"] = EventExtractor(warehouse).extract_all()
-
-    if snapshot:
-        result["snapshots"] = generate_snapshots(
-            warehouse, output_dir, recent_news_limit=recent_news_limit
-        )
-    warehouse.close()
-    return result
+        return result
+    finally:
+        warehouse.close()
 
 
 def main() -> None:
@@ -153,7 +155,6 @@ def main() -> None:
     parser.add_argument("--extract-events", action="store_true")
     parser.add_argument("--snapshot", action="store_true")
     parser.add_argument("--all", action="store_true")
-    parser.add_argument("--backfill-from", type=int, default=1952)
     parser.add_argument("--max-rss-queries", type=int)
     parser.add_argument("--max-social-queries", type=int, default=80)
     parser.add_argument("--social-limit", type=int, default=15)
@@ -164,7 +165,7 @@ def main() -> None:
     run_all = args.all or not any(
         (args.migrate, args.collect, args.extract_events, args.snapshot)
     )
-    source = Path(args.source)
+    source = project_root / args.source
     document = {}
     if source.exists():
         document, _ = recover_json_document(source)
@@ -181,9 +182,9 @@ def main() -> None:
     )
     result = run_pipeline(
         source=source,
-        database=Path(args.database),
-        output_dir=Path(args.output_dir),
-        quarantine_dir=Path(args.quarantine_dir),
+        database=project_root / args.database,
+        output_dir=project_root / args.output_dir,
+        quarantine_dir=project_root / args.quarantine_dir,
         collectors=collectors,
         curated_payload=export_curated_payload(project_root),
         migrate_existing=args.migrate or run_all,
@@ -191,7 +192,6 @@ def main() -> None:
         extract_events=args.extract_events or run_all,
         snapshot=args.snapshot or run_all,
     )
-    result["historicalBackfillStart"] = max(1952, args.backfill_from)
     print(json.dumps(result, indent=2))
 
 

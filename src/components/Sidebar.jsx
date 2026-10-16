@@ -1,7 +1,6 @@
-import React from "react";
 import { 
   X, User, Building2, AlertTriangle, Calendar, 
-  DollarSign, ShieldAlert, FileText, Info, Link2 
+  DollarSign, ShieldAlert, Info, Link2
 } from "lucide-react";
 
 export default function Sidebar({ selectedItem, onClose, db }) {
@@ -19,7 +18,7 @@ export default function Sidebar({ selectedItem, onClose, db }) {
     );
   }
 
-  const { type, id, data, edge } = selectedItem;
+  const { type, id, edge } = selectedItem;
 
   // Let's resolve the actual entity from db if it was select from graph
   let entity = null;

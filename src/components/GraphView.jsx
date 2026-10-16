@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import ReactFlow, { 
   MiniMap, Controls, Background, MarkerType, 
   Handle, Position 
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { AlertTriangle, ShieldAlert, Award, Network, GitCommit, HelpCircle } from "lucide-react";
+import { AlertTriangle, ShieldAlert, Network } from "lucide-react";
 import { findConnectionPath } from "../data/politicalDatabase";
 
 // Custom Politician Node

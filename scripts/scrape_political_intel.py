@@ -7,6 +7,7 @@ variations covering every politician, scandal, party event, and topic.
 import os
 import json
 import urllib.request
+import urllib.error
 import urllib.parse
 import xml.etree.ElementTree as ET
 import re
@@ -18,6 +19,11 @@ import hashlib
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+if __package__:
+    from .intelligence.classify import classify_category
+else:
+    from intelligence.classify import classify_category
 
 # ─────────────────────────────────────────────────────────────────────
 # CONFIGURATION: Politicians + Search Query Expansion
@@ -715,24 +721,16 @@ def parse_date(date_str):
         return date_str
 
 
+_UNVERIFIED_SIGNAL_PATTERN = re.compile(
+    r"(?<!\w)(?:rumou?rs?|speculations?|buzz|unverified|alleged(?:ly)?|"
+    r"leak(?:s|ed|ing)?|viral|social media|x posts?|tweets?|hashtags?|"
+    r"claim(?:s|ed|ing)?)(?!\w)",
+    re.IGNORECASE,
+)
+
+
 def detect_unverified_signal(text):
-    signal_terms = [
-        "rumour",
-        "rumor",
-        "speculation",
-        "buzz",
-        "unverified",
-        "alleged",
-        "leak",
-        "viral",
-        "social media",
-        "x post",
-        "tweet",
-        "hashtag",
-        "claim",
-    ]
-    lowered = text.lower()
-    return any(term in lowered for term in signal_terms)
+    return bool(_UNVERIFIED_SIGNAL_PATTERN.search(text))
 
 
 def iso_to_display_date(value):
@@ -750,16 +748,41 @@ def now_utc_iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def http_get(url, *, headers=None, timeout=12, attempts=3):
+    if attempts < 1:
+        raise ValueError("attempts must be at least 1")
+    request_headers = dict(headers or {})
+    if not any(key.lower() == "user-agent" for key in request_headers):
+        request_headers["User-Agent"] = random.choice(USER_AGENTS)
+    request = urllib.request.Request(url, headers=request_headers)
+    for attempt in range(attempts):
+        retry_after = None
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 and not 500 <= exc.code < 600:
+                raise
+            if attempt == attempts - 1:
+                raise
+            if exc.code in (429, 503):
+                try:
+                    seconds = float(exc.headers.get("Retry-After", ""))
+                    if seconds >= 0:
+                        retry_after = min(seconds, 30)
+                except (TypeError, ValueError, AttributeError):
+                    pass
+            exc.close()
+        except (urllib.error.URLError, TimeoutError):
+            if attempt == attempts - 1:
+                raise
+        delay = retry_after if retry_after is not None else 2 ** attempt * random.uniform(0.8, 1.2)
+        time.sleep(delay)
+
+
 def load_json_url(url, timeout=12):
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": random.choice(USER_AGENTS),
-            "Accept": "application/json",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+    data = http_get(url, headers={"Accept": "application/json"}, timeout=timeout)
+    return json.loads(data.decode("utf-8"))
 
 
 def bluesky_post_url(post):
@@ -823,7 +846,8 @@ def fetch_bluesky(query, pol_id, pol_name, limit=25):
                 "isRumor": True,
                 "verificationStatus": "unverified_chatter",
             })
-    except Exception:
+    except Exception as e:
+        print(f"[bluesky] {query!r}: {type(e).__name__}: {e}", file=sys.stderr)
         with lock:
             stats["errors"] += 1
 
@@ -891,8 +915,8 @@ def fetch_reddit(query, pol_id, pol_name, limit=25):
             if item:
                 item["sourceType"] = "pullpush_reddit_search"
                 items.append(item)
-    except Exception:
-        items = []
+    except Exception as e:
+        print(f"[reddit:pullpush] {query!r}: {type(e).__name__}: {e}", file=sys.stderr)
 
     if items:
         time.sleep(random.uniform(0.25, 0.6))
@@ -908,8 +932,8 @@ def fetch_reddit(query, pol_id, pol_name, limit=25):
             item = reddit_submission_to_item(child.get("data", {}), query, pol_id)
             if item:
                 items.append(item)
-    except Exception:
-        items = []
+    except Exception as e:
+        print(f"[reddit] {query!r}: {type(e).__name__}: {e}", file=sys.stderr)
 
     if items:
         time.sleep(random.uniform(0.25, 0.6))
@@ -941,15 +965,9 @@ def fetch_rss(query, pol_id, pol_name):
     encoded_query = urllib.parse.quote(query)
     url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-IN&gl=IN&ceid=IN:en"
 
-    req = urllib.request.Request(
-        url,
-        headers={"User-Agent": random.choice(USER_AGENTS)},
-    )
-
     items = []
     try:
-        with urllib.request.urlopen(req, timeout=12) as response:
-            xml_data = response.read()
+        xml_data = http_get(url)
 
         root = ET.fromstring(xml_data)
 
@@ -977,28 +995,7 @@ def fetch_rss(query, pol_id, pol_name):
             if not snippet or len(snippet) < 10:
                 snippet = f"News coverage regarding {pol_name} from {source_name}."
 
-            # Auto-detect category from title/query — social media FIRST priority
-            category = "news"
-            lower_title = (raw_title + " " + query).lower()
-            # Social media gets highest priority
-            if any(kw in lower_title for kw in [
-                "tweet", "twitter", "x.com", "social media", "instagram", "facebook",
-                "viral post", "troll", "meme", "trending", "IT cell", "IT wing",
-                "x post", "retweet", "hashtag", "viral video", "online war",
-                "deleted tweet", "social media war", "digital campaign",
-            ]):
-                category = "social_media"
-            elif any(kw in lower_title for kw in ["scam", "corruption", "arrest", "jail", "convicted", "fir", "chargesheet", "raid", "ed raid", "cbi probe", "pmla", "disproportionate assets"]):
-                category = "investigation"
-            elif any(kw in lower_title for kw in ["election", "campaign", "alliance", "manifesto", "poll", "vote", "constituency", "candidate", "ballot"]):
-                category = "election"
-            elif any(kw in lower_title for kw in [
-                "scheme", "welfare scheme", "policy announcement", "government order",
-                "g.o.", "budget allocation", "beneficiary", "subsidy", "rollout",
-                "implementation", "impact", "cabinet review", "project review",
-                "department circular", "neet exemption",
-            ]):
-                category = "policy"
+            category = classify_category(raw_title + " " + query)
 
             is_unverified_signal = detect_unverified_signal(raw_title + " " + snippet + " " + query)
 
@@ -1029,6 +1026,7 @@ def fetch_rss(query, pol_id, pol_name):
                 print(f"  ▸ Progress: {done}/{total} queries | {fetched} articles fetched")
 
     except Exception as e:
+        print(f"[rss] {query!r}: {type(e).__name__}: {e}", file=sys.stderr)
         with lock:
             stats["errors"] += 1
             stats["queries_done"] += 1
@@ -1112,7 +1110,7 @@ def main():
                 db = json.load(f)
                 print(f"Loaded existing database: {len(db.get('news', []))} articles, {len(db.get('evidence', []))} evidence sheets.\n")
         except Exception as e:
-            print(f"Error loading DB: {e}")
+            print(f"[database:load] {json_path!r}: {type(e).__name__}: {e}", file=sys.stderr)
     else:
         os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
@@ -1130,7 +1128,8 @@ def main():
     if not args.skip_social:
         social_jobs = build_social_jobs(db, max_queries=args.max_social_queries)
 
-    stats["total_queries"] = len(rss_jobs) + len(social_jobs)
+    with lock:
+        stats["total_queries"] = len(rss_jobs) + len(social_jobs)
     print(f"Total RSS queries to execute   : {len(rss_jobs)}")
     print(f"Total social queries to execute: {len(social_jobs)}")
     print(f"Threads: 8 RSS workers, 5 social workers\n")
@@ -1156,8 +1155,8 @@ def main():
                         all_new_items.append(article)
                         existing_urls.add(article["url"])
                         existing_titles.add(article["title"].lower())
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[rss] {futures[future][0]!r}: {type(e).__name__}: {e}", file=sys.stderr)
 
     # Execute public social jobs with a smaller pool to stay polite.
     with ThreadPoolExecutor(max_workers=5) as executor:
@@ -1184,8 +1183,8 @@ def main():
                             existing_urls.add(post_url)
                         if post_title:
                             existing_titles.add(post_title)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[social] {futures[future][0]!r}: {type(e).__name__}: {e}", file=sys.stderr)
 
     # Prepend new items
     if "news" not in db:
@@ -1227,7 +1226,7 @@ def main():
         print(f"  Errors encountered        : {stats['errors']}")
         print(f"{'═' * 60}")
     except Exception as e:
-        print(f"Error writing to database: {e}")
+        print(f"[database:write] {json_path!r}: {type(e).__name__}: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":

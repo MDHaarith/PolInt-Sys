@@ -1,4 +1,10 @@
+import threading
+
+import pytest
+
 from scripts.intelligence.collectors.base import CollectorRunner
+from scripts.intelligence.collectors.bluesky import BlueskyCollector
+from scripts.intelligence.collectors.reddit import RedditCollector
 from scripts.intelligence.collectors.rss import RssCollector
 from scripts.intelligence.models import CollectedItem
 from scripts.intelligence.warehouse import IntelligenceWarehouse
@@ -111,3 +117,45 @@ def test_duplicate_url_with_new_external_id_does_not_fail_collector(tmp_path):
     assert warehouse.upsert_raw_item(first.to_warehouse_dict()) is True
     assert warehouse.upsert_raw_item(second.to_warehouse_dict()) is False
     assert warehouse.count("raw_items") == 1
+
+
+@pytest.mark.parametrize("collector_type", [RssCollector, RedditCollector, BlueskyCollector])
+def test_collectors_fetch_concurrently_and_convert_on_caller_thread(collector_type, monkeypatch, capsys):
+    caller = threading.get_ident()
+    release_slow = threading.Event()
+    fetch_threads = []
+    conversion_threads = []
+    limits = []
+    original = CollectedItem.from_legacy
+
+    def convert(item):
+        conversion_threads.append(threading.get_ident())
+        return original(item)
+
+    def fetcher(query, politician_id, name, *limit):
+        fetch_threads.append(threading.get_ident())
+        limits.append(limit)
+        if query == "broken":
+            raise RuntimeError("blocked job")
+        if query == "slow":
+            assert release_slow.wait(5)
+        yield {"id": query, "url": f"https://example.test/{query}", "title": query}
+
+    monkeypatch.setattr(CollectedItem, "from_legacy", staticmethod(convert))
+    kwargs = {} if collector_type is RssCollector else {"limit": 7}
+    collector = collector_type(
+        [(query, "general", "Politics") for query in ("slow", "fast", "broken")],
+        fetcher, max_workers=2, **kwargs,
+    )
+    items = collector.collect()
+    try:
+        assert next(items).title == "fast"
+    finally:
+        release_slow.set()
+    assert [item.title for item in items] == ["slow"]
+    assert all(thread != caller for thread in fetch_threads)
+    assert conversion_threads == [caller, caller]
+    assert limits == ([()] * 3 if collector_type is RssCollector else [(7,)] * 3)
+    assert collector.health["failed_jobs"] == 1
+    assert collector.health["status"] == "degraded"
+    assert "RuntimeError: blocked job" in capsys.readouterr().err

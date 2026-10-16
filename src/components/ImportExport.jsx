@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Download, Upload, Plus, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Download, Upload, Plus, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function ImportExport({ db, onUpdateDatabase }) {
   const [csvInput, setCsvInput] = useState("");

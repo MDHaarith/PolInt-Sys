@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { exec } from 'child_process'
+import { spawn } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -55,17 +55,23 @@ const launchScraper = (reason = 'scheduled') => {
   const scriptPath = path.join(__dirname, 'scripts/run_intelligence_pipeline.py');
   console.log(`[Vite Middleware] Launching ${reason} pipeline: ${pipelinePython} ${scriptPath}`);
 
-  exec(`"${pipelinePython}" "${scriptPath}" --all --extended-public`, (error, stdout, stderr) => {
+  const child = spawn(pipelinePython, [scriptPath, '--all', '--extended-public'], {
+    cwd: __dirname,
+    stdio: 'inherit',
+  });
+  let spawnFailed = false;
+  child.on('error', (error) => {
+    spawnFailed = true;
+    scraperStatus = "idle";
+    console.error(`[Vite Scraper Error]: ${error.message}`);
+  });
+  child.on('close', (code, signal) => {
+    if (spawnFailed) return;
     scraperStatus = "idle";
     lastCompleted = new Date().toISOString();
 
-    if (error) {
-      console.error(`[Vite Scraper Error]: ${error.message}`);
-      return;
-    }
-    console.log(`[Vite Scraper Complete] stdout:\n${stdout}`);
-    if (stderr) {
-      console.warn(`[Vite Scraper warnings/stderr]:\n${stderr}`);
+    if (code !== 0) {
+      console.error(`[Vite Scraper Error]: Pipeline exited with code ${code}, signal ${signal}`);
     }
   });
   return true;
@@ -83,8 +89,6 @@ export default defineConfig({
         }
 
         server.middlewares.use((req, res, next) => {
-          console.log(`[Vite Middleware Log] URL: "${req.url}", Method: "${req.method}"`);
-          
           // Handle CORS Preflight requests for our API endpoints
           if (req.method === 'OPTIONS' && (req.url === '/api/scrape' || req.url === '/api/scrape-status')) {
             res.writeHead(204, {

@@ -356,6 +356,7 @@ export default function App() {
         const currentCount = latestNewsCountRef.current;
         if (status.newsCount >= currentCount + 10) {
           const reloadRes = await fetch(`/scrapedIntel.json?t=${Date.now()}`);
+          if (!reloadRes.ok) return;
           const freshIntel = await reloadRes.json();
           applyFreshIntel(freshIntel);
           showToast(`Loaded ${status.newsCount - currentCount} new intelligence items`, "success");
@@ -381,8 +382,8 @@ export default function App() {
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       list = list.filter(p => 
-        p.name.toLowerCase().includes(q) ||
-        p.constituency.toLowerCase().includes(q)
+        (p.name || "").toLowerCase().includes(q) ||
+        (p.constituency || "").toLowerCase().includes(q)
       );
     }
     return list;

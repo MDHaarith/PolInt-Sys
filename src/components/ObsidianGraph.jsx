@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from "react";
-import { Settings, ZoomIn, ZoomOut, Maximize2, Info } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
+import { Settings, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 
 export default function ObsidianGraph({ 
   nodes, edges, activeMode, selectedItem, onSelectItem 
@@ -352,7 +352,7 @@ export default function ObsidianGraph({
     }
   };
 
-  const handleMouseUp = (e) => {
+  const handleMouseUp = () => {
     const state = simStateRef.current;
     
     if (state.draggingNode) {
