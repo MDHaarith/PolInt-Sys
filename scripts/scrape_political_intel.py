@@ -22,16 +22,16 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 if __package__:
-    from .intelligence.classify import classify_category, detect_unverified_signal, is_political, reports_hearsay
+    from .intelligence.classify import classify_category, detect_unverified_signal, is_political, mentions_tamil_nadu, reports_hearsay
     from .intelligence.models import to_sortable_timestamp
     from .intelligence.people import resolve_politician
-    from .intelligence.source_config import RECENT_NEWS_QUERIES
+    from .intelligence.source_config import RECENT_NEWS_QUERIES, REGIONAL_FEED_URLS
     from .intelligence.snapshots import news_sort_key
 else:
-    from intelligence.classify import classify_category, detect_unverified_signal, is_political, reports_hearsay
+    from intelligence.classify import classify_category, detect_unverified_signal, is_political, mentions_tamil_nadu, reports_hearsay
     from intelligence.models import to_sortable_timestamp
     from intelligence.people import resolve_politician
-    from intelligence.source_config import RECENT_NEWS_QUERIES
+    from intelligence.source_config import RECENT_NEWS_QUERIES, REGIONAL_FEED_URLS
     from intelligence.snapshots import news_sort_key
 
 # ─────────────────────────────────────────────────────────────────────
@@ -734,9 +734,11 @@ def parse_date(date_str):
     return datetime.strptime(sortable[:10], "%Y-%m-%d").strftime("%B %d, %Y")
 
 
-def is_relevant(text):
+def is_relevant(text, *, require_tamil_nadu=False):
     """Keep items that mention politics or a tracked politician."""
-    return is_political(text) or resolve_politician(text) is not None
+    if resolve_politician(text) is not None:
+        return True
+    return is_political(text) and (not require_tamil_nadu or mentions_tamil_nadu(text))
 
 
 def summarize(text, limit=320):
@@ -1073,7 +1075,7 @@ def fetch_rss(query, pol_id, pol_name, *, feed_url=None, source_name=None, raise
             snippet = rss_snippet(desc, encoded, clean_title, item_source)
             # Classify on the story itself; the search query would tag every result alike.
             story_text = f"{clean_title} {snippet}"
-            if feed_url and not is_relevant(story_text):
+            if feed_url and not is_relevant(story_text, require_tamil_nadu=feed_url in REGIONAL_FEED_URLS):
                 continue
             category = classify_category(story_text)
             is_unverified_signal = reports_hearsay(story_text)

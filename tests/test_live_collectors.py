@@ -8,6 +8,7 @@ from scripts.intelligence.collectors.bluesky import BlueskyCollector
 from scripts.intelligence.collectors.reddit import RedditCollector
 from scripts.intelligence.collectors.rss import RssCollector
 from scripts.intelligence.warehouse import IntelligenceWarehouse
+from scripts.intelligence.source_config import NEWS_RSS_FEEDS, REGIONAL_FEED_URLS
 from scripts.run_intelligence_pipeline import build_default_collectors
 
 
@@ -88,7 +89,7 @@ def test_headless_collector_selection_keeps_recent_jobs_and_verified_direct_feed
     )
     assert [collector.name for collector in collectors] == ["rss", "rss_direct", "bluesky"]
     assert len(collectors[0].jobs) == 2
-    assert len(collectors[1].jobs) == 4
+    assert len(collectors[1].jobs) == len(NEWS_RSS_FEEDS) >= 10
     assert all(url.startswith("https://") for url, _, _ in collectors[1].jobs)
 
 
@@ -99,3 +100,17 @@ def test_successful_empty_search_is_distinguished_from_endpoint_failure(collecto
     assert collector.health["status"] == "no_results"
     assert collector.health["empty_jobs"] == 1
     assert collector.health["failed_jobs"] == 0
+
+
+def test_regional_feeds_keep_only_tamil_nadu_politics(monkeypatch):
+    xml = b"""<rss><channel>
+    <item><title>Kerala minister slams Opposition over budget</title><link>https://example.test/kerala</link></item>
+    <item><title>DMK minister slams Opposition over budget</title><link>https://example.test/dmk</link></item>
+    <item><title>Monsoon rain lashes Kochi</title><link>https://example.test/rain</link></item>
+    </channel></rss>"""
+    regional = sorted(REGIONAL_FEED_URLS)[0]
+    monkeypatch.setattr(legacy, "http_get", lambda url: xml)
+    monkeypatch.setattr(legacy.time, "sleep", lambda _: None)
+    items = legacy.fetch_direct_rss(regional, "general", "Regional")
+    assert [item["url"] for item in items] == ["https://example.test/dmk"]
+    assert {url for url, _ in NEWS_RSS_FEEDS} >= REGIONAL_FEED_URLS

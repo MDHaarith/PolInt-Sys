@@ -7,6 +7,7 @@ const remoteBase = (import.meta.env.VITE_DATA_BASE_URL ||
 export const recentIntelFile = "/scrapedIntel.mobile.json";
 export const fullIntelFile = isMobileBuild ? null : "/scrapedIntel.json";
 export const statusFile = "/intelStatus.json";
+export const storylinesFile = "/storylines.json";
 
 const fetchJson = async (url, options) => {
   const response = await fetch(`${url}?t=${Date.now()}`, options);

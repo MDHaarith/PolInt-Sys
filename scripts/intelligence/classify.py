@@ -112,3 +112,25 @@ def is_political(text: str) -> bool:
         match.group(0).lower() not in _AMBIGUOUS_LOWERCASE
         for match in _POLITICAL_PATTERN.finditer(text)
     )
+
+
+# Regional and national feeds carry every state; these words place a story in Tamil Nadu.
+TAMIL_NADU_MARKERS = (
+    "tamil nadu", "tamilnadu", "chennai", "madurai", "coimbatore", "tiruchi", "trichy",
+    "tiruchirappalli", "salem", "tirunelveli", "vellore", "thoothukudi", "erode", "thanjavur",
+    "kanyakumari", "puducherry", "dmk", "aiadmk", "tvk", "pmk", "vck", "ntk", "mdmk", "ammk",
+    "dmdk", "fort st. george", "secretariat in chennai",
+)
+TAMIL_NADU_TAMIL_MARKERS = (
+    "தமிழ்நாடு", "தமிழக", "சென்னை", "மதுரை", "கோவை", "திருச்சி", "சேலம்", "நெல்லை",
+    "திமுக", "அதிமுக", "தவெக", "பாமக", "விசிக", "நாம் தமிழர்", "மதிமுக", "முதல்வர் விஜய்",
+)
+_TAMIL_NADU_PATTERN = re.compile(
+    r"(?<![\w.])(?:" + "|".join(map(re.escape, TAMIL_NADU_MARKERS)) + r")(?!\w)",
+    re.IGNORECASE,
+)
+
+
+def mentions_tamil_nadu(text: str) -> bool:
+    text = text or ""
+    return any(marker in text for marker in TAMIL_NADU_TAMIL_MARKERS) or bool(_TAMIL_NADU_PATTERN.search(text))

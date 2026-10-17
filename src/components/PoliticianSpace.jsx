@@ -3,12 +3,13 @@ import {
   User, GitCommit, Award, AlertTriangle,
   Calendar, Landmark, Info, Search, Newspaper,
   Scale, Vote, TrendingUp, ExternalLink, BarChart3,
-  Zap, FileWarning, Gavel, Briefcase,
+  Zap, FileWarning, Gavel, Briefcase, Crosshair,
   MessageCircle, Repeat, Heart, Share2
 } from "lucide-react";
 
 import { formatDate, textLanguage, indianNumber, shareEvidence, formatMoneyText } from "./dateLabels";
 import Provenance from "./Provenance";
+import { PlaybookPanel } from "./Storylines";
 
 const EMPTY_NEWS = [];
 
@@ -174,9 +175,14 @@ const getPostingTrend = (posts) => {
   return dataPoints;
 };
 
-export default function PoliticianSpace({ politician, parties, events = [], onSelectEvent }) {
+export default function PoliticianSpace({
+  politician, parties, events = [], onSelectEvent, playbook, storylines, now, isKnownPolitician, onSelectPolitician,
+}) {
   const [shareStatus, setShareStatus] = useState("");
-  const [activeTab, setActiveTab] = useState("dossier");
+  const [chosenTab, setChosenTab] = useState(null);
+  // Storylines arrive after the dossier renders; open on moves once they exist.
+  const activeTab = chosenTab || (playbook ? "moves" : "dossier");
+  const setActiveTab = setChosenTab;
   const [newsSearch, setNewsSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [expandedCard, setExpandedCard] = useState(null);
@@ -252,6 +258,7 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
   const caseCountLabel = hasSourcedCaseData ? politician.criminalProfile.casesCount : "N/A";
 
   const tabs = [
+    { id: "moves", label: "Moves & motives", icon: Crosshair, badge: playbook?.moveCount || 0 },
     { id: "dossier", label: "Dossier", icon: Briefcase },
     { id: "cases", label: "Legal record", icon: Gavel },
     { id: "shifts", label: "Party Shifts", icon: GitCommit },
@@ -326,6 +333,19 @@ export default function PoliticianSpace({ politician, parties, events = [], onSe
 
       {/* Tab Content */}
       <div style={{ flex: 1 }}>
+        {activeTab === "moves" && (
+          <div className="tab-content-animate">
+            <PlaybookPanel
+              playbook={playbook}
+              threads={storylines?.threads}
+              objectives={storylines?.objectives}
+              now={now}
+              isKnown={isKnownPolitician}
+              onPerson={(id) => id !== politician.id && onSelectPolitician?.(id)}
+            />
+          </div>
+        )}
+
         {/* TAB 1: Dossier */}
         {activeTab === "dossier" && (
           <div className="tab-content-animate" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>

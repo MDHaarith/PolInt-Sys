@@ -9,8 +9,11 @@ from pathlib import Path
 
 from .assembly_status import apply_current_assembly_status
 from .classify import classify_category, is_political, reports_hearsay
+from .events import headline_tokens
 from .models import to_sortable_timestamp
 from .people import canonical_politician_id, resolve_politician
+from .quality import TIER_WEIGHT, source_affiliation, source_tier, story_importance
+from .storylines import build_storylines
 from .warehouse import IntelligenceWarehouse, now_utc_iso
 
 MOBILE_NEWS_LIMIT = 3000
@@ -126,6 +129,40 @@ def frontend_news_record(row) -> dict | None:
     return {key: value for key, value in record.items() if value not in (None, "")}
 
 
+# Rewrites of one wire story share most of their headline words.
+_NEAR_DUPLICATE_WINDOW_SECONDS = 36 * 3600
+
+
+def _near_duplicate(left: frozenset[str], right: frozenset[str]) -> bool:
+    shared = len(left & right)
+    return shared >= 3 and shared / max(1, len(left | right)) >= 0.6
+
+
+def _epoch(value: str | None) -> float | None:
+    from datetime import datetime
+
+    try:
+        return datetime.fromisoformat((value or "").replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def _lead_rank(record: dict) -> tuple:
+    # The copy shown is the best-sourced one; the rest become "also reported by".
+    return (TIER_WEIGHT[record["sourceTier"]], len(record.get("snippet") or "") >= 80, bool(record.get("imageUrl")))
+
+
+def _merge_copy(lead: dict, copy: dict) -> dict:
+    if _lead_rank(copy) > _lead_rank(lead):
+        lead, copy = copy | {"alsoReportedBy": lead.pop("alsoReportedBy", []), "outletCount": lead["outletCount"]}, lead
+    seen = {lead["source"], *(other["source"] for other in lead.get("alsoReportedBy", []))}
+    if copy["source"] not in seen:
+        lead["outletCount"] += 1
+        if len(lead.setdefault("alsoReportedBy", [])) < 6:
+            lead["alsoReportedBy"].append({"source": copy["source"], "url": copy.get("url")})
+    return lead
+
+
 def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
     cursor = warehouse.connection.execute(
         """
@@ -136,23 +173,38 @@ def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
         ORDER BY published_at IS NULL, published_at DESC, retrieved_at DESC, id DESC
         """
     )
-    news = []
-    by_title = {}
+    news: list[dict] = []
+    by_title: dict[str, int] = {}
+    # Recent leads, for matching reworded copies: (epoch, tokens, index).
+    window: list[tuple[float, frozenset[str], int]] = []
     for row in cursor:
         record = frontend_news_record(row)
         if record is None:
             continue
-        # Syndicated copies of one story collapse into the newest report.
+        record["sourceTier"] = source_tier(record["source"], is_social=bool(row["is_social"]))
+        record["outletCount"] = 1
         key = _title_key(record["title"])
-        lead = by_title.get(key)
-        if lead is not None:
-            if record["source"] != lead["source"] and len(lead.setdefault("alsoReportedBy", [])) < 6:
-                lead["alsoReportedBy"].append({"source": record["source"], "url": record.get("url")})
+        index = by_title.get(key)
+        tokens = headline_tokens(record["title"])
+        published = _epoch(record.get("publishedAt"))
+        if index is None and published is not None and record["sourceTier"] != "social":
+            window = [entry for entry in window if entry[0] - published <= _NEAR_DUPLICATE_WINDOW_SECONDS]
+            index = next((entry[2] for entry in window if _near_duplicate(tokens, entry[1])), None)
+        if index is not None:
+            news[index] = _merge_copy(news[index], record)
+            by_title[key] = index
             continue
-        by_title[key] = record
-        news.append(record)
         if len(news) >= limit:
             break
+        by_title[key] = len(news)
+        if published is not None and record["sourceTier"] != "social":
+            window.append((published, tokens, len(news)))
+        news.append(record)
+    for record in news:
+        affiliation = source_affiliation(record["source"])
+        if affiliation:
+            record["sourceAffiliation"] = affiliation
+        record["importance"] = story_importance(record)
     return news
 
 
@@ -320,4 +372,5 @@ def generate_snapshots(
     atomic_write_json(output / "timeFabric.json", time_fabric)
     atomic_write_json(output / "policyUpdates.json", policy_updates)
     atomic_write_json(output / "intelStatus.json", status)
+    atomic_write_json(output / "storylines.json", build_storylines(compatibility["news"], generated_at))
     return {"raw_items": raw_count, "events": event_count}

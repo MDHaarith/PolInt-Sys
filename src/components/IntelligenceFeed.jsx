@@ -1,5 +1,6 @@
 import { useMemo, useState, useRef } from "react";
 import { textLanguage, shareEvidence, relativeTime, formatDateTime, verificationLabel } from "./dateLabels";
+import { IntentTag, RivalryList, StorylineCard } from "./Storylines";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -30,6 +31,27 @@ const RANGE_CONFIG = {
   day: { label: "24 hours", span: DAY },
   week: { label: "7 days", span: 7 * DAY },
   all: { label: "All", span: Infinity },
+};
+
+const SORT_CONFIG = {
+  top: { label: "Top" },
+  latest: { label: "Latest" },
+};
+
+// Mirrors scripts/intelligence/quality.py.
+const TIER_LABELS = {
+  record: "Newspaper of record",
+  established: "Established outlet",
+  partisan: "Party-affiliated outlet",
+  aggregator: "Aggregator or small site",
+  social: "Social post",
+};
+
+// Importance (0-100, from source quality and corroboration) loses half its weight every 18 hours.
+const HALF_LIFE_HOURS = 18;
+const rankScore = (story, now) => {
+  const ageHours = story.timestamp ? Math.max(0, (now - story.timestamp) / 3600000) : 24 * 30;
+  return (story.importance || 15) * Math.pow(0.5, ageHours / HALF_LIFE_HOURS);
 };
 
 const EVENT_TYPE_LABELS = {
@@ -74,6 +96,7 @@ export default function IntelligenceFeed({
   politicians = [],
   parties = [],
   events = [],
+  storylines = null,
   onSelectPolitician,
   onSelectEvent,
   loading = false,
@@ -87,6 +110,7 @@ export default function IntelligenceFeed({
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [range, setRange] = useState("all");
+  const [sort, setSort] = useState("top");
   const [personFilter, setPersonFilter] = useState(null);
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_LIMIT);
   const touchStart = useRef(null);
@@ -103,6 +127,8 @@ export default function IntelligenceFeed({
     });
     return map;
   }, [events]);
+
+  const storyMoves = storylines?.storyMoves;
 
   const allStories = useMemo(() => {
     const seen = new Set();
@@ -127,10 +153,11 @@ export default function IntelligenceFeed({
           isRumor,
           timestamp: parseStoryDate(story.publishedAt || story.publishedAtRaw || story.date),
           event: eventByEvidenceId.get(story.rawId) || eventByEvidenceId.get(story.id),
+          move: storyMoves?.[story.rawId] || storyMoves?.[story.id],
         };
       })
       .sort((a, b) => b.timestamp - a.timestamp);
-  }, [news, politicianById, eventByEvidenceId]);
+  }, [news, politicianById, eventByEvidenceId, storyMoves]);
 
   const inRange = useMemo(() => {
     const span = RANGE_CONFIG[range].span;
@@ -158,16 +185,21 @@ export default function IntelligenceFeed({
     });
   }, [activeCategory, inRange, personFilter, query]);
 
+  const orderedStories = useMemo(() => (sort === "top"
+    ? [...filteredStories].sort((a, b) => rankScore(b, now) - rankScore(a, now))
+    : filteredStories), [filteredStories, sort, now]);
+
   const groupedStories = useMemo(() => {
+    if (sort === "top") return [{ label: "Ranked by importance", stories: orderedStories.slice(0, visibleLimit) }];
     const groups = [];
-    filteredStories.slice(0, visibleLimit).forEach(story => {
+    orderedStories.slice(0, visibleLimit).forEach(story => {
       const label = dayLabel(story.timestamp, now);
       const group = groups[groups.length - 1];
       if (group?.label === label) group.stories.push(story);
       else groups.push({ label, stories: [story] });
     });
     return groups;
-  }, [filteredStories, visibleLimit, now]);
+  }, [orderedStories, sort, visibleLimit, now]);
 
   // Rail: who and which outlets dominate the past week.
   const { topPeople, topSources, weekCount, dayCount } = useMemo(() => {
@@ -192,6 +224,11 @@ export default function IntelligenceFeed({
     .sort((a, b) => (b.occurredAt || "").localeCompare(a.occurredAt || "")
       || (b.independentSourceCount || 0) - (a.independentSourceCount || 0))
     .slice(0, 4), [events, now]);
+
+  const threads = useMemo(() => (storylines?.threads || [])
+    .filter(thread => !personFilter || thread.participants.some(person => person.id === personFilter))
+    .slice(0, 3), [storylines, personFilter]);
+  const isKnown = (id) => politicianById.has(id);
 
   const resetLimit = () => setVisibleLimit(INITIAL_LIMIT);
   const filtersActive = query || activeCategory !== "all" || personFilter || range !== "all";
@@ -226,7 +263,22 @@ export default function IntelligenceFeed({
 
       {shareStatus && <p role="status" className="share-status">{shareStatus}</p>}
 
-      {developing.length > 0 && (
+      {threads.length > 0 && (
+        <section className="storylines" aria-labelledby="storylines-heading">
+          <div className="section-head">
+            <h2 id="storylines-heading">Connected storylines</h2>
+            <p>Related moves chained across days and people, with the likely intent behind each. Intent is inferred, not reported.</p>
+          </div>
+          <div className="storyline-grid">
+            {threads.map(thread => (
+              <StorylineCard key={thread.id} thread={thread} now={now} isKnown={isKnown} preview={2}
+                onPerson={(id) => { if (isKnown(id)) { setPersonFilter(id); resetLimit(); } }} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {threads.length === 0 && developing.length > 0 && (
         <section className="developing" aria-labelledby="developing-heading">
           <h2 id="developing-heading">Developing stories</h2>
           <ol className="developing-grid">
@@ -264,6 +316,13 @@ export default function IntelligenceFeed({
                 placeholder="Search headlines, outlets, people…"
               />
             </label>
+            <div className="segmented" role="group" aria-label="Order">
+              {Object.entries(SORT_CONFIG).map(([key, config]) => (
+                <button key={key} type="button" aria-pressed={sort === key} onClick={() => { setSort(key); resetLimit(); }}>
+                  {config.label}
+                </button>
+              ))}
+            </div>
             <div className="segmented" role="group" aria-label="Time range">
               {Object.entries(RANGE_CONFIG).map(([key, config]) => (
                 <button key={key} type="button" aria-pressed={range === key} onClick={() => { setRange(key); resetLimit(); }}>
@@ -311,7 +370,7 @@ export default function IntelligenceFeed({
 
             {groupedStories.map(group => (
               <section key={group.label} className="day-group" aria-label={group.label}>
-                <h3 className="day-heading">{group.label}</h3>
+                <h3 className={`day-heading ${sort === "top" ? "visually-hidden" : ""}`}>{group.label}</h3>
                 {group.stories.map(story => (
                   <StoryRow
                     key={story.id}
@@ -369,6 +428,8 @@ export default function IntelligenceFeed({
               </ol>
             </section>
           )}
+          <RivalryList relations={storylines?.relations} isKnown={isKnown}
+            onPerson={(id) => { setPersonFilter(id); resetLimit(); }} />
           {topSources.length > 0 && (
             <section className="rail-card">
               <h2>Most active outlets</h2>
@@ -417,7 +478,14 @@ function StoryRow({ story, now, partyColor, onPerson, onSelectEvent, onShare }) 
       <div className="story-body">
         <p className="story-kicker">
           <span className={`story-tag tag-${story.category}`}>{platform || label}</span>
-          <span className="story-source">{story.source || "Unknown source"}</span>
+          <span className="story-source" data-tier={story.sourceTier} title={TIER_LABELS[story.sourceTier]}>
+            {story.source || "Unknown source"}
+          </span>
+          {story.sourceAffiliation && (
+            <span className="story-flag" title="This outlet is owned by or speaks for a party">
+              {story.sourceAffiliation.toUpperCase()}-affiliated
+            </span>
+          )}
           {story.timestamp > 0 && (
             <time dateTime={new Date(story.timestamp).toISOString()} title={formatDateTime(story.timestamp)}>
               {relativeTime(new Date(story.timestamp).toISOString(), now)}
@@ -433,6 +501,12 @@ function StoryRow({ story, now, partyColor, onPerson, onSelectEvent, onShare }) 
           {story.url ? <a href={story.url} target="_blank" rel="noreferrer">{story.title || "Untitled story"}</a> : (story.title || "Untitled story")}
         </h4>
         {story.snippet && <p lang={textLanguage(story.snippet)} className="story-snippet">{story.snippet}</p>}
+        {story.move && story.move.confidence !== "low" && (
+          <p className="story-move">
+            {story.move.actor !== story.politician?.id && <span className="story-move-actor">{story.move.actorName}</span>}
+            <IntentTag move={story.move} />
+          </p>
+        )}
         <div className="story-meta">
           {story.politician && (
             <button type="button" className="person-chip" onClick={() => onPerson(story.politician.id)}>
@@ -440,7 +514,12 @@ function StoryRow({ story, now, partyColor, onPerson, onSelectEvent, onShare }) 
               <span lang={textLanguage(story.politician.name)}>{story.politician.name}</span>
             </button>
           )}
-          {outlets.length > 0 && (
+          {(story.outletCount || 1) > 1 && (
+            <span className="story-outlets" title={outlets.map(item => item.source).join(", ")}>
+              +{story.outletCount - 1} {story.outletCount === 2 ? "outlet" : "outlets"}
+            </span>
+          )}
+          {!story.outletCount && outlets.length > 0 && (
             <span className="story-outlets" title={outlets.map(item => item.source).join(", ")}>
               +{outlets.length} {outlets.length === 1 ? "outlet" : "outlets"}
             </span>
