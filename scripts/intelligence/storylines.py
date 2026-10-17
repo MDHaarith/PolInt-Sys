@@ -577,7 +577,41 @@ def _core(thread: dict) -> set[str]:
     return {token for token, count in thread["tokens"].items() if count >= 2}
 
 
+# Story vectors are centred (the corpus mean subtracted) before comparison:
+# every headline here shares a "Tamil Nadu politics" direction, and without
+# centring a large thread's centre resembles every political story. Measured on
+# the hand-checked groups in tests/fixtures/same_issue_clusters.json, a group's
+# centred centre scores its own stories at a median 0.54-0.67 and the rest of
+# the feed below 0.42-0.56 (99.9th percentile). A move joins a thread on meaning
+# alone above SEMANTIC_LINK, or above SEMANTIC_LINK_WITH_CONTEXT when it also
+# names the thread's issue (#sir, #cauvery, ...).
+SEMANTIC_LINK = 0.58
+SEMANTIC_LINK_WITH_CONTEXT = 0.50
+SEMANTIC_MERGE = 0.72
+
+
+def _centred(vectors: dict) -> dict:
+    if len(vectors) < 2:
+        return dict(vectors)
+    mean = sum(vectors.values()) / len(vectors)
+    out = {}
+    for key, vector in vectors.items():
+        shifted = vector - mean
+        out[key] = shifted / max(float((shifted @ shifted) ** 0.5), 1e-9)
+    return out
+
+
+def _centroid(thread: dict):
+    if not thread.get("vectors"):
+        return None
+    total = sum(thread["vectors"])
+    return total / max(float((total @ total) ** 0.5), 1e-9)
+
+
 def _same_issue(left: dict, right: dict) -> bool:
+    left_centre, right_centre = _centroid(left), _centroid(right)
+    if left_centre is not None and right_centre is not None and float(left_centre @ right_centre) >= SEMANTIC_MERGE:
+        return True
     left_core, right_core = _core(left), _core(right)
     shared = left_core & right_core
     # Relative overlap, so a thread that has already absorbed others cannot snowball.
@@ -623,6 +657,7 @@ def _merge_threads(threads: list[dict]) -> list[dict]:
         target["tokens"].update(thread["tokens"])
         target["storyIds"].extend(thread["storyIds"])
         target["people"] |= thread["people"]
+        target["vectors"] = (target.get("vectors", []) + thread.get("vectors", []))[-12:]
         target["last"] = max(target["last"], thread["last"])
     return merged
 
@@ -633,6 +668,7 @@ def build_storylines(
     *,
     window_days: int = 45,
     max_threads: int = 60,
+    vectors: dict | None = None,
 ) -> dict:
     """Moves, storylines and per-politician playbooks for the recent window."""
     dated = [(record, _parse(record.get("publishedAt"))) for record in news]
@@ -654,6 +690,13 @@ def build_storylines(
             tokens = Counter(_word_tokens(title))
             tokens.update(concept_tokens(f"{title} {_first_sentence(record.get('snippet') or '')}"))
             moves.append((record, when, move, tokens))
+    # Story embeddings (EmbeddingGemma 2), when the pipeline has them, link
+    # reports that share a meaning but no words, such as a Tamil and an
+    # English account of one statement.
+    vectors = _centred(vectors or {})
+    vector_of = {
+        id(record): vectors.get(record.get("rawId")) for record, *_ in moves
+    }
 
     # Words most stories use ("DMK", "alliance") cannot tie two stories together.
     document_frequency = Counter(token for *_, tokens in moves for token in tokens)
@@ -678,10 +721,20 @@ def build_storylines(
             # Once a thread has a theme, new moves must share its recurring words.
             needed = 2 if len(thread["steps"]) >= 3 else 1
             shared = [token for token in distinctive if bag[token] >= needed]
-            # Two distinctive words in common; people alone do not make a storyline.
-            if len(shared) < 2:
+            vector = vector_of[id(record)]
+            # Against the thread's centre, so a chain of near neighbours cannot drift off-topic.
+            centre = _centroid(thread)
+            meaning = float(vector @ centre) if vector is not None and centre is not None else 0.0
+            # Two distinctive words in common, or a close match in meaning;
+            # people alone do not make a storyline.
+            # The same named issue (SIR, Cauvery, ...); leading figures appear in too many threads to count.
+            context = any(token.startswith("#") and bag[token] for token in distinctive)
+            if len(shared) >= 2:
+                score = sum(idf[token] for token in shared) + max(0.0, meaning - SEMANTIC_LINK_WITH_CONTEXT) * 20
+            elif meaning >= SEMANTIC_LINK or (context and meaning >= SEMANTIC_LINK_WITH_CONTEXT):
+                score = 7.0 + (meaning - SEMANTIC_LINK_WITH_CONTEXT) * 20
+            else:
                 continue
-            score = sum(idf[token] for token in shared)
             if move["actor"] in thread["people"] or any(
                 c[1:] in thread["people"] for c in move["counterparts"] if c.startswith("@")
             ):
@@ -689,7 +742,7 @@ def build_storylines(
             if score > best_score:
                 best, best_score = thread, score
         if best is None or best_score < 7.0:
-            best = {"recent": [], "people": set(), "steps": [], "last": when, "tokens": Counter(), "storyIds": []}
+            best = {"recent": [], "people": set(), "steps": [], "last": when, "tokens": Counter(), "storyIds": [], "vectors": []}
             threads.append(best)
         step = _step(record, move)
         repeat = next(
@@ -708,6 +761,8 @@ def build_storylines(
             best["steps"].append(step)
             best["recent"] = (best["recent"] + [distinctive])[-6:]
         best["tokens"].update(distinctive)
+        if vector_of[id(record)] is not None:
+            best["vectors"] = (best["vectors"] + [vector_of[id(record)]])[-12:]
         best["storyIds"].append(step["storyId"])
         best["people"].add(move["actor"])
         best["people"].update(c[1:] for c in move["counterparts"] if c.startswith("@"))

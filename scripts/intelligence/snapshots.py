@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import base64
 import html
 import json
 import os
 import re
 import tempfile
 from pathlib import Path
+
+import numpy as np
 
 from .assembly_status import apply_current_assembly_status
 from .classify import classify_category, is_political, reports_hearsay
@@ -14,6 +17,7 @@ from .models import to_sortable_timestamp
 from .people import DEFAULT_ALIASES, canonical_politician_id, mentioned_politicians, resolve_politician
 from .quality import TIER_WEIGHT, source_affiliation, source_tier, story_importance
 from .storylines import build_storylines
+from .vectors import MODEL_NAME, VectorStore, truncate
 from .warehouse import IntelligenceWarehouse, now_utc_iso
 
 MOBILE_NEWS_LIMIT = 3000
@@ -125,7 +129,7 @@ def frontend_news_record(row) -> dict | None:
         "verificationStatus": verification,
         "isRumor": verification == "unverified_chatter",
     }
-    for key in ("imageUrl", "engagement", "author", "language"):
+    for key in ("imageUrl", "audioUrl", "engagement", "author", "language"):
         if original.get(key):
             record[key] = original[key]
     return {key: value for key, value in record.items() if value not in (None, "")}
@@ -218,6 +222,37 @@ def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
             record["sourceAffiliation"] = affiliation
         record["importance"] = story_importance(record)
     return news
+
+
+APP_VECTOR_DIMENSIONS = 256
+
+
+def story_vectors(warehouse: IntelligenceWarehouse, raw_ids: list[str]) -> dict[str, np.ndarray]:
+    """Text vectors for these stories, keyed by story id; empty without embeddings."""
+    meta, matrix = VectorStore(warehouse.connection).load(modality="text", raw_item_ids=raw_ids)
+    return {item["raw_item_id"]: matrix[index] for index, item in enumerate(meta)}
+
+
+def app_vector_index(vectors: dict[str, np.ndarray], generated_at: str) -> dict:
+    """A small index the app searches on the device.
+
+    Matryoshka training keeps the first 256 of 768 dimensions useful on their
+    own; each vector is then scaled to int8, so 3,000 stories take about 1 MB.
+    """
+    ids = list(vectors)
+    if not ids:
+        return {"model": MODEL_NAME, "dimensions": APP_VECTOR_DIMENSIONS, "generatedAt": generated_at, "ids": [], "scales": [], "vectors": ""}
+    matrix = truncate(np.stack([vectors[i] for i in ids]), APP_VECTOR_DIMENSIONS)
+    scales = 127 / np.maximum(np.abs(matrix).max(axis=1), 1e-9)
+    quantised = np.clip(np.rint(matrix * scales[:, None]), -127, 127).astype(np.int8)
+    return {
+        "model": MODEL_NAME,
+        "dimensions": APP_VECTOR_DIMENSIONS,
+        "generatedAt": generated_at,
+        "ids": ids,
+        "scales": [round(float(value), 4) for value in scales],
+        "vectors": base64.b64encode(quantised.tobytes()).decode("ascii"),
+    }
 
 
 def _event_rows(warehouse: IntelligenceWarehouse) -> list[dict]:
@@ -383,7 +418,10 @@ def generate_snapshots(
     atomic_write_json(output / "scrapedIntel.mobile.json", mobile_intel(compatibility))
     atomic_write_json(output / "timeFabric.json", time_fabric)
     atomic_write_json(output / "policyUpdates.json", policy_updates)
-    atomic_write_json(output / "storylines.json", build_storylines(compatibility["news"], generated_at))
+    mobile = mobile_intel(compatibility)
+    vectors = story_vectors(warehouse, [story["rawId"] for story in mobile["news"]])
+    atomic_write_json(output / "storylines.json", build_storylines(compatibility["news"], generated_at, vectors=vectors))
+    atomic_write_json(output / "vectorIndex.json", app_vector_index(vectors, generated_at))
     # Clients key refreshes on the status file, so it is written last.
     atomic_write_json(output / "intelStatus.json", status)
     return {"raw_items": raw_count, "events": event_count}

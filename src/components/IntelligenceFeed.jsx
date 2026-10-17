@@ -1,6 +1,7 @@
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { textLanguage, shareEvidence, relativeTime, formatDateTime, verificationLabel } from "./dateLabels";
 import { IntentTag, RivalryList, StorylineCard } from "./Storylines";
+import { MODEL_DOWNLOAD_MB, canEncodeQueries, decodeVectorIndex, loadQueryEncoder, searchVectorIndex, storyVector } from "../semanticSearch";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -8,6 +9,7 @@ import {
   Newspaper,
   Search,
   Share2,
+  Sparkles,
   X,
 } from "lucide-react";
 
@@ -97,6 +99,7 @@ export default function IntelligenceFeed({
   parties = [],
   events = [],
   storylines = null,
+  vectorIndex = null,
   onSelectPolitician,
   onSelectEvent,
   loading = false,
@@ -111,6 +114,15 @@ export default function IntelligenceFeed({
   const [activeCategory, setActiveCategory] = useState("all");
   const [range, setRange] = useState("all");
   const [sort, setSort] = useState("top");
+  // "Meaning" search ranks stories by similarity to the query, in any language.
+  const [semantic, setSemantic] = useState(false);
+  const [encoderState, setEncoderState] = useState({ status: "idle", progress: 0 });
+  const [semanticHits, setSemanticHits] = useState(null);
+  const [gpuReady, setGpuReady] = useState(null);
+  // "Similar" ranks the feed against one story's own vector; no model needed.
+  const [similarTo, setSimilarTo] = useState(null);
+  const encoderRef = useRef(null);
+  const decodedIndex = useMemo(() => decodeVectorIndex(vectorIndex), [vectorIndex]);
   const [personFilter, setPersonFilter] = useState(null);
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_LIMIT);
   const touchStart = useRef(null);
@@ -127,6 +139,39 @@ export default function IntelligenceFeed({
     });
     return map;
   }, [events]);
+
+  const startEncoder = () => {
+    setEncoderState({ status: "loading", progress: 0 });
+    loadQueryEncoder((event) => {
+      if (event.status === "progress" && event.file?.includes(".onnx")) {
+        setEncoderState({ status: "loading", progress: Math.round(event.progress || 0) });
+      }
+    })
+      .then(encode => { encoderRef.current = encode; setEncoderState({ status: "ready", progress: 100 }); })
+      .catch(error => setEncoderState({ status: "error", progress: 0, message: String(error.message || error) }));
+  };
+
+  useEffect(() => {
+    if (!semantic || gpuReady !== null) return;
+    canEncodeQueries().then(setGpuReady);
+  }, [semantic, gpuReady]);
+
+  const similarHits = useMemo(() => {
+    if (!similarTo || !decodedIndex) return null;
+    const vector = storyVector(decodedIndex, similarTo.rawId);
+    return vector && new Map(searchVectorIndex(decodedIndex, vector, { limit: 40 }).map(hit => [hit.id, hit.score]));
+  }, [similarTo, decodedIndex]);
+
+  useEffect(() => {
+    const text = query.trim();
+    if (!semantic || encoderState.status !== "ready" || !decodedIndex || text.length < 3) return undefined;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const vector = await encoderRef.current(text, decodedIndex.dimensions);
+      if (!cancelled) setSemanticHits(new Map(searchVectorIndex(decodedIndex, vector, { limit: 80 }).map(hit => [hit.id, hit.score])));
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [semantic, encoderState.status, decodedIndex, query]);
 
   const storyMoves = storylines?.storyMoves;
 
@@ -174,18 +219,23 @@ export default function IntelligenceFeed({
     return counts;
   }, [inRange, personFilter]);
 
+  // A "Similar" pick wins over a typed meaning search; both rank by cosine score.
+  const rankedHits = similarHits || (semantic && semanticHits && query.trim().length >= 3 ? semanticHits : null);
+  const meaningActive = Boolean(rankedHits);
   const filteredStories = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return inRange.filter(story => {
       if (activeCategory !== "all" && story.category !== activeCategory) return false;
       if (personFilter && story.politician?.id !== personFilter) return false;
+      if (meaningActive) return rankedHits.has(story.rawId);
       if (!needle) return true;
       return `${story.title} ${story.snippet} ${story.source || ""} ${story.politician?.name || ""}`
         .toLowerCase().includes(needle);
     });
-  }, [activeCategory, inRange, personFilter, query]);
+  }, [activeCategory, inRange, personFilter, query, meaningActive, rankedHits]);
 
   const orderedStories = useMemo(() => {
+    if (meaningActive) return [...filteredStories].sort((a, b) => rankedHits.get(b.rawId) - rankedHits.get(a.rawId));
     if (sort !== "top") return filteredStories;
     const ranked = filteredStories.map(story => ({ story, score: rankScore(story, now) }))
       .sort((a, b) => b.score - a.score);
@@ -200,9 +250,10 @@ export default function IntelligenceFeed({
       seen.set(thread, count + 1);
     });
     return ranked.sort((a, b) => b.score - a.score).map(item => item.story);
-  }, [filteredStories, sort, now]);
+  }, [filteredStories, sort, now, meaningActive, rankedHits]);
 
   const groupedStories = useMemo(() => {
+    if (meaningActive) return [{ label: "Closest in meaning", stories: orderedStories.slice(0, visibleLimit) }];
     if (sort === "top") return [{ label: "Ranked by importance", stories: orderedStories.slice(0, visibleLimit) }];
     const groups = [];
     orderedStories.slice(0, visibleLimit).forEach(story => {
@@ -212,7 +263,7 @@ export default function IntelligenceFeed({
       else groups.push({ label, stories: [story] });
     });
     return groups;
-  }, [orderedStories, sort, visibleLimit, now]);
+  }, [orderedStories, sort, visibleLimit, now, meaningActive]);
 
   // Rail: who and which outlets dominate the past week.
   const { topPeople, topSources, weekCount, dayCount } = useMemo(() => {
@@ -244,7 +295,7 @@ export default function IntelligenceFeed({
   const isKnown = (id) => politicianById.has(id);
 
   const resetLimit = () => setVisibleLimit(INITIAL_LIMIT);
-  const filtersActive = query || activeCategory !== "all" || personFilter || range !== "all";
+  const filtersActive = query || activeCategory !== "all" || personFilter || range !== "all" || similarTo;
   const personName = personFilter ? politicianById.get(personFilter)?.name : null;
   const health = (status?.collectorHealth || []).filter(item => item.items_seen > 0 || item.health?.status !== "unavailable");
 
@@ -326,8 +377,19 @@ export default function IntelligenceFeed({
                 aria-label="Search stories"
                 value={query}
                 onChange={(event) => { setQuery(event.target.value); resetLimit(); }}
-                placeholder="Search headlines, outlets, people…"
+                placeholder={semantic ? "Describe what you want, in English or Tamil…" : "Search headlines, outlets, people…"}
               />
+              {decodedIndex && (
+                <button
+                  type="button"
+                  className="meaning-toggle"
+                  aria-pressed={semantic}
+                  title="Search by meaning"
+                  onClick={() => { setSemantic(on => !on); setSemanticHits(null); resetLimit(); }}
+                >
+                  <Sparkles size={15} aria-hidden="true" /><span>Meaning</span>
+                </button>
+              )}
             </label>
             <div className="segmented" role="group" aria-label="Order">
               {Object.entries(SORT_CONFIG).map(([key, config]) => (
@@ -356,6 +418,11 @@ export default function IntelligenceFeed({
                 {config.label}<span className="chip-count">{formatNumber(categoryCounts[key] || 0)}</span>
               </button>
             ))}
+            {similarTo && (
+              <button type="button" className="chip chip-person" aria-pressed="true" onClick={() => setSimilarTo(null)} aria-label="Stop showing similar stories">
+                Like: {similarTo.title.slice(0, 40)}{similarTo.title.length > 40 ? "…" : ""}<X size={14} aria-hidden="true" />
+              </button>
+            )}
             {personName && (
               <button type="button" className="chip chip-person" aria-pressed="true" onClick={() => setPersonFilter(null)} aria-label={`Remove filter: ${personName}`}>
                 {personName}<X size={14} aria-hidden="true" />
@@ -363,11 +430,36 @@ export default function IntelligenceFeed({
             )}
           </div>
 
+          {semantic && encoderState.status !== "ready" && (
+            <div className="meaning-panel" role="status">
+              {gpuReady === false ? (
+                <p>
+                  Typing a description needs WebGPU, which this device does not offer. Use <strong>Similar</strong> on any
+                  story to find others about the same thing, in English or Tamil.
+                </p>
+              ) : encoderState.status === "loading" ? (
+                <>
+                  <p>Downloading the search model… {encoderState.progress}%</p>
+                  <progress max="100" value={encoderState.progress} />
+                </>
+              ) : (
+                <>
+                  <p>
+                    <strong>Search by meaning</strong> finds stories about what you describe, even when they use other words or
+                    are in Tamil. It downloads a {MODEL_DOWNLOAD_MB} MB model once and runs on this device.
+                  </p>
+                  {encoderState.status === "error" && <p className="meaning-error">Download failed: {encoderState.message}</p>}
+                  <button type="button" className="load-more-intel-btn" onClick={startEncoder}>Download and turn on</button>
+                </>
+              )}
+            </div>
+          )}
+
           <p className="feed-count" aria-live="polite">
             {formatNumber(filteredStories.length)} {filteredStories.length === 1 ? "story" : "stories"}
             {filtersActive ? " match" : ""}
             {filtersActive && (
-              <button type="button" className="link-button" onClick={() => { setQuery(""); setActiveCategory("all"); setPersonFilter(null); setRange("all"); resetLimit(); }}>
+              <button type="button" className="link-button" onClick={() => { setQuery(""); setActiveCategory("all"); setPersonFilter(null); setRange("all"); setSimilarTo(null); resetLimit(); }}>
                 Clear filters
               </button>
             )}
@@ -383,7 +475,7 @@ export default function IntelligenceFeed({
 
             {groupedStories.map(group => (
               <section key={group.label} className="day-group" aria-label={group.label}>
-                <h3 className={`day-heading ${sort === "top" ? "visually-hidden" : ""}`}>{group.label}</h3>
+                <h3 className={`day-heading ${sort === "top" || meaningActive ? "visually-hidden" : ""}`}>{group.label}</h3>
                 {group.stories.map(story => (
                   <StoryRow
                     key={story.id}
@@ -392,6 +484,11 @@ export default function IntelligenceFeed({
                     partyColor={partyColor}
                     onPerson={(id) => { setPersonFilter(id); resetLimit(); }}
                     onSelectEvent={onSelectEvent}
+                    onSimilar={decodedIndex?.rows.has(story.rawId) ? () => {
+                      setSimilarTo({ rawId: story.rawId, title: story.title });
+                      resetLimit();
+                      document.querySelector("#main-content")?.scrollTo({ top: 0, behavior: "smooth" });
+                    } : null}
                     onShare={async () => setShareStatus(await shareEvidence(story))}
                   />
                 ))}
@@ -482,7 +579,7 @@ export default function IntelligenceFeed({
   );
 }
 
-function StoryRow({ story, now, partyColor, onPerson, onSelectEvent, onShare }) {
+function StoryRow({ story, now, partyColor, onPerson, onSelectEvent, onSimilar, onShare }) {
   const outlets = story.alsoReportedBy || [];
   const platform = story.platform ? story.platform.charAt(0).toUpperCase() + story.platform.slice(1) : null;
   const label = CATEGORY_CONFIG[story.category]?.label || "News";
@@ -548,6 +645,11 @@ function StoryRow({ story, now, partyColor, onPerson, onSelectEvent, onShare }) 
                 ? `${formatNumber(story.engagement.likes)} likes · ${formatNumber(story.engagement.reposts)} reposts`
                 : `${formatNumber(story.engagement.score)} points · ${formatNumber(story.engagement.comments)} comments`}
             </span>
+          )}
+          {onSimilar && (
+            <button type="button" className="meta-button" onClick={onSimilar} title="Stories about the same thing, in any language">
+              <Sparkles size={13} aria-hidden="true" />Similar
+            </button>
           )}
           {story.url && (
             <button type="button" className="meta-button meta-icon" onClick={onShare} aria-label="Share with source">

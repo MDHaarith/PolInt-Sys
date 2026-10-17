@@ -1,0 +1,1200 @@
+{
+ "description": "Same-issue groups of real headlines from 10-17 Oct 2026, hand-checked. Used to benchmark embedding models and storyline linking: a story's group-mates should rank above the rest of the feed.",
+ "clusters": {
+  "meth_haul_row": [
+   {
+    "rawId": "raw_b71823838adf610f3ab2",
+    "title": "TVK is not just bad, it’s a ‘Breaking Bad’ party: Stalin",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b745e98d3b9edc91a6d5",
+    "title": "“தமிழகம் போதைப்பொருள் கடத்தலுக்கான மையமாக மாறியிருக்கிறதா?” - தவெக அரசுக்கு ஆ.ராசா கேள்வி",
+    "snippet": "சென்னை: “தமிழகத்தில் மெத்தம்பெட்டமைன் போதைப்பொருள் இவ்வளவு பெரிய அளவில் பறிமுதல் செய்யப்பட்டிருப்பது மிகவும் தீவிரமான விஷயம். தமிழகம் போதைப்பொருள் கடத்தலுக்கான மையமாக மாறியிருக்கிறதா என்ற கேள்வி எழுகி"
+   },
+   {
+    "rawId": "raw_0a482f047e51de3bf25d",
+    "title": "TVK has become a ‘Breaking Bad’ party, alleges M.K. Stalin",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e1988adedb791eef81a3",
+    "title": "தமிழகத்தை போதைப்பொருள் மையமாக தவெக அரசு மாற்றியுள்ளது - ஆ.ராசா குற்றச்சாட்டு",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_ec3718255b7922997fc7",
+    "title": "'Breaking Bad Party’: Stalin targets Vijay's TVK after 135 kg meth seized from functionary | India News",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_81ab1206164aad4f02d7",
+    "title": "“Breaking Bad Govt”: Stalin Slams Vijay After ₹100Cr Drug Bust",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c541eca0845054135322",
+    "title": "தவெக நிர்வாகியிடம் போதைப்பொருள் பறிமுதல்: மத்திய அரசு விசாரிக்க கனிமொழி வலியுறுத்தல்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e4cc6d5198a901b1226d",
+    "title": "தவெக நிவாகியிடம் சிக்கிய மெத்தம்பெட்டமைன்: முதல்வரின் போதைப்பொருள் ஒழிப்பு லட்சணம் இதுதானா? - உதயநிதி சாடல்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f2bb0138991f870ccd20",
+    "title": "போதை கலாசாரத்தை ஒழிப்பேன் என வீரவசனம் பேசியவர்கள் அதை ஒளித்து வைத்து தமிழ்நாட்டை சீரழித்து கொண்டிருக்கிறார்கள் - கனிமொழி எம்பி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_57c6e169e4e85cfd74a3",
+    "title": "Not just bad, but 'breaking bad' party: M K Stalin slams TVK over multi-crore drug seizure",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_0dfb9af01271c931f8f5",
+    "title": "Stalin Slams TVK Over 135 Kg Meth Seizure | Tamil Nadu Political Row | Tamil Nadu Drug",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_00dfddd875470cecef37",
+    "title": "‘Not Just Bad, But Breaking Bad’: MK Stalin’s Sharp Jibe At Vijay’s TVK Over Drug Case",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bf4b68e8e62ba48101c0",
+    "title": "DMK president Stalin takes a swipe at TVK over 135 kg meth haul, calls it ‘Breaking Bad Party’",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_0314829b62910f6d9b52",
+    "title": "MK Stalin brands TVK a ‘Breaking Bad party’ after meth arrest",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_52b02ae56281890a87b2",
+    "title": "DMK's Stalin calls TVK \"Breaking Bad\" party following TVK functionary's arrest in meth seizure case",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_83ade2d35efb31e91f79",
+    "title": "TVK functionary arrested over 135 kg meth trafficking in Nagapattinam",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_15b35d866a699794b03b",
+    "title": "'Breaking Bad Party': DMK president M K Stalin flays TVK over multi-crore meth bust",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_47f29f1313e0f698d02d",
+    "title": "“தவெக இப்போது ‘பிரேக்கிங் பேட்’ பார்ட்டி” - ‘மெத்’ கடத்தல் விவகாரத்தில் மு.க.ஸ்டாலின் விமர்சனம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b048df582f4b94851959",
+    "title": "TVK = Bad Party மட்டுமல்ல, Breaking Bad Party -என திமுக தலைவர் மு.க.ஸ்டாலின் விமர்சனம்!!!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_eabbd21e88a1f6b161f8",
+    "title": "Nagai TVK functionary among four held for smuggling meth ‘worth crores’",
+    "snippet": "NAGAPATTINAM: The Directorate of Revenue Intelligence (DRI) on Friday detained four persons, including a TVK functionary from Nagapattinam district, for their alleged involvement in smuggling methamph"
+   },
+   {
+    "rawId": "raw_4104d53d8978d31fd67e",
+    "title": "கடத்தவிட்டு வேடிக்கையா? .. போதைப்பொருள் கடத்திய தவெக நிர்வாகி.. விஜயை விளாசிய",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_3c15d276e4de86e6b14c",
+    "title": "இதுதான் போதைப்பொருள் ஒழிப்பு லட்சணமா? - உதயநிதி கேள்வி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_a005bd0ff2fcc0c2eee0",
+    "title": "கட்சியினரை மெத் கடத்தவிட்டு வேடிக்கை பார்ப்பதுதான் போதைப்பொருள் ஒழிப்பு லட்சணமா? உதயநிதி ஸ்டாலின்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_3179678b946c75a0e821",
+    "title": "“தமிழ்நாட்டில் இதுவரை இல்லாத அளவுக்கு..” - போதைப்பொருள் கடத்தல் சம்பவத்திற்கு உதயநிதி கண்டனம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_32446687000aaa4b749b",
+    "title": "தவெக நிர்வாகியிடம் 135 கிலோ போதைப்பொருள்- உதயநிதி கேள்வி! TVK- 135 Kg Drug Seizure: Udhayanidhi Demands NIA, ED Probe",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_02b4b01cc9a034c38760",
+    "title": "TVK functionary held with 100 kg of meth in Nagapattinam",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_a2f314b93fa04b59834a",
+    "title": "கட்சிக்குள்ளேயே போதைப்பொருள் கடத்தல்காரர் மாரத்தான் ஓடி நடிப்பதில் என்ன",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f4120b89bc39bba24723",
+    "title": "Is BJP eyeing something big by planning to send Murugan to Tamil Nadu?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_23341494046cb45a856f",
+    "title": "அரசின் மெத்தனத்தால் யூனிட் ஒன்று ரூ.35 கொடுத்து வாங்கும் நிலை! - கனிமொழி எம்பி கண்டனம்!",
+    "snippet": ""
+   }
+  ],
+  "periyar_arivulagam": [
+   {
+    "rawId": "raw_084af649d2a439ccbb37",
+    "title": "கோவை பெரியார் அறிவுலகத்தை உருவாக்கியது நாங்கள்: மு.க.ஸ்டாலின் பெருமிதம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_cac6f4bb0dc66a449b57",
+    "title": "கோவையில் பெரியார் அறிவுலகத்தை உருவாக்கிய பெருமை திமுகவுக்கே உரியது: மு.க.ஸ்டாலின் கருத்து",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_4fc84618b73b7692de19",
+    "title": "பெரியார் அறிவுலகம் திறந்து வைப்பதில் என்ன பெருமை திட்டமிட்டு உருவாக்குவதில்தான் உண்மையான பெருமை: திமுக தலைவர் மு.க.ஸ்டாலின் அ",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_3df220b828c53d07bf1e",
+    "title": "‘பெரியார் அறிவுலகம் திறப்பில்\nஆற்றாமையை வெளிப்படுத்துகிறார் மு.க. ஸ்டாலின்’ - ஆதவ் அர்ஜுனா",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_5bc1f6c44bd3fe87204c",
+    "title": "True pride lies in Building, not inaugurating Periyar Arivulagam: M.K. Stalin",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_0f2ef81b87933253dea3",
+    "title": "Stalin slams TVK govt on Periyar Arivulagam",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_947cbb60f6ccc8e83ccb",
+    "title": "Tamil Nadu CM C Joseph Vijay inaugurates Rs 301-crore Periyar Arivulagam in Coimbatore",
+    "snippet": "Tamil Chief Minister C Joseph Vijay inaugurated the Periyar Arivulagam library and science centre in Coimbatore on Friday. This facility has a built-up area of 1,98,000 sq ft, featuring modern technol"
+   },
+   {
+    "rawId": "raw_74c36ab122fc4468032d",
+    "title": "Tamil Nadu CM Vijay Inaugurates Periyar Arivulagam, Library And Science Centre In Coimbatore",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e55b0c3aeba2bae4c7fe",
+    "title": "\"Cheap CM obsessed with sticking labels\": Udhayanidhi hits out at Vijay over ‘Naan Mudhalvan’ name covered at Periyar Arivulagam",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_99b715177593647c7a7f",
+    "title": "திமுக ஆட்சியில் கட்டியெழுப்பப்பட்ட பெரியார் அறிவுலகம் இன்று திறக்கப்படுவதில் மகிழ்ச்சி- உதயநிதி ஸ்டாலின்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_edba25ecb66052a9bc3b",
+    "title": "Periyar Arivulagam is Dravidian model government’s brainchild, says Stalin",
+    "snippet": "Stalin also listed several library and other knowledge-centre projects undertaken by the DMK government, including the Anna Centenary Library in Chennai, the Kalaignar Centenary Library in Madurai, Mu"
+   },
+   {
+    "rawId": "raw_065f58af8612fb5ab1f2",
+    "title": "கோவை பெரியார் அறிவுலகத்தில் ‘நான் முதல்வன்’ பெயரை மறைத்தது ஏன்? - உதயநிதி ஸ்டாலின் கேள்வி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b66aa89a63382ef6763c",
+    "title": "பெரியார் அறிவுலகம்.. திறந்து வைப்பதில் என்ன பெருமை? - மு.க. ஸ்டாலின் விமர்சனம்!!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8beff6f2fcdbc310061e",
+    "title": "பெரியார் அறிவுலகம்! திறந்து வைப்பதில் என்ன பெருமை, உருவாக்குவதில்தான் உண்மையான பெருமை: மு.க.ஸ்டாலின்",
+    "snippet": ""
+   }
+  ],
+  "l_murugan_resignation": [
+   {
+    "rawId": "raw_a52ae1ca6b7dcaa08192",
+    "title": "எல்.முருகன் விஷயத்தில் இன்னும் சஸ்பென்ஸ்.. தமிழக பாஜக தலைவரா? வானதி சீனிவாசன் சொன்ன அந்த விஷயம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e7fd421a000ee5748eab",
+    "title": "தமிழக பாஜக தலைவராக எல்.முருகன் நியமிக்கப்படுகிறாரா? வானதி சீனிவாசன் சொன்ன விஷயம் - பாஜகவில் அடுத்து என்ன?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9f5742d39e16c143f48d",
+    "title": "தலித் விரோத போக்கில் பாஜக - எல்.முருகன் ராஜினாமா குறித்து கொந்தளிக்கும் வன்னிஅரசு",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_362f1150d86f865acf1e",
+    "title": "L Murugan resigns as Union Minister to focus on BJP in Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_2fda29413f0de9dae888",
+    "title": "President Droupadi Murmu accepts resignation of Union minister L Murugan",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f596d7b1e7ce20e7f3e0",
+    "title": "பயந்துபோன எல் முருகன்.. ராஜ்யசபா எம்பி + மத்திய அமைச்சர் பதவியை ராஜினாமா செய்தது ஏன்? பின்னணி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8c2bb31527d09d9ccc4c",
+    "title": "எல்.முருகன் ராஜினாமாவால் தமிழக பாஜகவில் புதிய கணக்குகள்! மத்திய அமைச்சர் பதவிக்கு நயினார் நாகேந்திரனா? சரத்குமார் பெயரும் அடிபடுகிறத",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f8d9abf9f3b50ec13300",
+    "title": "மீண்டும் தமிழக அரசியலுக்கு திரும்பும் எல்.முருகன்? அமைச்சர்கள் ராஜினாமா செய்வதில் உள்ள நடைமுறைகள் என்ன?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_dad25b78c942fe9e1eb0",
+    "title": "எல்.முருகன் இடத்திற்கு பாஜக பிளான்: தமிழகத்தில் இருந்து புதிய மத்திய அமைச்சர்- சாய்ஸில் மூன்று பேர்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_abeca26cab1611e452a5",
+    "title": "Reshuffle buzz as MoS L Murugan resigns | The New Indian Express - newspaper",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_25cbaa7736a72c832a17",
+    "title": "தீபாவளிக்கு முன் மோடி அமைச்சரவையில் மாற்றம்..? எல்.முருகன் பதவி விலகலில் பரபரப்பு பின்னணி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9689484ed16bb2575f6e",
+    "title": "Why L Murugan Quit The Modi Ministry",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_6792dd9bb3ca36e6758f",
+    "title": "எல். முருகன் ராஜினாமா: தமிழகத்தில் பாஜக போடும் மெகா பிளான்? பலே அரசியல் கணக்கு",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_7a9ef6ca62bd0bb53ce1",
+    "title": "L Murugan resigns as I&B MoS, to focus on BJP's Tamil Nadu strategy",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_3bdb5bc8498572bdd229",
+    "title": "எல். முருகன் திடீர் ராஜினாமா! பின்னணியில் இருக்கும் 4 முக்கிய அரசியல் காரணங்கள் என்ன? அப்போ தவெக",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f160d516637b5b9d799c",
+    "title": "Who is L Murugan? From son of daily-wage labourers to MoS, why his resignation fuels cabinet reshuffle buzz",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_a146cc0c5974d557cd8e",
+    "title": "மத்திய இணை அமைச்சர் பதவியை ராஜினாமா செய்த எல்.முருகன்.. தமிழக பாஜகவில் முழுநேரப் பணி! தீபாவளிக்கு முன் மத்திய அமைச்சரவை மாற்றமா?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d7fbd8bdff8746a8035e",
+    "title": "எல்.முருகன் செயல்பாடு மீது பாஜக மேலிடம் அதிருப்தி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bc670c34ae560e6596a7",
+    "title": "L Murugan quits as Minister of State, fuels Cabinet reshuffle speculation",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_fc8a1cf39b1e019783c3",
+    "title": "மத்திய அமைச்சர் பதவியை ராஜினாமா செய்த எல்.முருகன்: தமிழக பாஜக தலைவராகிறாரா?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_58f14f63c61873e255b0",
+    "title": "தமிழ்நாடு பாஜகவில் நடக்கும்போகும் மாற்றம்? - எல்.முருகன் திடீர் ராஜினாமா... பின்னணி இதுதான்! | L.Murugan",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c1f55758edaddaf8dc14",
+    "title": "மத்திய அமைச்சர் பதவியை ராஜினாமா செய்யும் எல்.முருகன்! தமிழக பாஜக தலைவராகும் ஆசையா? பின்னணியில் என்ன நடக்கிறது?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_2c0332de778917991bbb",
+    "title": "L Murugan quits as minister from Modi Cabinet",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c081983e3e144fccf7d3",
+    "title": "I&B Minister L Murugan Seeks To Quit Union Government For Tamil Nadu BJP Work",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9e2692bfe8b26b2c7442",
+    "title": "L Murugan resigns as Union MoS, seeks to strengthen TN BJP; Cabinet reshuffle speculation grows",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_1705d10b12a46bd0181c",
+    "title": "நன்றி..மீண்டும் வராதீங்க! திடீரென ராஜினாமா செய்த எல்.முருகன்! செய்தாரா? செய்ய வைக்கப்பட்டரா? பின்னணி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8ff596eba98bb8ea2fba",
+    "title": "அமைச்சர் பதவி ராஜினாமா; மீண்டும் தமிழக பாஜக தலைவராகிறார் எல்.முருகன்?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_1623f06262ae51b863e9",
+    "title": "Congress MP Jothimani criticises BJP over Tamil Nadu after L Murugan quits",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_ffd5349071c13705c965",
+    "title": "\"BJP against people of Tamil Nadu\": Congress MP Jothimani slams ruling party following L Murugan's exit from Union Cabinet",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_ff8082cfe724b2882734",
+    "title": "L Murugan Resigns as Union Minister to Focus on Tamil Nadu Politics",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_020d07af3210e9f6d65a",
+    "title": "Union Minister L Murugan offers to resign from Rajya Sabha, wants to work full-time for BJP in Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_dc354d9474d4ed5f615e",
+    "title": "L Murugan Resigns As Union Minister, Says He Wants To Strengthen BJP In Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9baaf3c3181bc1ec4a36",
+    "title": "Who is L Murugan? Farmers' son, ex-Tamil Nadu BJP chief quits as union minister and Rajya Sabha member | India News",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_7bdd8ddcac7200982e4d",
+    "title": "L Murugan Offers Resignation to Work in Tamil Nadu, Fueling Modi Cabinet Reshuffle Talk - India Today",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_08321da7a36faf867dba",
+    "title": "BJP MP L. Murugan Resigns as Union Minister, Says Wish to Return to Grassroots",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_ddb759eb2747cb43b8ec",
+    "title": "ராஜினாமா ஏன்?- எல்.முருகன் விளக்கம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f03b50f401b352e6154d",
+    "title": "BJP's TN leader L Murugan tenders his resignation from council of ministers",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_fe5706b934e7ed12b238",
+    "title": "L Murugan resigns as Union minister, Rajya Sabha MP to focus on BJP's Tamil Nadu push",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_cdc366ba7f706ac43bb8",
+    "title": "L Murugan quits Union ministry ‘to strengthen BJP in Tamil Nadu’",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_96f4905683df57f07b44",
+    "title": "Video | L Murugan Quits Union Ministry, Says Want to Work The Grassroots In Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_fd9ec591f6601516b99a",
+    "title": "BJP’s Tamil Nadu game plan? L Murugan quits Cabinet amid reshuffle buzz",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_47cb65ec2400b812ec12",
+    "title": "L Murugan Quits Two National Posts To Focus On BJP’s Southern Strategy",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_293c663a4869c5ca8d59",
+    "title": "L Murugan resigns as I&B MoS, Rajya Sabha member; to focus on Tamil Nadu BJP",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_52a158875c4a9064bf2f",
+    "title": "L Murugan Quits Union Cabinet, Rajya Sabha Seat to Focus on BJP’s Tamil Nadu Mission: ‘Want to Strengthen Party’",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bde20108cfcfa750fa7a",
+    "title": "Union Minister L Murugan resigns, sparks speculation of imminent cabinet reshuffle",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_0ff1085cb33b4db8a2e8",
+    "title": "L Murugan Resigns as Union Minister of State and Rajya Sabha Member",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b70863fbcf3fd58e4f76",
+    "title": "L. Murugan resigns from Union Ministry, Rajya Sabha seat, setting off buzz about a pre-Deepavali Cabinet reset",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_4dfac3b3c55b5fd935f6",
+    "title": "L Murugan Resigns As Union Minister, Rajya Sabha Member In Letter To PM Modi: 'Want To Strengthen BJP In Tamil Nadu'",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b4538695fb63b4cab899",
+    "title": "L Murugan resigns as Union Minister, to work full-time to strengthen BJP in Tamil Nadu - INDIA - GENERAL",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c25a66a689cc0cd08e1c",
+    "title": "L Murugan Seeks Exit From Union Cabinet to Focus on Grassro…",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_28082bfad34de5d6dc74",
+    "title": "மீண்டும் தமிழ்நாடு பாஜக தலைவரா எல்.முருகன்? நயினார் நாகேந்திரன் தலைவராக இருக்கும் போதே எழும் யூகங்கள்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c122ee1514d109768e11",
+    "title": "L Murugan quits ministerial post, Rajya Sabha to strengthen BJP in Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c8288f2e7e8407322e09",
+    "title": "'தினக்கூலி தொழிலாளியின் மகன் நான்': மோடி அமைச்சரவை அனுபவம் குறித்து எல். முருகன் உருக்கம்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d66c9a97782bfc2c4890",
+    "title": "Minister L. Murugan resigns, seeks return to Tamil Nadu politics. Is a cabinet reshuffle likely soon?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_284afed0b99dca60ae3c",
+    "title": "L Murugan resigns as Union minister, says wants to further strengthen BJP in Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_fd2702b7defd8abe550a",
+    "title": "L Murugan Resigns As Union Minister, Vows To Strengthen BJP Ahead Of 2029 Lok Sabha Elections",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9f1e104f8a69f32dc281",
+    "title": "MoS L Murugan seeks to quit I&B Ministry to focus on BJP in Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_fd5e1f3b1ca04f225270",
+    "title": "L Murugan Resigns As Minister, PM Modi's Cabinet Reshuffle Imminent Before Diwali | News18",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_87a54c0f996483d9d030",
+    "title": "L Murugan Resigns From Rajya Sabha, Seeks PM Modi's Approval To Quit Union Cabinet",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d566194ce50c1f4ca1df",
+    "title": "L Murugan resigns as Union minister, Rajya Sabha MP to focus on ‘strengthening BJP in Tamil Nadu’",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_3d9177264d11802da076",
+    "title": "Union MoS L Murugan resigns from Union Cabinet",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_512dc2ef82e50eb74424",
+    "title": "'I wish to return to the grassroots': L Murugan resigns from Modi Cabinet to strengthen BJP in Tamil Nadu ahead of 2029 polls",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c9dbb6b0feef9492c8ec",
+    "title": "L Murugan writes to PM Modi seeking exit from Union Cabinet, says wants to return to grassroots",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d29d7e37b530c8bca6e3",
+    "title": "L Murugan resigns as Union minister, Rajya Sabha member: Writes 5-page letter to PM, says he will focus on ...",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_a6e7a0a6f4886a4ea12f",
+    "title": "Want to strengthen Tamil Nadu BJP: L Murugan quits govt, thanks PM amid rejig buzz",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_5e122238454fcffc91a2",
+    "title": "Union MoS L Murugan Resigns From Union Cabinet, Thanks PM Modi: 'Wish To Return To Grassroots'",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_4a427c9538eeb55c9f0f",
+    "title": "எல்.முருகன் ராஜினாமா! மோடிக்கு 5 பக்க கடிதம்! L Murugan Seeks Resignation: 5-Page Letter to PM Modi",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_4acb4deb8f7ff6384d68",
+    "title": "மத்திய அமைச்சர் பதவியை துறப்பதாக எல்.முருகன் அறிவிப்பு - காரணம் என்ன?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_488807f96df1ebe432e5",
+    "title": "L Murugan: மத்திய அமைச்சர் பொறுப்பில் இருந்து விலகுவதாக எல் முருகன் திடீர் அறிவிப்பு.. எம்பி பதவிக்கும் முழுக்கு",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9d7f945dcc9d2c85e443",
+    "title": "‘Want to strengthen BJP in Tamil Nadu’: L Murugan resigns; 3rd Union minister to quit in 4 months | India News",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e4422456fa3d72fe3afb",
+    "title": "அமைச்சர் பதவியை ராஜினாமா செய்தார் எல்.முருகன் - ஏன் இந்த திடீர் முடிவு?",
+    "snippet": ""
+   }
+  ],
+  "composer_deva_death": [
+   {
+    "rawId": "raw_0b8d40360a4f14ada002",
+    "title": "Deva, veteran music composer’s funeral LIVE | Final rites on October 18; T.N. government to accord State honours",
+    "snippet": "'Thenisai Thendral' Deva was 75 and breathed his last at a private hospital in Chennai"
+   },
+   {
+    "rawId": "raw_436c26d71b092cb33946",
+    "title": "CM Vijay pays last respects to music composer Deva; State honours announced",
+    "snippet": "CHENNAI: Chief Minister C Joseph Vijay on Saturday paid his last respects to veteran music composer and playback singer Deva, popularly known as ‘Thenisai Thendral’, at his residence in Nungambakkam, "
+   },
+   {
+    "rawId": "raw_29898fd4a4257ad7a95b",
+    "title": "Deva death: Rajinikanth, Tamil Nadu CM Vijay and MK Stalin visit music composer's residence to pay last...",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_5ad216fa515f3ef348a2",
+    "title": "Composer Deva Death: Rajinikanth, Kamal Haasan And More Remember Legend, CM Vijay Visits Home To Pay Respects",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f39a28a3c5f572ca10ae",
+    "title": "தேவா மறைவு - சீமான், பிரேமலதா விஜயகாந்த் இரங்கல்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8668cced23aff16c4ef8",
+    "title": "‘தமிழ் மண்ணின் மகத்தான இசைக் கலைஞர் தேவா...’ - கமல்ஹாசன் முதல் விஜய் சேதுபதி வரை புகழஞ்சலி",
+    "snippet": "தமிழ்த் திரையுலகில் ‘தேனிசைத் தென்றல்’ என்ற அடைமொழியோடு ரசிகர்களை தனது எளிய, துள்ளலான மெட்டுகளால் கட்டிப்போட்ட இசையமைப்பாளர் தேவா, இசைப் பிரியர்களையும் திரைத் துறையையும் கண்ணீரில் ஆழ்த்திவிட்டு இன்று "
+   },
+   {
+    "rawId": "raw_1c3d0c6bc4ebad0b2550",
+    "title": "Tamil Nadu Governor Arlekar, CM Vijay express condolences over passing of music director Deva",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d257f545ec002b9b1b9f",
+    "title": "Veteran music director Deva dies at 75; CM Vijay, MK Stalin and more pay tribute",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8614c7f9c2206fb84512",
+    "title": "தேனிசைத் தென்றல் தேவா மறைவு மிகுந்த வேதனை அளிக்கிறது - எடப்பாடி பழனிசாமி இரங்கல்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_2d339364bf5de290868b",
+    "title": "தேவாவின் உடலுக்கு மு.க.ஸ்டாலின் அஞ்சலி..!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_30273c397cb00eccb35c",
+    "title": "Veteran Tamil composer Deva dies; MK Stalin pays tribute",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e58cfdc3dd96db1a54da",
+    "title": "இசையமைப்பாளர் தேவா உடலுக்கு அரசு மரியாதையுடன் இறுதி சடங்கு- தமிழ்நாடு அரசு",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8ec7b6e216d77636d5b6",
+    "title": "Veteran music composer Deva passes away: MK Stalin offers emotional tribute, \"Gaana became synonymous with Deva himself\"",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_6ec6c279473588d22600",
+    "title": "தேவா உயிரிழப்பு| ”இசைக்கு மரணமில்லை..” முதல்வர் விஜய், EPS, கமல் உள்ளிட்ட அரசியல் தலைவர்கள் இரங்கல்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b33e07d3a71fabe32459",
+    "title": "இசையமைப்பாளர் தேவாவின் உடலுக்கு மு.க. ஸ்டாலின் நேரில் அஞ்சலி!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d8f1ab95b16465b4a74d",
+    "title": "“தேனிசைத் தென்றல் வீசுவது நிற்காது...” - தேவா மறைவுக்கு ஸ்டாலின், பழனிசாமி, தலைவர்கள் புகழஞ்சலி",
+    "snippet": "சென்னை: தேனிசைத் தென்றல் தேவா மறைவுக்கு திமுக தலைவர் மு.க.ஸ்டாலின், அதிமுக பொதுச் செயலாளர் எடப்பாடி பழனிசாமி உள்ளிட்ட அரசியல் கட்சித் தலைவர்கள் பலரும் தனது ஆழ்ந்த இரங்கலைத் தெரிவித்துள்ளனர். திமுக தலை"
+   },
+   {
+    "rawId": "raw_4fbbebe9650ab53b1f67",
+    "title": "#JUST IN : தேவா உடலுக்கு நேரில் அஞ்சலி செலுத்திய மு.க.ஸ்டாலின்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_68d4e9803b2d86827264",
+    "title": "RIP Music Director Deva | கடைசியாக ஒரு முறை தேவாவை பார்க்க வந்த மு.க. ஸ்டாலின் | DMK MK Stalin",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_1ca5a97c70f451286125",
+    "title": "பிரபல இசையமைப்பாளர் தேவா மறைவு- மு.க.ஸ்டாலின் நேரில் அஞ்சலி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bf3a24f560b351489a22",
+    "title": "இசையமைப்பாளர் தேவா காலமானார் - 400க்கும் மேலான படங்களில் பங்காற்றிய 'தேனிசைத் தென்றல்'",
+    "snippet": "அண்ணாமலை, பாட்ஷா உள்பட சுமார் 400க்கும் மேலான படங்களின் இசையமைப்பாளர் தேவா காலமானார்."
+   },
+   {
+    "rawId": "raw_7df5298e821afeaae729",
+    "title": "இசையமைப்பாளர் தேவா மறைவுக்கு முதல்வர் விஜய், திமுக., தலைவர் ஸ்டாலின் உள்ளிட்ட தலைவர்கள் இரங்கல்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9c842e3151191148dc25",
+    "title": "பிரபல இசையமைப்பாளரும், பாடகருமான தேவா மறைவுக்கு திமுக தலைவர் மு.க.ஸ்டாலின் இரங்கல்!!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f196f34b9ddd9047ec68",
+    "title": "தேவாவின் மறைவு ஒட்டுமொத்த தமிழ் சமூகத்திற்கும் பேரிழப்பு!திருமாவளவன் இரங்கல்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f333ad871dc1006088bf",
+    "title": "Tamil cinema loses its Thenisai Thendral: Vijay, Stalin lead tributes for Deva",
+    "snippet": "Deva played a significant role in bringing gaana music into mainstream Tamil cinema. Known for his distinctive voice and musical style, he built a dedicated fan base of his own. The post Tamil cinema "
+   },
+   {
+    "rawId": "raw_d14e947c666a930baf2b",
+    "title": "\"அவர் இசை காற்று என்றும் ஒலிக்கும்\": தேவா மறைவுக்கு சீமான் உருக்கம்",
+    "snippet": ""
+   }
+  ],
+  "chennai_metro_phase2": [
+   {
+    "rawId": "raw_a7744a17ef3e4621e385",
+    "title": "Tamil Nadu CM Vijay urges PM Modi to sanction Metro Rail from Hosur to Karnataka’s Bommasandra",
+    "snippet": "The CM says the inter-State link will benefit both T.N. and Karnataka. He also urges Modi to reconsider Metro Rail projects in Coimbatore and Madurai in view of the future development and economic gro"
+   },
+   {
+    "rawId": "raw_6fea80e2abc399298521",
+    "title": "PM Modi and CM Vijay flag off Chennai Metro Rail’s first train for phase II project, take a ride together",
+    "snippet": "The passenger services will start on October 11, 2026 from 4 p.m."
+   },
+   {
+    "rawId": "raw_e40c6360e99c679aa663",
+    "title": "Palaniswami recalls efforts by AIADMK government towards Phase II Chennai Metro Rail project",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_3746fbdd6df4c18fedb9",
+    "title": "PM Modi to launch Chennai Metro Rail Phase 2, to share ride with Tamil Nadu CM Vijay",
+    "snippet": "In the initial period, 15 trains will be run from Poonamallee to Vadapalani, and commuters can access a train every 10 minutes during the peak hours"
+   },
+   {
+    "rawId": "raw_0a2afeeb3af8bc018f98",
+    "title": "மாணவர்களோடு மெட்ரோ ரயிலில் பயணிக்கும் மோடியின் விளம்பர அரசியல் தமிழ்நாட்டில் எடுபடாது",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_816066e08cc0b508634c",
+    "title": "PM Modi, Vijay’s Viral Metro Ride: A New Political Equation In Tamil Nadu?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_145cfc12adca0524a02b",
+    "title": "Video | Chennai Metro Opening Sparks Credit War Between DMK and AIADMK",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e76ee1f11d51f6fc8362",
+    "title": "T.N. start-ups pitch their ideas to Modi during his Chennai Metro Rail ride",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e9c2084e7e6cc785d066",
+    "title": "Metro ride with PM Modi, cappuccino with LoP Rahul: How CM Vijay is navigating political equations in Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_08d1261526ef7cd0162c",
+    "title": "Vijay’s wishlist to Modi: Rs 5,110 crore school funds dues, Metro for Coimbatore & Madurai, CMRL expansion, two more high-speed rail",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8b2528d685c30ee21be9",
+    "title": "Tamil Nadu CM Vijay urges PM Modi to sanction Metro Rail from Hosur to Karnataka’s Bommasandra",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b7f0739e357d681e41f8",
+    "title": "Coffee with Rahul, metro ride with PM Modi: CM Vijay's weekend balancing act",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_86d69a73123f2bf1da69",
+    "title": "Can't steal credit for AIADMK's Chennai Metro Rail DPR with optics, EPS tells TVK govt",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_84bae52e53696446e58e",
+    "title": "Palaniswami hails AIADMK regime for groundwork on Chennai Metro Phase 2 project",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_719ba63f50ea1d167a2e",
+    "title": "Palaniswami recalls efforts by AIADMK government towards Phase II Chennai Metro Rail project",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_90f73195499e0f42bea2",
+    "title": "DMK, AIADMK stake claim to Chennai metro stretch after PM Modi-CM Vijay’s flag-off | India News",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_1d57dbe7e4886e5158c0",
+    "title": "“வடபழனி - போரூர் மெட்ரோ அதிமுக ஆட்சியில் தொடங்கப்பட்ட திட்டம்!” – எடப்பாடி பழனிசாமி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_2699dc7be2bc00e809ab",
+    "title": "PM Modi pledges to work for Tamil Nadu's development as Vijay seeks metro expansion, more funds",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_56cbadd448339f595487",
+    "title": "From new metro links to river linking: CM Vijay lists his demands before PM Modi",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_63200d18462344dc8616",
+    "title": "LIVE: PM Modi inaugurates Metro Rail's Phase 2 stretch, ₹13000-crore worth development projects | Tamil Nadu",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_3ee7416731c8f603e89c",
+    "title": "PM Modi and Tamil Nadu CM Vijay flag off Chennai Metro Rail’s first train for phase II project, take a ride together",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_0595b928b9065f64bac5",
+    "title": "“பூந்தமல்லி - வடபழனி மெட்ரோ ரயில் திட்டம் அதிமுக ஆட்சியில் போடப்பட்ட விதை” - இபிஎஸ் பெருமிதம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_038d9f34b3abaec393d4",
+    "title": "Video: PM Modi Inaugurates Chennai Metro Phase II, Takes Ride With Chief Minister Vijay",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_2614f33bb29ffcf875b8",
+    "title": "PM Modi In Chennai, Flags Off Metro Phase 2 With CM Vijay In Shift From DMK Era - India Today",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bea932d848eeb6f8880d",
+    "title": "Coffee with Rahul and a metro ride with Modi: Vijay’s politics of convenience",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e3196fa7a2c5162d6c2c",
+    "title": "Tamil Nadu CM Vijay Hosts Congress Leader Rahul Gandhi For Lunch, Set To Join PM Modi For Chennai Metro Ride",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_610b60cce03ff0d9fa64",
+    "title": "Lunch with Rahul, Metro ride with Modi: Vijay walks a political tightrope",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b8e375039d0e06323b49",
+    "title": "‘Girlfriend gives 0% interest, our FD gives 14.4%’: Chennai Metro ad sparks political row",
+    "snippet": ""
+   }
+  ],
+  "power_purchase_row": [
+   {
+    "rawId": "raw_b596013f950813ff6522",
+    "title": "Scrap power purchase plan, urge Left parties",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_26e18b048fbc60616efc",
+    "title": "AIADMK’s Palaniswami alleges ‘mega corruption’ by TN govt over power purchase at Rs 35 per unit",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f536fe4d9623b1b12b45",
+    "title": "Palaniswami alleges ‘mega corruption’ in TVK’s power purchase",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_994244f71475757f06ed",
+    "title": "மின் கொள்முதல், விலைவாசி உயர்வு, குதிரை பேரம்...! தவெக மீது இபிஎஸ் கடும் விமர்சனம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_1e81530e6571c4ed9e20",
+    "title": "“இது ஒரு ‘வெற்றி’ மெகா ஊழல்” - மின்சார கொள்முதல் குறித்து எடப்பாடி பழனிசாமி விமர்சனம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_a1de70a6906867b94e3a",
+    "title": "Why Andhra got it cheap? Tamil Nadu state discom faces Oppn heat over record-high power purchase",
+    "snippet": "Compared to the rate of Rs 11 to Rs 20 per unit during previous administration, TVK govt has decided to purchase power at Rs 35 per unit for meeting growing power demand."
+   },
+   {
+    "rawId": "raw_6a62c1ffec60fd016c84",
+    "title": "TVK under fire for power purchase move, opposition demands rollback of decision",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9a2d1f9de1a72dcc4b0d",
+    "title": "வெளிச்சந்தையில் அதிக விலைக்கு மின் கொள்முதல்: பொதுமக்கள் மத்தியில் எழும் சந்தேகங்கள்! டிடிவி தினகரன்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_dddb2e88ab3406593763",
+    "title": "₹35 per unit: Why Tamil Nadu minister C.T.R. Nirmal Kumar’s power purchase politics hit a short circuit?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bfecb433c617fd11c05c",
+    "title": "EPS accuses TVK govt of ₹35/unit power procurement scam | Tap to know more | Inshorts",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bfe7ad90ecfbc6885823",
+    "title": "AIADMK accuses TVK govt of ‘orchestrating’ power procurement scam, flags Rs 35/unit purchase",
+    "snippet": ""
+   }
+  ],
+  "vck_pmk_alliance": [
+   {
+    "rawId": "raw_a108c5e83784d521f288",
+    "title": "பாமக - தவெக உறவு.. விரும்பாத திருமாவளவன்.. திடீரென திமுக ஆதரவு டோனில் விசிக.. பின்னணி என்ன?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_1235e8960d90df9e62d7",
+    "title": "தவெக கூட்டணியில் பாமக இணைய வாய்ப்புள்ளதா? விசிக நிலைப்பாடு என்ன? முழு பின்னணி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_4dcd3812a5fbb8a9f5c1",
+    "title": "திருமாவிற்கு ஜான் ஆரோக்கியசாமி கொடுத்த உறுதி: தவெக – விசிக கூட்டணிக்குள் பாமக வராது",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d9fe434632a5d5e4629a",
+    "title": "Breaking | Tamil Nadu Politics: VCK Objects to Possible PMK Entry Into TVK-Led Alliance | News18",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_1c1f2c3bf9b2115ca9dd",
+    "title": "தவெக கூட்டணியில் பாமக? கலக்கத்தில் விசிக!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_42f7c5da1845cb6f1fb2",
+    "title": "VCK says it will quit alliance if PMK joins, minister says no such plan",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c9d9b7cc032414538782",
+    "title": "பாமக வந்தால் விசிக வெளியேறுமா? தவெக கூட்டணியில் நடப்பது என்ன?",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bee73eb8e086ce5b4ffd",
+    "title": "தவெக கூட்டணிக்கு பாமக வந்தால் விசிக வெளியேறும்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_ec6ede60375ebe62671e",
+    "title": "VCK | TVK | PMK | ``பாமக உள்ள வந்தா வெளியேறுவோம்’’ என அறிவித்த விசிக - தவெகவின் `முதல்’ ரியாக்‌ஷன்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_a07b31cc46f3dea6e764",
+    "title": "“தவெக கூட்டணிக்கு பாமக வந்தால் விசிக வெளியேறும்” - அமைச்சர் வன்னிஅரசு",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d23d6dccdd8da33b035c",
+    "title": "“தவெக அணிக்குள் பாமக வந்தால் விசிக வெளியேறும்” - அமைச்சர் வன்னி அரசு உறுதி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c70c4cacfd0cac18b1c4",
+    "title": "“விசிக அங்கம் வகிக்கும் தவெக அணிக்கு பாமகவினர் எப்படி வாக்களிப்பர்?” - திருமாவளவன்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8e20a279fe73e5671000",
+    "title": "VCK draws red line on PMK's Cabinet entry",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_43c32d24ecc962f7b0fd",
+    "title": "“தவெக கூட்டணியில் பாமக உள்ளே வந்தால் விசிக வெளியே செல்லும்” - அமைச்சர் வன்னி அரசு திட்டவட்டம்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_71dedb558bc86f3955d4",
+    "title": "பாமக இருக்கும் கூட்டணியில் விசிக இடம்பெறாது: உறுதியாக இருக்கும் திருமாவளவன்- பின்னணி என்ன",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_62d255b5dbcb2d2aaf6d",
+    "title": "Breaking: பாமக, பாஜக இருக்கும் இடத்தில் விசிக இருக்காது: தொல். திருமாவளவன் திட்டவட்ட அறிவிப்பு!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_d3f45a7e553a58a3b0f7",
+    "title": "தவெக கூட்டணியில் பாமக இடம்பெற்றால் விசிக வெளியேறும் - வன்னியரசு அதிரடி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f8f4d94081e34c0f6cb3",
+    "title": "தவெக கூட்டணிக்கு பாமக வந்தால் விசிக வெளியேறும்: அமைச்சர் வன்னிஅரசு பேச்சு",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_be32adf9b8147133d4d6",
+    "title": "விசிகவை சிறுமைப்படுத்த முயற்சி: பாமகவினர் தவெகவுக்கு எப்படி வாக்களிப்பார்கள் என திருமாவளவன் கேள்வி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_8dfeb58b0374668bbd3c",
+    "title": "விசிகவை சிறுமைப்படுத்த பாக்குறாங்க.. தவெகவுக்கு பாமகவினர் எப்படி ஓட்டு போடுவாங்க? திருமாவளவன்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_5811950fa9d9d7be7613",
+    "title": "Thiruma |\"விசிக இடம்பெறும் அணிக்கு பாமகவினர் எப்படி வாக்களிப்பார்கள்?\"வெளிப்படையாக கேட்ட திருமா",
+    "snippet": ""
+   }
+  ],
+  "cauvery_river": [
+   {
+    "rawId": "raw_2cc889105047b5ccab12",
+    "title": "காவிரி தொழில்நுட்பக் குழும துணைத்தலைவரை இதுவரை நியமனம் செய்யாதது ஏன்?- சீமான் கேள்வி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_87fb7079ca0c72c56e76",
+    "title": "Tamil Nadu CM Vijay Meets Andhra CM Naidu in Vijayawada, Discusses Godavari-Cauvery River Linking - India Today",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_52de74e1dfe5da0295ee",
+    "title": "“கிருஷ்ணா நதி நீருக்காக பேசும் முதலமைச்சர் விஜய் காவிரி விவகாரத்தில் மவுனம் காப்பது ஏன்..?” டிடிவி தினகரன் கேள்வி!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_708609414bfbeb12ba52",
+    "title": "Dhinakaran questions Tamil Nadu CM Vijay’s ‘silence’ over Cauvery water dispute with Karnataka",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_126a6f7ec4899d9178d6",
+    "title": "Naidu pushes Godavari-Cauvery link amid El Niño stress, Vijay seeks more water for Chennai from Andhra",
+    "snippet": "Andhra CM Naidu said the suggested Godavari-Cauvery link could become a vital, climate-resilient solution to secure water needs of the southern peninsula."
+   },
+   {
+    "rawId": "raw_97bdecca7d95b41b623d",
+    "title": "காவிரி டெல்டாவை வறட்சி பாதித்த மாவட்டங்களாக அறிவித்து விவசாயிகளுக்கு உரிய இழப்பீட்டை உடனடியாக வழங்கிட வேண்டும்: டிடிவி தினகரன் வல",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_48752f758a6d77da23b3",
+    "title": "காவிரி விவகாரத்தில் முதல்வர் விஜய் மவுனம் ஏன்? டிடிவி தினகரன் கடும் கேள்வி!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_6642651c4d73deff2060",
+    "title": "Tamil Nadu CM Vijay Seeks Naidu’s Backing For Godavari-Cauvery Link, More Krishna Water For Chennai",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_5fa4b53cfa260deec46b",
+    "title": "கிருஷ்ணா நீருக்கு பேச்சுவார்த்தை.. காவிரிக்கு ஏன் மவுனம்? விஜய்க்கு டிடிவி தினகரன் கேள்வி!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_2cea4c9fa5ef7c12a457",
+    "title": "காவிரி நமது உயிர்நாடி என்று சட்டமன்றத்தில் பேசிய வசனமெல்லாம் வெறும் Reels -க்காக மட்டுமா ?: டி.டி.வி. தினகரன்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_11ae40f327b2a43fe1fe",
+    "title": "சந்திரபாபு நாயுடுவிடம் பேசும் முதலமைச்சர், காவிரி விவகாரத்தில் மட்டும் கள்ள மவுனம் காப்பது ஏன்?- தினகரன் கேள்வி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_bf88e31cec33d6486ceb",
+    "title": "“காவிரி விவகாரத்தில் முதல்வர் விஜய் கள்ள மவுனம் காப்பது ஏன்?” - டிடிவி தினகரன் கேள்வி!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_64a92359a712ba80c137",
+    "title": "காவிரி நீர் பங்கீடு: “கர்நாடகத்தின் முயற்சியைத் தடுக்க வேண்டும்\".. உதயநிதி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_083dd14d8431dfe5b361",
+    "title": "காவிரி நீா் விவகாரம்: பிரதமரிடம் வலியுறுத்த முதல்வா் விஜய்க்கு உதயநிதி கோரிக்கை",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_6bdeec71f8096b23b4cf",
+    "title": "“காவிரி நீர்ப் பங்கீட்டு அளவை மறுஆய்வு செய்ய கர்நாடகா முயற்சி” - உதயநிதி கண்டனம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_c8803294e6711f7c9115",
+    "title": "காவிரி நீர்ப் பங்கீட்டு மறுஆய்வு: கர்நாடகத்தின் முயற்சியை முறியடிக்க வேண்டும் - உதயநிதி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_e3c44956115757ab7ae1",
+    "title": "Tamil Nadu CM Vijay opens Mettur Dam gates, releases Cauvery water for 12 delta districts",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_9aa5341266bd39ecd2fa",
+    "title": "Why Vijay tested Cauvery waters with Karnataka: ‘Even hostile nations try to resolve issues’",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_95d8491a283c92e64ed4",
+    "title": "In Tamil Nadu Assembly, Vijay defends Cauvery talks with Karnataka",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_b6935c1849714769f3a2",
+    "title": "Cauvery dispute: How Tamil Nadu and Karnataka are pulling Congress in two directions",
+    "snippet": ""
+   }
+  ],
+  "aiadmk_55th_year": [
+   {
+    "rawId": "raw_6332ed2868956200be9a",
+    "title": "AIADMK Celebrates Its 55th Foundation Day",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_590a0e9fd70eeedc4d06",
+    "title": "AIADMK steps into 55th year of political service, dissident MLAs skip milestone celebrations at HQ",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_2077ca03dded9ff41a81",
+    "title": "அதிமுக 55-வது ஆண்டு விழா; தனித்தனியாக கொண்டாடிய ஈபிஎஸ்-எஸ்.பி.வேலுமணி அணி",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_76a77279949971482a03",
+    "title": "அ.தி.மு.க 55-வது ஆண்டு தொடக்க விழா கொண்டாட்டம்: எடப்பாடி பழனிசாமி தொண்டர்களுக்கு இனிப்பு வழங்கினார்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_aa9b7b72331733dadf3d",
+    "title": "As AIADMK steps into 55th year, Palaniswami calls for unity to overcome political challenges",
+    "snippet": "CHENNAI: AIADMK chief Edappadi K Palaniswami on Saturday urged party workers to strive unitedly with determination and overcome the new political challenges manifest before the party. Marking the Drav"
+   },
+   {
+    "rawId": "raw_38977593535b3b516175",
+    "title": "55-ம் ஆண்டில் அதிமுக.. எடப்பாடி எடுத்த சபதம்! AIADMK 55th Anniversary: EPS Pledge",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_90dbdb4338dfcd78d9b9",
+    "title": "AIADMK 55th Anniversary: Palaniswami Urges Unity and Commitment",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_352ebf76b181e444f507",
+    "title": "Palaniswami calls for unity, commitment among cadres as AIADMK enters 55th year",
+    "snippet": "Even though several political rivals and traitors attempted to work against the party over the past five decades, he said that the AIADMK marched ahead with the massive support of its cadres"
+   },
+   {
+    "rawId": "raw_3f0d8c36815f568ada6a",
+    "title": "வருகிற 17-ந்தேதி அ.தி.மு.க. தலைமை அலுவலகத்தில் கட்சியின் 55-வது ஆண்டு தொடக்க விழா",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_5e334186dbe2a827b4fe",
+    "title": "அதிமுக 55-வது ஆண்டு தொடக்க நாள்: நலத்திட்ட உதவிகள் வழங்க தலைமைக் கழகம் அறிவுறுத்தல்",
+    "snippet": ""
+   }
+  ],
+  "fishermen_arrests": [
+   {
+    "rawId": "raw_61d47e8a1b960de29773",
+    "title": "மீனவர்களை விடுவிக்க போர்க்கால அடிப்படையில் துரிதமாகச் செயல்பட வேண்டும்! - மாணிக்கம் தாகூர்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_44830e2a6cee06748f71",
+    "title": "Vijay writes to Centre over arrest of fishermen by Sri Lanka",
+    "snippet": "He also makes a strong case for reviving the India-Sri Lanka Joint Working Group on Fisheries"
+   },
+   {
+    "rawId": "raw_15852aafe321a91c8d6f",
+    "title": "சுறா படத்தில் வருவது போல்... மீனவர்கள் கைது தொடர்பாக முதல்வர் விஜய் மீது எடப்பாடி பழனிசாமி விமர்சனம்!",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_f24ee5d289d84a30c04b",
+    "title": "மீனவர்களின் வாழ்வில் அக்கறை காட்டாத தவெக அரசு: எடப்பாடி பழனிசாமி கண்டனம்",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_ac239fdbe4253008680a",
+    "title": "CM Vijay Seeks Jaishankar's Help For Release Of 25 Tamil Nadu Fishermen Detained In Maldives",
+    "snippet": ""
+   },
+   {
+    "rawId": "raw_83c314745ff126881b84",
+    "title": "T.N. CM Vijay urges Centre to secure release of 25 Thoothukudi fishermen arrested by Maldives Coast Guard",
+    "snippet": ""
+   }
+  ]
+ }
+}

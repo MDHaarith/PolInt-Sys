@@ -641,3 +641,12 @@ small, [style*="font-size: 0."], [style*="font-size:0."] { font-size: .875rem !i
   .profile-tab-btn { flex: none; white-space: nowrap; }
   .playbook-grid { gap: 18px; }
 }
+
+/* ── Search by meaning ─────────────────────────────────────────────── */
+.meaning-toggle { display: inline-flex; align-items: center; gap: 4px; flex: none; min-height: 30px; padding: 2px 10px; border: 1px solid var(--border-subtle); border-radius: 999px; background: transparent; font-size: .8125rem; color: var(--text-secondary); }
+.meaning-toggle[aria-pressed="true"] { border-color: var(--accent-color); background: color-mix(in srgb, var(--accent-color) 12%, transparent); color: var(--accent-color); }
+.meaning-panel { margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--bg-panel); font-size: .875rem; line-height: 1.5; }
+.meaning-panel p + p, .meaning-panel p + button { margin-top: 10px; }
+.meaning-panel progress { width: 100%; margin-top: 8px; accent-color: var(--accent-color); }
+.meaning-error { color: var(--accent-color); }
+@media (max-width: 768px) { .meaning-toggle span { display: none; } }

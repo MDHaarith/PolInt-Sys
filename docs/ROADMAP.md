@@ -17,6 +17,11 @@ shipped so the plan stays honest.
 - Feed diversity: further stories from a storyline already shown rank lower.
 - Android app: back button, native share sheet, saved last download, app
   icon and splash, compact app bar and icon tab bar, signed version releases.
+- EmbeddingGemma 2 vector store for text, photos and audio in the warehouse;
+  cross-modal search (`scripts/search_intel.py`); on-device search by meaning
+  in the app; centred embeddings in storyline linking; a same-issue benchmark
+  (`scripts/eval_embeddings.py`); a dataset builder and a first action
+  classifier (`scripts/build_datasets.py`, `scripts/train_move_classifier.py`).
 
 ## 1. Algorithm
 
@@ -36,12 +41,17 @@ once. At roughly 200 new low-confidence stories per day this is a few cents
 a day. It needs an `ANTHROPIC_API_KEY` secret in the data workflow, and the
 rules remain the fallback.
 
-### 1.3 Multilingual embeddings for linking
-Replace token overlap with sentence embeddings from a multilingual model
-(e.g. multilingual-e5-small, ~120 MB) computed in the data workflow. Cosine
-similarity links paraphrases and translations that share no words, and the
-concept glossary becomes a fallback. This adds about a minute per run, with
-the model cached between runs.
+### 1.3 Embeddings: next steps
+- Grow the hand-checked benchmark beyond 10 groups, and add groups where
+  embeddings currently fail (analysis pieces, opinion columns).
+- Use the action classifier (70% agreement with high-confidence rule labels
+  after three weeks of data) for headlines the rules cannot read, once a
+  hand-labelled set shows it beats the rules there.
+- Fine-tune on `story_pairs.jsonl` and `gold_pairs.jsonl` (e.g. a small
+  linear adapter on top of the frozen vectors) when there are a few thousand
+  pairs.
+- Add audio sources: Tamil news podcasts and bulletin feeds with enclosures,
+  or a YouTube transcript-free audio pipeline for speeches.
 
 ### 1.4 Wider name coverage
 Only about 40 leaders are recognised by name. Generate aliases for all 234

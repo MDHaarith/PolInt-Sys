@@ -8,7 +8,7 @@ import {
 } from "./data/politicalDatabase";
 import { mergeTimeFabricData } from "./data/timeFabricData";
 import { minimizeApp, onBackButton } from "./native";
-import { fullIntelFile, isMobileBuild, loadData, normalizeStory, recentIntelFile, statusFile, storylinesFile } from "./dataSource";
+import { fullIntelFile, isMobileBuild, loadData, normalizeStory, recentIntelFile, statusFile, storylinesFile, vectorIndexFile } from "./dataSource";
 import { relativeTime, formatDateTime, textLanguage, indianNumber } from "./components/dateLabels";
 import { 
   Users, GitBranch, Search, ChevronRight, Newspaper, Sun, Moon, Monitor, ClipboardList, RefreshCw, ChevronDown
@@ -312,6 +312,7 @@ export default function App() {
   const [selectedPoliticianId, setSelectedPoliticianId] = useState("vijay");
   const [timeFabricSnapshot, setTimeFabricSnapshot] = useState(null);
   const [storylines, setStorylines] = useState(null);
+  const [vectorIndex, setVectorIndex] = useState(null);
   const [intelStatus, setIntelStatus] = useState(null);
   const [focusedEventId, setFocusedEventId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "info" });
@@ -406,6 +407,8 @@ export default function App() {
       }
       if (fabric.status === "fulfilled") setTimeFabricSnapshot(fabric.value);
       if (threads.status === "fulfilled") setStorylines(threads.value);
+      // The vector index only powers "search by meaning", so it loads after the stories.
+      loadData(vectorIndexFile).then(setVectorIndex).catch(() => {});
       applyFreshIntel(freshIntel, updatedAt);
       latestSnapshotTimeRef.current = snapshotTime;
       statusRef.current = statusMatches ? status : null;
@@ -739,6 +742,7 @@ export default function App() {
             parties={db.parties}
             events={eventNodes}
             storylines={storylines}
+            vectorIndex={vectorIndex}
             lastIntelSync={db.lastIntelSync}
             loading={intelLoadState === "loading"}
             loadError={intelLoadState === "error"}

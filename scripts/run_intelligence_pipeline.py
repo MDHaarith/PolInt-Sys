@@ -27,6 +27,7 @@ from scripts.intelligence.collectors.x_public import XPublicCollector
 from scripts.intelligence.curated_seed import upsert_curated_payload
 from scripts.intelligence.events import EventExtractor
 from scripts.intelligence.snapshots import generate_snapshots
+from scripts.intelligence.vectors import EmbeddingUnavailable, VectorStore
 from scripts.intelligence.source_config import (
     DEFAULT_X_QUERIES,
     NEWS_RSS_FEEDS,
@@ -103,6 +104,25 @@ def build_default_collectors(
     return collectors
 
 
+def embed_media(warehouse, *, limit: int, seconds: float, days: int) -> dict:
+    """Register new stories, photos and audio, then embed the newest first.
+
+    Each run spends at most `seconds` on the model, so a large backlog fills
+    in over several runs. Without Node or the model the step is skipped and
+    the rest of the pipeline is unaffected.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    store = VectorStore(warehouse.connection)
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat() if days else None
+    discovered = store.discover(since=since)
+    try:
+        counts = store.embed_pending(limit=limit, deadline_seconds=seconds)
+    except EmbeddingUnavailable as error:
+        return {"status": "unavailable", "reason": str(error)[:300], "discovered": discovered}
+    return {"status": "ready", "discovered": discovered, **counts, "store": store.stats()}
+
+
 def run_pipeline(
     *,
     source: Path,
@@ -116,6 +136,10 @@ def run_pipeline(
     extract_events=True,
     snapshot=True,
     recent_news_limit=25000,
+    embed=False,
+    embed_limit=3000,
+    embed_seconds=900,
+    embed_days=120,
 ) -> dict:
     warehouse = IntelligenceWarehouse(database)
     try:
@@ -141,6 +165,11 @@ def run_pipeline(
         if extract_events:
             result["events"] = EventExtractor(warehouse).extract_all()
 
+        if embed:
+            result["embeddings"] = embed_media(
+                warehouse, limit=embed_limit, seconds=embed_seconds, days=embed_days
+            )
+
         if snapshot:
             result["snapshots"] = generate_snapshots(
                 warehouse, output_dir, recent_news_limit=recent_news_limit
@@ -165,6 +194,12 @@ def main() -> None:
     parser.add_argument("--max-social-queries", type=int, default=80)
     parser.add_argument("--social-limit", type=int, default=15)
     parser.add_argument("--extended-public", action="store_true")
+    parser.add_argument("--embed", action="store_true",
+                        help="Embed stories, photos and audio with EmbeddingGemma 2 (also part of --all)")
+    parser.add_argument("--no-embed", action="store_true", help="Skip embedding during --all")
+    parser.add_argument("--embed-limit", type=int, default=3000, help="Most items to embed in one run")
+    parser.add_argument("--embed-seconds", type=int, default=900, help="Time budget for embedding")
+    parser.add_argument("--embed-days", type=int, default=120, help="Only embed items from the last N days (0 for all)")
     parser.add_argument(
         "--collectors", nargs="+",
         choices=("rss", "rss_direct", "reddit", "bluesky", "scrapy_newspaper", "instagram", "x_public"),
@@ -174,7 +209,7 @@ def main() -> None:
 
     project_root = PROJECT_ROOT
     run_all = args.all or not any(
-        (args.migrate, args.collect, args.extract_events, args.snapshot)
+        (args.migrate, args.collect, args.extract_events, args.snapshot, args.embed)
     )
     source = project_root / args.source
     document = {}
@@ -203,6 +238,10 @@ def main() -> None:
         collect=args.collect or run_all,
         extract_events=args.extract_events or run_all,
         snapshot=args.snapshot or run_all,
+        embed=(args.embed or run_all) and not args.no_embed,
+        embed_limit=args.embed_limit,
+        embed_seconds=args.embed_seconds,
+        embed_days=args.embed_days,
     )
     print(json.dumps(result, indent=2))
 

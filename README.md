@@ -89,6 +89,71 @@ npm run build
 - Assets, affidavits, criminal cases, and court filings must remain `Not sourced yet` until a real affidavit ingestion step exists.
 - `scripts/seed_all_234_mlas.py` is demo-only and must not be used for production roster data.
 
+## Embeddings, vector store and search
+
+Stories, news photos and audio are embedded with **EmbeddingGemma 2**
+(Google DeepMind, Apache 2.0), which puts text, images and audio into one
+768-dimensional space. A text query can therefore find a photo or a speech
+clip, and Tamil and English reports of one event land close together. The
+model runs on CPU through Transformers.js (`scripts/embeddings/`), using the
+4-bit ONNX export. Each modality's encoder is downloaded only when needed:
+text 174 MB, vision 109 MB, audio 189 MB, cached in `data/models/hf/`.
+
+**Data pipeline** (`--embed`, also part of `--all`):
+1. *Discover*: every story's headline and summary, its photo (`imageUrl`), any
+   audio enclosure in its feed (`audioUrl`), and any image or audio file dropped
+   into `data/media/inbox/`. A file can carry a sidecar `clip.mp3.json` with
+   `{"title", "publishedAt", "politicianId"}`.
+2. *Embed*: newest first, within a time budget (`--embed-seconds`), so a
+   backlog fills in over several runs. Failures are retried up to three times.
+3. *Store*: vectors live in the SQLite warehouse (`media_items`, `vectors`
+   tables, float16). Search is exact cosine similarity with numpy, which takes
+   milliseconds at this size.
+
+**Search** across modalities:
+
+```bash
+python3 scripts/search_intel.py "farmers protest over Cauvery water" --days 14
+python3 scripts/search_intel.py "மீனவர்கள் கைது"
+python3 scripts/search_intel.py --image rally.jpg --modality image
+python3 scripts/search_intel.py --audio speech.mp3
+python3 scripts/search_intel.py --stats
+```
+
+**In the app**, *Meaning* next to the feed's search box searches by meaning on
+the phone. The pipeline publishes `vectorIndex.json` (the recent stories cut
+to 256 dimensions by Matryoshka truncation and stored as int8, about 1 MB).
+The first time it is used, the app downloads the text encoder once and keeps
+it in the browser cache. After that, queries never leave the device.
+
+**Storylines** also use the vectors, centred by subtracting the corpus mean.
+Every headline shares a broad "Tamil Nadu politics" direction, and without
+centring a big storyline's centre resembles every political story. A move
+joins a storyline when its meaning is close to the storyline's centre, even
+with no shared words, and storylines with near-identical centres merge
+(thresholds and their measurements are in `storylines.py`). On the
+hand-checked same-issue groups in `tests/fixtures/same_issue_clusters.json`
+(`python3 scripts/eval_embeddings.py`):
+
+| Method | Precision@10 | Cross-language top-1 | Same-issue pair F1 |
+| --- | ---: | ---: | ---: |
+| Word overlap (before) | 0.64 | 0.20 | 0.39 |
+| EmbeddingGemma 2, document prompt, 768-d | 0.67 | 0.69 | 0.83 |
+| EmbeddingGemma 2, document prompt, 256-d | 0.68 | 0.68 | 0.83 |
+| EmbeddingGemma 2, document prompt, 768-d, centred | 0.70 | 0.71 | 0.84 |
+| EmbeddingGemma 2, clustering prompt, 256-d | 0.62 | 0.66 | 0.69 |
+
+**Datasets and training**:
+
+```bash
+python3 scripts/build_datasets.py --days 60      # data/datasets/polint-YYYYMMDD/
+python3 scripts/train_move_classifier.py data/datasets/polint-YYYYMMDD
+```
+
+The dataset folder holds labelled stories, weak move labels, contrastive story
+triples, hand-checked gold pairs, photo–headline and audio pairs, and the
+vectors, with a dataset card (`README.md`) describing provenance and limits.
+
 ## Releasing the Android app
 
 1. Create a release key once and keep it safe; Google Play and every update need the same key:
