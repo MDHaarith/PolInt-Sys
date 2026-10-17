@@ -11,7 +11,7 @@ from .assembly_status import apply_current_assembly_status
 from .classify import classify_category, is_political, reports_hearsay
 from .events import headline_tokens
 from .models import to_sortable_timestamp
-from .people import canonical_politician_id, resolve_politician
+from .people import DEFAULT_ALIASES, canonical_politician_id, mentioned_politicians, resolve_politician
 from .quality import TIER_WEIGHT, source_affiliation, source_tier, story_importance
 from .storylines import build_storylines
 from .warehouse import IntelligenceWarehouse, now_utc_iso
@@ -95,7 +95,9 @@ def frontend_news_record(row) -> dict | None:
     source_type = original.get("sourceType") or row["collector"]
     story_text = f"{title} {snippet}"
     politician_id = canonical_politician_id(original.get("politicianId") or row["politician_id"]) or "general"
-    if politician_id == "general":
+    # Collectors tag results with the politician they searched for; keep that
+    # only when the story itself names them.
+    if politician_id in DEFAULT_ALIASES and politician_id not in mentioned_politicians(story_text) or politician_id == "general":
         politician_id = resolve_politician(story_text) or "general"
     if source_type in _FILTERED_SOURCE_TYPES and politician_id == "general" and not is_political(story_text):
         return None
@@ -147,6 +149,13 @@ def _epoch(value: str | None) -> float | None:
         return None
 
 
+def _within_window(lead: dict, published: float | None) -> bool:
+    lead_time = _epoch(lead.get("publishedAt"))
+    if lead_time is None or published is None:
+        return lead_time is None and published is None
+    return abs(lead_time - published) <= _NEAR_DUPLICATE_WINDOW_SECONDS
+
+
 def _lead_rank(record: dict) -> tuple:
     # The copy shown is the best-sourced one; the rest become "also reported by".
     return (TIER_WEIGHT[record["sourceTier"]], len(record.get("snippet") or "") >= 80, bool(record.get("imageUrl")))
@@ -184,9 +193,12 @@ def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
         record["sourceTier"] = source_tier(record["source"], is_social=bool(row["is_social"]))
         record["outletCount"] = 1
         key = _title_key(record["title"])
-        index = by_title.get(key)
         tokens = headline_tokens(record["title"])
         published = _epoch(record.get("publishedAt"))
+        # Only copies close in time are one story; social posts never merge on title alone.
+        index = by_title.get(key) if record["sourceTier"] != "social" else None
+        if index is not None and not _within_window(news[index], published):
+            index = None
         if index is None and published is not None and record["sourceTier"] != "social":
             window = [entry for entry in window if entry[0] - published <= _NEAR_DUPLICATE_WINDOW_SECONDS]
             index = next((entry[2] for entry in window if _near_duplicate(tokens, entry[1])), None)
@@ -371,6 +383,7 @@ def generate_snapshots(
     atomic_write_json(output / "scrapedIntel.mobile.json", mobile_intel(compatibility))
     atomic_write_json(output / "timeFabric.json", time_fabric)
     atomic_write_json(output / "policyUpdates.json", policy_updates)
-    atomic_write_json(output / "intelStatus.json", status)
     atomic_write_json(output / "storylines.json", build_storylines(compatibility["news"], generated_at))
+    # Clients key refreshes on the status file, so it is written last.
+    atomic_write_json(output / "intelStatus.json", status)
     return {"raw_items": raw_count, "events": event_count}

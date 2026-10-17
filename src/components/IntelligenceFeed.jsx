@@ -185,9 +185,22 @@ export default function IntelligenceFeed({
     });
   }, [activeCategory, inRange, personFilter, query]);
 
-  const orderedStories = useMemo(() => (sort === "top"
-    ? [...filteredStories].sort((a, b) => rankScore(b, now) - rankScore(a, now))
-    : filteredStories), [filteredStories, sort, now]);
+  const orderedStories = useMemo(() => {
+    if (sort !== "top") return filteredStories;
+    const ranked = filteredStories.map(story => ({ story, score: rankScore(story, now) }))
+      .sort((a, b) => b.score - a.score);
+    // Each further story from the same storyline counts for less, so one row
+    // does not fill the top of the feed.
+    const seen = new Map();
+    ranked.forEach(item => {
+      const thread = item.story.move?.threadId;
+      if (!thread) return;
+      const count = seen.get(thread) || 0;
+      item.score *= Math.pow(0.5, count);
+      seen.set(thread, count + 1);
+    });
+    return ranked.sort((a, b) => b.score - a.score).map(item => item.story);
+  }, [filteredStories, sort, now]);
 
   const groupedStories = useMemo(() => {
     if (sort === "top") return [{ label: "Ranked by importance", stories: orderedStories.slice(0, visibleLimit) }];

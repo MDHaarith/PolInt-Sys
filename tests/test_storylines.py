@@ -1,4 +1,6 @@
 import json
+from collections import Counter
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -168,3 +170,87 @@ def test_snapshot_publishes_storylines(tmp_path):
     storylines = json.loads((tmp_path / "public" / "storylines.json").read_text(encoding="utf-8"))
     assert storylines["moveCount"] == 1
     assert storylines["people"]["mk_stalin"]["moves"][0]["intent"] == "Erode the ruling party's standing"
+
+
+def test_concepts_bridge_tamil_and_english_headlines():
+    from scripts.intelligence.storylines import concept_tokens
+
+    assert "#drugs" in concept_tokens("Stalin slams TVK over 135 kg meth seizure")
+    assert "#drugs" in concept_tokens("போதைப்பொருள் கடத்தல்: ஸ்டாலின் கண்டனம்")
+    assert "#sir" in concept_tokens("DMK protests SIR of electoral rolls")
+    assert concept_tokens("CM Vijay visits Madurai") == []
+
+
+def test_tamil_and_english_threads_on_one_issue_merge():
+    from scripts.intelligence.storylines import _merge_threads
+
+    def thread(language, day, tokens, people):
+        title = "போதை கடத்தல் விவகாரம்" if language == "ta" else "Meth haul row"
+        steps = [{"date": f"2026-10-1{day}T0{i}:00:00Z", "title": title} for i in range(3)]
+        return {
+            "steps": steps, "tokens": Counter(tokens), "people": set(people),
+            "storyIds": [f"{language}{i}" for i in range(3)], "last": datetime(2026, 10, 10 + day, 3, tzinfo=timezone.utc),
+        }
+
+    english = thread("en", 5, {"#drugs": 3, "meth": 3, "functi": 2}, {"mk_stalin"})
+    tamil = thread("ta", 6, {"#drugs": 3, "போதை": 3}, {"mk_stalin"})
+    unrelated = thread("ta", 6, {"#drugs": 3, "கஞ்சா": 2}, {"seeman"})
+    merged = _merge_threads([english, tamil, unrelated])
+    assert len(merged) == 2
+    assert len(merged[0]["steps"]) == 6
+    assert set(merged[0]["storyIds"]) == {"en0", "en1", "en2", "ta0", "ta1", "ta2"}
+
+
+def test_pace_marks_a_storyline_escalating_or_cooling():
+    from scripts.intelligence.storylines import _thread_reading
+
+    reference = datetime(2026, 10, 17, 12, tzinfo=timezone.utc)
+
+    def step(hours_ago, outlets):
+        return {
+            "date": (reference - timedelta(hours=hours_ago)).isoformat(), "actor": "vijay", "action": "deliver",
+            "objective": "governance", "outlets": outlets, "counterparts": [],
+        }
+
+    hot = _thread_reading([step(60, 1), step(5, 3), step(2, 2)], reference)
+    assert hot["momentum"] == "escalating" and hot["pace"]["last24h"] == 5
+    quiet = _thread_reading([step(70, 2), step(50, 2), step(30, 2)], reference)
+    assert quiet["momentum"] == "cooling"
+
+
+def test_a_future_dated_post_cannot_blank_the_storylines():
+    news = [
+        story("a", "Stalin slams TVK government over power purchase scam", "2026-10-13T08:00:00Z"),
+        story("future", "Bluesky clock skew", "2027-10-13T08:00:00Z", source="x.com"),
+    ]
+    result = build_storylines(news, "2026-10-14T00:00:00Z")
+    assert result["referenceAt"].startswith("2026-10-13")
+    assert result["moveCount"] == 1
+
+
+def test_identical_titles_far_apart_stay_separate_stories(tmp_path):
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    try:
+        collect(warehouse, id="now", title="Stalin speaks in Assembly", url="https://hindu.test/1",
+                source="The Hindu", publishedAtRaw="2026-10-16T07:00:00Z")
+        collect(warehouse, id="old", title="Stalin speaks in Assembly", url="https://hindu.test/2",
+                source="The Hindu", publishedAtRaw="2024-01-10T07:00:00Z")
+        news = _frontend_news(warehouse, 10)
+    finally:
+        warehouse.close()
+    assert [item["id"] for item in news] == ["now", "old"]
+    assert all(item["outletCount"] == 1 for item in news)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("இசைக் கலைஞர் தேவா மறைவு", None),
+        ("விஜய் சேதுபதி நடிக்கும் புதிய படம்", None),
+        ("விஜய் ஆண்டனி இசை", None),
+        ("முதல்வர் விஜய் அறிவிப்பு", "vijay"),
+        ("கலைஞர் கருணாநிதி நினைவு நாள்", "m_karunanidhi"),
+    ],
+)
+def test_tamil_names_do_not_catch_namesakes(text, expected):
+    assert resolve_politician(text) == expected

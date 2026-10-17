@@ -1,3 +1,4 @@
+import { shareText } from "../native";
 const formatter = new Intl.RelativeTimeFormat("en-IN", { numeric: "auto" });
 
 export const textLanguage = (text = "") => /[\u0B80-\u0BFF]/.test(text) ? "ta" : "en";
@@ -33,11 +34,14 @@ export const shareEvidence = async (story) => {
   if (!url) return "Source link unavailable";
   const text = `${story.title}\n${story.source || "Source unavailable"} · ${formatDate(story.publishedAt || story.date)}\n${verificationLabel(story.verificationStatus)}\n${url}`;
   try {
-    if (navigator.share) await navigator.share({ title: story.title, text });
-    else { await navigator.clipboard.writeText(text); return "Story and source copied"; }
+    if (!(await shareText({ title: story.title, text }))) {
+      await navigator.clipboard.writeText(text);
+      return "Story and source copied";
+    }
     return "Shared with source";
   } catch (error) {
-    return error.name === "AbortError" ? "Share cancelled" : "Sharing unavailable on this device";
+    const cancelled = error?.name === "AbortError" || /cancel/i.test(error?.message || "");
+    return cancelled ? "Share cancelled" : "Sharing unavailable on this device";
   }
 };
 

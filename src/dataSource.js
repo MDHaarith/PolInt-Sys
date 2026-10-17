@@ -15,13 +15,42 @@ const fetchJson = async (url, options) => {
   return response.json();
 };
 
+// The last download is kept on the phone, so a restart without signal shows
+// it rather than the older copy bundled into the APK.
+const CACHE_NAME = "polint-data-v1";
+const snapshotTime = (value) =>
+  Date.parse(value?.generatedAt || value?.coverageMeta?.lastSnapshotAt || "") || 0;
+
+const saveCopy = async (path, value) => {
+  try {
+    const cache = await globalThis.caches?.open(CACHE_NAME);
+    await cache?.put(path, new Response(JSON.stringify(value), { headers: { "Content-Type": "application/json" } }));
+  } catch { /* Storage may be full or unavailable; the bundled copy still works. */ }
+};
+
+const savedCopy = async (path) => {
+  try {
+    const response = await globalThis.caches?.match(path, { cacheName: CACHE_NAME });
+    return response ? await response.json() : null;
+  } catch {
+    return null;
+  }
+};
+
 export const loadData = async (path) => {
   if (isMobileBuild && remoteBase) {
     try {
-      return await fetchJson(`${remoteBase}${path}`, { signal: AbortSignal.timeout(20000) });
+      const value = await fetchJson(`${remoteBase}${path}`, { signal: AbortSignal.timeout(20000) });
+      void saveCopy(path, value);
+      return value;
     } catch (error) {
-      console.warn(`Remote ${path} unavailable, using bundled copy:`, error);
+      console.warn(`Remote ${path} unavailable, using the saved or bundled copy:`, error);
     }
+    const [saved, bundled] = await Promise.all([savedCopy(path), fetchJson(path).catch(() => null)]);
+    // After an app update the bundled copy can be newer than the saved download.
+    const best = saved && (!bundled || snapshotTime(saved) >= snapshotTime(bundled)) ? saved : bundled;
+    if (best) return best;
+    throw new Error(`No copy of ${path} is available`);
   }
   return fetchJson(path);
 };

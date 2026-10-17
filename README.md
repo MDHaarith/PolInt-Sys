@@ -3,6 +3,9 @@
 Tamil Nadu political intelligence dashboard built with React and Vite.
 
 **Android app:** [Download PolInt.apk](https://github.com/MDHaarith/PolInt-Sys/releases/download/apk-latest/PolInt.apk), rebuilt automatically on every app update to `main`.
+Versioned releases (signed APK plus an App Bundle for Google Play) are published
+from tags; see [Releasing the Android app](#releasing-the-android-app). The plan
+for further work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Data Workflow
 
@@ -85,3 +88,17 @@ npm run build
 - Secondary free public sources may enrich records only when explicitly stored with source URLs.
 - Assets, affidavits, criminal cases, and court filings must remain `Not sourced yet` until a real affidavit ingestion step exists.
 - `scripts/seed_all_234_mlas.py` is demo-only and must not be used for production roster data.
+
+## Releasing the Android app
+
+1. Create a release key once and keep it safe; Google Play and every update need the same key:
+   `keytool -genkeypair -keystore polint-release.keystore -alias polint -keyalg RSA -keysize 2048 -validity 10000`
+2. Add four repository secrets: `ANDROID_RELEASE_KEYSTORE_B64` (`base64 -w0 polint-release.keystore`),
+   `ANDROID_RELEASE_KEYSTORE_PASSWORD`, `ANDROID_RELEASE_KEY_ALIAS` and `ANDROID_RELEASE_KEY_PASSWORD`.
+3. Tag a version on `main` and push it: `git tag v1.0.0 && git push origin v1.0.0`.
+
+The `Release Android app` workflow builds `PolInt-1.0.0.apk` and `PolInt-1.0.0.aab`
+(version code 10000 for 1.0.0, 10100 for 1.1.0) and attaches both to a GitHub release.
+To build locally: `npm run build:mobile`, then `cd android && ./gradlew assembleRelease`
+with `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and
+`ANDROID_KEY_PASSWORD` set.

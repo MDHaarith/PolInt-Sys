@@ -7,10 +7,11 @@ import {
   seedPoliticians, seedParties, generateEventGraphData, seedAdministrations 
 } from "./data/politicalDatabase";
 import { mergeTimeFabricData } from "./data/timeFabricData";
+import { minimizeApp, onBackButton } from "./native";
 import { fullIntelFile, isMobileBuild, loadData, normalizeStory, recentIntelFile, statusFile, storylinesFile } from "./dataSource";
 import { relativeTime, formatDateTime, textLanguage, indianNumber } from "./components/dateLabels";
 import { 
-  Users, GitBranch, Search, ChevronRight, Newspaper, ClipboardList, RefreshCw, ChevronDown
+  Users, GitBranch, Search, ChevronRight, Newspaper, Sun, Moon, Monitor, ClipboardList, RefreshCw, ChevronDown
 } from "lucide-react";
 
 // Helper to determine deceased politician end year of political activity
@@ -325,6 +326,29 @@ export default function App() {
     document.querySelector("#main-content")?.scrollTo(0, 0);
   }, [workspaceMode, selectedPoliticianId, focusedEventId]);
 
+  // Android's back button walks back through visited screens before leaving the app.
+  const historyRef = useRef(["intelligence"]);
+  const goingBackRef = useRef(false);
+  useEffect(() => {
+    const stack = historyRef.current;
+    if (goingBackRef.current) goingBackRef.current = false;
+    else if (stack[stack.length - 1] !== workspaceMode) historyRef.current = [...stack, workspaceMode].slice(-20);
+  }, [workspaceMode]);
+  useEffect(() => onBackButton(() => {
+    if (directoryOpen) {
+      setDirectoryOpen(false);
+      return;
+    }
+    const stack = historyRef.current;
+    if (stack.length > 1) {
+      historyRef.current = stack.slice(0, -1);
+      goingBackRef.current = true;
+      setWorkspaceMode(historyRef.current[historyRef.current.length - 1]);
+    } else {
+      minimizeApp();
+    }
+  }), [directoryOpen]);
+
 
   const showToast = useCallback((message, type = "info") => {
     setToast({ show: true, message, type });
@@ -370,8 +394,11 @@ export default function App() {
       if (intel.status === "rejected") throw intel.reason;
       if (!Array.isArray(intel.value?.news)) throw new Error("The intelligence snapshot has no story list");
       const freshIntel = intel.value;
-      const updatedAt = status?.generatedAt || freshIntel.coverageMeta?.lastSnapshotAt || freshIntel.coverageMeta?.lastRunAt;
+      // Each file falls back to its bundled copy on its own, so the stories carry their own age.
+      const updatedAt = freshIntel.coverageMeta?.lastSnapshotAt || freshIntel.coverageMeta?.lastRunAt || status?.generatedAt;
       const snapshotTime = Date.parse(updatedAt) || 0;
+      // Only remember a status that matches the stories in hand; otherwise the next poll retries.
+      const statusMatches = Boolean(status && status.generatedAt === freshIntel.coverageMeta?.lastSnapshotAt);
       // The mobile loader can fall back to an older bundled snapshot after a network failure.
       if (isMobileBuild && snapshotTime < latestSnapshotTimeRef.current) {
         setOffline(true);
@@ -381,10 +408,10 @@ export default function App() {
       if (threads.status === "fulfilled") setStorylines(threads.value);
       applyFreshIntel(freshIntel, updatedAt);
       latestSnapshotTimeRef.current = snapshotTime;
-      statusRef.current = status;
+      statusRef.current = statusMatches ? status : null;
       setIntelStatus(status);
       setIntelLoadState("ready");
-      setOffline(!navigator.onLine || fabric.status === "rejected");
+      setOffline(!navigator.onLine || fabric.status === "rejected" || !statusMatches);
       setNow(Date.now());
       const added = (status?.rawItemCount || 0) - (previous?.rawItemCount || 0);
       if (previous && added > 0) showToast(`${indianNumber(added)} new stories loaded`, "success");
@@ -392,7 +419,7 @@ export default function App() {
         // Dossiers need the full archive; it streams in after the recent stories render.
         loadData(fullIntelFile)
           .then(full => {
-            if (statusRef.current === status && Array.isArray(full?.news)) applyFreshIntel(full, updatedAt);
+            if (latestSnapshotTimeRef.current === snapshotTime && Array.isArray(full?.news)) applyFreshIntel(full, updatedAt);
           })
           .catch(error => console.warn("Full archive unavailable; showing recent stories:", error));
       }
@@ -539,6 +566,15 @@ export default function App() {
               {offline ? (db.lastIntelSync ? "Offline · showing saved data" : "Offline · unable to load feed") : refreshing ? "Checking for updates…" : db.intelUpdatedAt ? `Updated ${relativeTime(db.intelUpdatedAt, now)}` : "Saved intelligence snapshot"}
             </span>
           </div>
+          <button
+            type="button"
+            className="app-theme-btn"
+            onClick={() => setTheme(current => ({ light: "dark", dark: "system", system: "light" })[current])}
+            aria-label={`Theme: ${theme}. Switch theme`}
+            title={`Theme: ${theme}`}
+          >
+            {theme === "light" ? <Sun size={18} aria-hidden="true" /> : theme === "dark" ? <Moon size={18} aria-hidden="true" /> : <Monitor size={18} aria-hidden="true" />}
+          </button>
           <button type="button" className="app-refresh-btn" onClick={() => refreshIntel({ force: true })} disabled={refreshing} aria-label={refreshing ? "Refreshing intelligence" : "Refresh intelligence"} title="Refresh intelligence">
             <RefreshCw size={18} className={refreshing ? "spin-icon" : ""} aria-hidden="true" />
           </button>
