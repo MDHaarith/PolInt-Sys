@@ -10,7 +10,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let scraperStatus = "idle";
 let lastCompleted = null;
 let scraperTimerStarted = false;
-const intelPath = path.join(__dirname, 'public', 'scrapedIntel.json');
+// The pipeline writes this small summary next to the 25k-story snapshot; parsing the
+// snapshot itself on every status poll took seconds.
+const statusPath = path.join(__dirname, 'public', 'intelStatus.json');
 const pipelinePython = fs.existsSync(path.join(__dirname, '.venv', 'bin', 'python'))
   ? path.join(__dirname, '.venv', 'bin', 'python')
   : 'python3';
@@ -18,14 +20,13 @@ const MIN_SCRAPE_INTERVAL_MS = 30 * 60 * 1000;
 
 const readIntelStatus = () => {
   try {
-    const raw = fs.readFileSync(intelPath, 'utf8');
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
     return {
-      newsCount: Array.isArray(parsed.news) ? parsed.news.length : 0,
-      policyCount: Array.isArray(parsed.news) ? parsed.news.filter(item => item.category === 'policy').length : 0,
-      mlas: Array.isArray(parsed.mlas) ? parsed.mlas.length : 0,
-      updatedAt: fs.statSync(intelPath).mtime.toISOString(),
-      currentAssembly: parsed.currentAssembly || null,
+      newsCount: parsed.rawItemCount || 0,
+      eventCount: parsed.eventCount || 0,
+      mlas: parsed.mlaCount || 0,
+      updatedAt: parsed.generatedAt || fs.statSync(statusPath).mtime.toISOString(),
+      collectorHealth: parsed.collectorHealth || [],
       coverageMeta: parsed.coverageMeta || {
         storyTarget: 100000,
         autoReloadThreshold: 10,
@@ -35,10 +36,10 @@ const readIntelStatus = () => {
   } catch {
     return {
       newsCount: 0,
-      policyCount: 0,
+      eventCount: 0,
       mlas: 0,
       updatedAt: null,
-      currentAssembly: null,
+      collectorHealth: [],
       coverageMeta: {
         storyTarget: 100000,
         autoReloadThreshold: 10,

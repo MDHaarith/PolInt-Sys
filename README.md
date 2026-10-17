@@ -40,6 +40,13 @@ Run a bounded smoke collection:
   --max-rss-queries 10 --max-social-queries 5 --social-limit 5
 ```
 
+Snapshots publish a flat story record (`id`, `url`, `snippet`, `publishedAt`,
+`imageUrl`, `alsoReportedBy`, …). Broad publisher feeds and keyword social
+searches are filtered to items with a political signal or a tracked politician,
+syndicated copies of one headline collapse into a single story, and automatic
+timeline events are rebuilt each run by clustering headlines per person, type
+and day.
+
 The original `scripts/scrape_political_intel.py` remains available as the
 legacy collector implementation used by the integrated adapters.
 

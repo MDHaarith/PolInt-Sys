@@ -13,9 +13,10 @@ test('mobile refreshes use the public branch and keep the cache buster', async (
     urls.push(url);
     return { ok: true, json: async () => ({ current: true }) };
   });
-  const { loadData, intelFile } = await loadModule({ MODE: 'mobile' });
-  assert.equal(intelFile, '/scrapedIntel.mobile.json');
-  await loadData(intelFile);
+  const { loadData, recentIntelFile, fullIntelFile } = await loadModule({ MODE: 'mobile' });
+  assert.equal(recentIntelFile, '/scrapedIntel.mobile.json');
+  assert.equal(fullIntelFile, null);
+  await loadData(recentIntelFile);
   await loadData('/timeFabric.json');
   assert.match(urls[0], /^https:\/\/raw\.githubusercontent\.com\/MDHaarith\/PolInt-Sys\/live-data\/scrapedIntel\.mobile\.json\?t=\d+$/);
   assert.match(urls[1], /\/live-data\/timeFabric\.json\?t=\d+$/);
@@ -38,14 +39,30 @@ test('mobile keeps the LAN override and falls back when remote JSON fails', asyn
   assert.match(urls[1], /^\/timeFabric\.json\?t=/);
 });
 
-test('web builds continue to load the full feed locally', async (t) => {
+test('web builds load the recent snapshot then the full archive locally', async (t) => {
   const urls = [];
   t.mock.method(globalThis, 'fetch', async (url) => {
     urls.push(url);
     return { ok: true, json: async () => ({ news: [] }) };
   });
-  const { loadData, intelFile } = await loadModule({ MODE: 'production' });
-  assert.equal(intelFile, '/scrapedIntel.json');
-  await loadData(intelFile);
+  const { loadData, recentIntelFile, fullIntelFile } = await loadModule({ MODE: 'production' });
+  assert.equal(recentIntelFile, '/scrapedIntel.mobile.json');
+  assert.equal(fullIntelFile, '/scrapedIntel.json');
+  await loadData(fullIntelFile);
   assert.match(urls[0], /^\/scrapedIntel\.json\?t=/);
+});
+
+test('legacy warehouse-shaped stories are lifted into the flat shape', async () => {
+  const { normalizeStory } = await loadModule({ MODE: 'production' });
+  const story = normalizeStory({
+    canonicalUrl: 'https://example.test/a', title: 'T', publishedAtRaw: '2026-10-16T09:00:00Z',
+    rawMetadata: { id: 'scraped_1', url: 'https://example.test/a', snippet: 'News coverage regarding X from X.', isRumor: false },
+  });
+  assert.equal(story.id, 'scraped_1');
+  assert.equal(story.url, 'https://example.test/a');
+  assert.equal(story.publishedAt, '2026-10-16T09:00:00Z');
+  assert.equal(story.snippet, '');
+  assert.equal(story.rawMetadata, undefined);
+  const flat = { id: 'x', title: 'Flat' };
+  assert.equal(normalizeStory(flat), flat);
 });

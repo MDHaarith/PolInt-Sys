@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import html
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 
 from .assembly_status import apply_current_assembly_status
+from .classify import classify_category, is_political, reports_hearsay
 from .models import to_sortable_timestamp
+from .people import canonical_politician_id, resolve_politician
 from .warehouse import IntelligenceWarehouse, now_utc_iso
 
 MOBILE_NEWS_LIMIT = 3000
@@ -56,17 +60,100 @@ def atomic_write_json(path: str | Path, value, validator=None) -> None:
         raise
 
 
-def _legacy_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
-    rows = warehouse.connection.execute(
+_PLACEHOLDER_SNIPPET = re.compile(r"^News coverage regarding .* from .*\.$")
+# Broad sources whose items are only published when they carry a political signal.
+_FILTERED_SOURCE_TYPES = {"publisher_rss", "bluesky_search", "reddit_search", "pullpush_reddit_search"}
+
+
+def _title_key(title: str) -> str:
+    return re.sub(r"[\W_]+", " ", title.lower()).strip()
+
+
+def _repeats_title(snippet: str, title: str) -> bool:
+    # Google News descriptions are the headline followed by the outlet name.
+    text, headline = _title_key(snippet), _title_key(title)
+    return text == headline or (text.startswith(headline) and len(text) - len(headline) < 40)
+
+
+def frontend_news_record(row) -> dict | None:
+    """Flatten a warehouse row into the record shape the app reads.
+
+    Collected items store the warehouse dict with the collector's original record
+    nested under rawMetadata; legacy imports store the original record directly.
+    """
+    stored = json.loads(row["raw_metadata_json"] or "{}")
+    original = stored.get("rawMetadata") if isinstance(stored.get("rawMetadata"), dict) else stored
+    title = (row["title"] or original.get("title") or "").strip()
+    if not title or title == row["canonical_url"]:
+        return None
+    snippet = " ".join(html.unescape(original.get("snippet") or original.get("body") or row["body"] or "").split())
+    if _PLACEHOLDER_SNIPPET.match(snippet) or _repeats_title(snippet, title):
+        snippet = ""
+    source_type = original.get("sourceType") or row["collector"]
+    story_text = f"{title} {snippet}"
+    politician_id = canonical_politician_id(original.get("politicianId") or row["politician_id"]) or "general"
+    if politician_id == "general":
+        politician_id = resolve_politician(story_text) or "general"
+    if source_type in _FILTERED_SOURCE_TYPES and politician_id == "general" and not is_political(story_text):
+        return None
+    is_social = bool(row["is_social"])
+    category = "social_media" if is_social else classify_category(story_text)
+    # Older collections flagged reports from the search query text, not the story.
+    verification = original.get("verificationStatus") or row["verification_status"]
+    if not is_social and verification in ("source_reported", "unverified_chatter"):
+        verification = "unverified_chatter" if reports_hearsay(story_text) else "source_reported"
+    published = row["published_at"]
+    record = {
+        "id": original.get("id") or row["external_id"] or row["id"],
+        "rawId": row["id"],
+        "title": title,
+        "snippet": snippet,
+        "url": original.get("url") or row["canonical_url"],
+        "source": original.get("source") or "Unknown source",
+        "sourceType": source_type,
+        "platform": original.get("platform") or row["platform"],
+        "category": category,
+        "politicianId": politician_id,
+        "publishedAt": published,
+        "date": published,
+        "retrievedAt": row["retrieved_at"],
+        "verificationStatus": verification,
+        "isRumor": verification == "unverified_chatter",
+    }
+    for key in ("imageUrl", "engagement", "author", "language"):
+        if original.get(key):
+            record[key] = original[key]
+    return {key: value for key, value in record.items() if value not in (None, "")}
+
+
+def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
+    cursor = warehouse.connection.execute(
         """
-        SELECT raw_metadata_json
+        SELECT id, canonical_url, collector, platform, external_id, title, body,
+               published_at, retrieved_at, politician_id, verification_status,
+               is_social, raw_metadata_json
         FROM raw_items
         ORDER BY published_at IS NULL, published_at DESC, retrieved_at DESC, id DESC
-        LIMIT ?
-        """,
-        (limit,),
-    ).fetchall()
-    return [json.loads(row["raw_metadata_json"]) for row in rows]
+        """
+    )
+    news = []
+    by_title = {}
+    for row in cursor:
+        record = frontend_news_record(row)
+        if record is None:
+            continue
+        # Syndicated copies of one story collapse into the newest report.
+        key = _title_key(record["title"])
+        lead = by_title.get(key)
+        if lead is not None:
+            if record["source"] != lead["source"] and len(lead.setdefault("alsoReportedBy", [])) < 6:
+                lead["alsoReportedBy"].append({"source": record["source"], "url": record.get("url")})
+            continue
+        by_title[key] = record
+        news.append(record)
+        if len(news) >= limit:
+            break
+    return news
 
 
 def _event_rows(warehouse: IntelligenceWarehouse) -> list[dict]:
@@ -188,7 +275,7 @@ def generate_snapshots(
     }
 
     compatibility = {
-        "news": _legacy_news(warehouse, recent_news_limit),
+        "news": _frontend_news(warehouse, recent_news_limit),
         "evidence": warehouse.get_state("evidence", []),
         "mlas": warehouse.get_state("mlas", []),
         "rosterMeta": warehouse.get_state("rosterMeta"),
