@@ -1,17 +1,16 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import PoliticianSpace from "./components/PoliticianSpace";
 import EventGraph from "./components/EventGraph";
-import AssemblyDashboard from "./components/AssemblyDashboard";
 import IntelligenceFeed from "./components/IntelligenceFeed";
 import PolicyImpactDashboard from "./components/PolicyImpactDashboard";
 import { 
-  seedPoliticians, seedParties, generateEventGraphData, seedAdministrations, generateAssemblySeats 
+  seedPoliticians, seedParties, generateEventGraphData, seedAdministrations 
 } from "./data/politicalDatabase";
 import { mergeTimeFabricData } from "./data/timeFabricData";
-import { intelFile, isMobileBuild, loadData } from "./dataSource";
+import { fullIntelFile, isMobileBuild, loadData, normalizeStory, recentIntelFile, statusFile, storylinesFile } from "./dataSource";
 import { relativeTime, formatDateTime, textLanguage, indianNumber } from "./components/dateLabels";
 import { 
-  Users, GitBranch, Search, ChevronRight, LayoutDashboard, Newspaper, ClipboardList, RefreshCw, ChevronDown
+  Users, GitBranch, Search, ChevronRight, Newspaper, ClipboardList, RefreshCw, ChevronDown
 } from "lucide-react";
 
 // Helper to determine deceased politician end year of political activity
@@ -136,7 +135,7 @@ const canonicalizePoliticianId = (politicianId, aliases) => {
 };
 
 const normalizeIntelRecords = (records = [], aliases = {}) =>
-  records.map(item => {
+  records.map(normalizeStory).map(item => {
     const canonicalPoliticianId = canonicalizePoliticianId(item.politicianId, aliases);
     if (canonicalPoliticianId === item.politicianId) return item;
     return {
@@ -282,7 +281,6 @@ export default function App() {
       politicians: seedPoliticians,
       parties: seedParties,
       administrations: seedAdministrations,
-      seats: generateAssemblySeats(seedPoliticians),
       news: [],
       rosterMeta: null,
       intelUpdatedAt: null,
@@ -290,7 +288,7 @@ export default function App() {
     };
   });
 
-  const [workspaceMode, setWorkspaceMode] = useState("intelligence"); // "dashboard" | "intelligence" | "policies" | "politician" | "events"
+  const [workspaceMode, setWorkspaceMode] = useState("intelligence"); // "intelligence" | "policies" | "politician" | "events"
   const [theme, setTheme] = useState(() => {
     try { return ["light", "dark", "system"].includes(localStorage.getItem("polint-theme")) ? localStorage.getItem("polint-theme") : "light"; }
     catch { return "light"; }
@@ -309,8 +307,11 @@ export default function App() {
   }, [theme]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAdminId, setSelectedAdminId] = useState("all");
-  const [selectedPoliticianId, setSelectedPoliticianId] = useState("mk_stalin");
+  // Opens on the sitting Chief Minister.
+  const [selectedPoliticianId, setSelectedPoliticianId] = useState("vijay");
   const [timeFabricSnapshot, setTimeFabricSnapshot] = useState(null);
+  const [storylines, setStorylines] = useState(null);
+  const [intelStatus, setIntelStatus] = useState(null);
   const [focusedEventId, setFocusedEventId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "info" });
   const [directoryOpen, setDirectoryOpen] = useState(false);
@@ -332,17 +333,15 @@ export default function App() {
     }, 4000);
   }, []);
 
-  const latestNewsCountRef = useRef(0);
+  const statusRef = useRef(null);
   const latestSnapshotTimeRef = useRef(0);
 
   const applyFreshIntel = useCallback((freshIntel, updatedAt) => {
     const aliases = buildPoliticianIdAliases(freshIntel.mlas || []);
     const merged = mergeIntelAndRoster(freshIntel, seedPoliticians);
-    latestNewsCountRef.current = freshIntel.news?.length || 0;
     setDb(prev => ({
       ...prev,
       politicians: merged,
-      seats: generateAssemblySeats(merged),
       news: normalizeIntelRecords(freshIntel.news || [], aliases),
       rosterMeta: freshIntel.rosterMeta || null,
       intelUpdatedAt: updatedAt,
@@ -350,23 +349,28 @@ export default function App() {
     }));
   }, []);
 
-  const refreshIntel = useCallback(async () => {
-    if (refreshingRef.current) return;
+  // Checks the small status file first and downloads stories only when a new snapshot exists.
+  const refreshIntel = useCallback(async ({ force = false } = {}) => {
+    if (refreshingRef.current) return false;
     refreshingRef.current = true;
     setRefreshing(true);
     try {
-      const [intel, fabric] = await Promise.allSettled([
-        loadData(intelFile),
+      const status = await loadData(statusFile).catch(() => null);
+      const previous = statusRef.current;
+      if (!force && status && previous && status.generatedAt === previous.generatedAt) {
+        setOffline(!navigator.onLine);
+        setNow(Date.now());
+        return false;
+      }
+      const [intel, fabric, threads] = await Promise.allSettled([
+        loadData(recentIntelFile),
         loadData("/timeFabric.json"),
+        loadData(storylinesFile),
       ]);
       if (intel.status === "rejected") throw intel.reason;
       if (!Array.isArray(intel.value?.news)) throw new Error("The intelligence snapshot has no story list");
       const freshIntel = intel.value;
-      const updatedAt = freshIntel.coverageMeta?.lastRunAt || freshIntel.coverageMeta?.generatedAt || freshIntel.generatedAt
-        || freshIntel.news.reduce((latest, story) => {
-          const date = story.publishedAt || story.date || story.retrievedAt;
-          return Date.parse(date) > (Date.parse(latest) || 0) ? date : latest;
-        }, null);
+      const updatedAt = status?.generatedAt || freshIntel.coverageMeta?.lastSnapshotAt || freshIntel.coverageMeta?.lastRunAt;
       const snapshotTime = Date.parse(updatedAt) || 0;
       // The mobile loader can fall back to an older bundled snapshot after a network failure.
       if (isMobileBuild && snapshotTime < latestSnapshotTimeRef.current) {
@@ -374,11 +378,24 @@ export default function App() {
         return false;
       }
       if (fabric.status === "fulfilled") setTimeFabricSnapshot(fabric.value);
+      if (threads.status === "fulfilled") setStorylines(threads.value);
       applyFreshIntel(freshIntel, updatedAt);
       latestSnapshotTimeRef.current = snapshotTime;
+      statusRef.current = status;
+      setIntelStatus(status);
       setIntelLoadState("ready");
       setOffline(!navigator.onLine || fabric.status === "rejected");
       setNow(Date.now());
+      const added = (status?.rawItemCount || 0) - (previous?.rawItemCount || 0);
+      if (previous && added > 0) showToast(`${indianNumber(added)} new stories loaded`, "success");
+      if (fullIntelFile) {
+        // Dossiers need the full archive; it streams in after the recent stories render.
+        loadData(fullIntelFile)
+          .then(full => {
+            if (statusRef.current === status && Array.isArray(full?.news)) applyFreshIntel(full, updatedAt);
+          })
+          .catch(error => console.warn("Full archive unavailable; showing recent stories:", error));
+      }
       return true;
     } catch (error) {
       console.warn("Intelligence refresh unavailable; keeping saved data:", error);
@@ -389,7 +406,7 @@ export default function App() {
       refreshingRef.current = false;
       setRefreshing(false);
     }
-  }, [applyFreshIntel]);
+  }, [applyFreshIntel, showToast]);
 
   useEffect(() => {
     let active = true;
@@ -401,7 +418,7 @@ export default function App() {
       if (document.visibilityState === "visible") void refreshIntel();
     };
     const markOffline = () => setOffline(true);
-    const interval = setInterval(refreshVisible, 10 * 60 * 1000);
+    const interval = setInterval(refreshVisible, 5 * 60 * 1000);
     const clock = setInterval(() => setNow(Date.now()), 60 * 1000);
     document.addEventListener("visibilitychange", refreshVisible);
     window.addEventListener("online", refreshVisible);
@@ -415,27 +432,6 @@ export default function App() {
       window.removeEventListener("offline", markOffline);
     };
   }, [refreshIntel]);
-
-  useEffect(() => {
-    if (isMobileBuild) return;
-    const pollIntelStatus = async () => {
-      try {
-        if (document.visibilityState !== "visible") return;
-        const res = await fetch(`/api/intel-status?t=${Date.now()}`);
-        if (!res.ok) return;
-        const status = await res.json();
-        const currentCount = latestNewsCountRef.current;
-        if (status.newsCount >= currentCount + 10) {
-          if (await refreshIntel()) showToast(`Loaded ${status.newsCount - currentCount} new intelligence items`, "success");
-        }
-      } catch (err) {
-        console.error("Error checking intelligence status:", err);
-      }
-    };
-
-    const interval = setInterval(pollIntelStatus, 60 * 1000);
-    return () => clearInterval(interval);
-  }, [refreshIntel, showToast]);
 
   // 1. Filter Politicians based on Selected Assembly and Search Query
   const filteredPoliticians = useMemo(() => {
@@ -543,14 +539,14 @@ export default function App() {
               {offline ? (db.lastIntelSync ? "Offline · showing saved data" : "Offline · unable to load feed") : refreshing ? "Checking for updates…" : db.intelUpdatedAt ? `Updated ${relativeTime(db.intelUpdatedAt, now)}` : "Saved intelligence snapshot"}
             </span>
           </div>
-          <button type="button" className="app-refresh-btn" onClick={refreshIntel} disabled={refreshing} aria-label={refreshing ? "Refreshing intelligence" : "Refresh intelligence"} title="Refresh intelligence">
+          <button type="button" className="app-refresh-btn" onClick={() => refreshIntel({ force: true })} disabled={refreshing} aria-label={refreshing ? "Refreshing intelligence" : "Refresh intelligence"} title="Refresh intelligence">
             <RefreshCw size={18} className={refreshing ? "spin-icon" : ""} aria-hidden="true" />
           </button>
         </div>
 
-        <label className="theme-control">Edition
+        <label className="theme-control">Theme
           <select aria-label="Appearance" value={theme} onChange={event => setTheme(event.target.value)}>
-            <option value="light">Paper</option><option value="dark">Ink</option><option value="system">System</option>
+            <option value="light">Light</option><option value="dark">Dark</option><option value="system">System</option>
           </select>
         </label>
 
@@ -591,15 +587,6 @@ export default function App() {
           >
             <GitBranch size={16} />
             <span className="mode-label-desktop">Timeline</span><span className="mode-label-mobile">Timeline</span>
-          </button>
-          <button 
-            className={`sidebar-mode-btn ${workspaceMode === "dashboard" ? "active" : ""}`}
-            aria-current={workspaceMode === "dashboard" ? "page" : undefined}
-            aria-label="Assembly Dashboard"
-            onClick={() => setWorkspaceMode("dashboard")}
-          >
-            <LayoutDashboard size={16} />
-            <span className="mode-label-desktop">Assembly</span><span className="mode-label-mobile">Assembly</span>
           </button>
         </nav>
 
@@ -704,55 +691,23 @@ export default function App() {
               )}
             </div>
           </div>
-        ) : workspaceMode === "dashboard" ? (
-          <div className="sidebar-overview" style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-            <span className="sidebar-section-title">Overview</span>
-            <p>Explore the Assembly</p>
-            <p>234 constituencies. One view of Tamil Nadu’s 17th Legislative Assembly.</p>
-            <p>Click any seat block on the canvas to inspect its MLA representative, party affiliation, assets, and criminal profile.</p>
-            <p>For representatives with pre-loaded profiles, click the button in the inspector card to open their full evidence dossier.</p>
-          </div>
-        ) : workspaceMode === "intelligence" ? (
-          <div className="sidebar-overview" style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-            <span className="sidebar-section-title">All News</span>
-            <p>The state of the story</p>
-            <p>Reporting and public signals, brought together in a searchable archive.</p>
-            <p>Use search and category filters to cut through live news, public social signals, elections, probes, and policy coverage.</p>
-          </div>
-        ) : workspaceMode === "policies" ? (
-          <div className="sidebar-overview" style={{ flex: 1, color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-            <span className="sidebar-section-title">Policy Tracker</span>
-            <p>Follow the impact</p>
-            <p>Discover how public schemes evolve across administrations.</p>
-            <p>Each item tracks origin, conversion, current custodian, impact watch points, and follow-up cadence.</p>
-          </div>
-        ) : (
-          <div className="sidebar-overview" style={{ flex: 1, color: "var(--text-muted)", fontSize: "0.82rem", lineHeight: 1.5, marginTop: "20px" }}>
-            <p>See the connections</p>
-            <p style={{ marginTop: "12px" }}>The timeline combines historical incidents, power shifts, scandals, and CM-wise policy lineage.</p>
-            <p style={{ marginTop: "12px" }}>Click any node to inspect fallout, successor policies, source links, and daily follow-up items.</p>
-          </div>
-        )}
+        ) : null}
       </aside>
 
       {/* 2. Center Workspace Panel: Dashboard OR Tabbed Profile Space OR Event Graph Canvas */}
       <main className="workspace-content-pane" id="main-content" aria-label="Selected workspace">
-        {workspaceMode === "dashboard" ? (
-          <AssemblyDashboard 
-            seats={db.seats}
-            parties={db.parties}
-            onSelectPolitician={handleSelectPolitician}
-          />
-        ) : workspaceMode === "intelligence" ? (
+        {workspaceMode === "intelligence" ? (
           <IntelligenceFeed
             news={db.news}
             politicians={db.politicians}
             parties={db.parties}
             events={eventNodes}
+            storylines={storylines}
             lastIntelSync={db.lastIntelSync}
             loading={intelLoadState === "loading"}
             loadError={intelLoadState === "error"}
-            onRefresh={refreshIntel}
+            onRefresh={() => refreshIntel({ force: true })}
+            status={intelStatus}
             refreshing={refreshing}
             now={now}
             onSelectPolitician={handleSelectPolitician}
@@ -767,6 +722,11 @@ export default function App() {
             parties={db.parties} 
             events={activePoliticianEvents}
             onSelectEvent={handleSelectEvent}
+            playbook={storylines?.people?.[activePolitician?.id]}
+            storylines={storylines}
+            now={now}
+            isKnownPolitician={(id) => db.politicians.some(p => p.id === id)}
+            onSelectPolitician={handleSelectPolitician}
           />
         ) : (
           <EventGraph 

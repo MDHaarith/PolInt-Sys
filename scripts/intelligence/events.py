@@ -7,6 +7,7 @@ from datetime import datetime
 from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 
+from .classify import is_political
 from .people import resolve_politician
 from .warehouse import now_utc_iso
 
@@ -28,7 +29,7 @@ EVENT_PATTERNS = [
     ("appointment", r"\bappoint(?:s|ed|ment)?\b|\bsworn in\b|\btakes? oath\b"),
     ("death", r"\bdies?\b|\bpasses? away\b|\bdeath of\b"),
     ("hospitalization", r"\bhospitali[sz](?:ed|ation)\b|\badmitted to hospital\b"),
-    ("policy", r"\blaunch(?:es|ed)?\b|\bscheme\b|\bgovernment order\b|\bg\.o\.\b|\bpolicy\b|\bsanction(?:s|ed)?\b"),
+    ("policy", r"\blaunch(?:es|ed)?\b(?! (?:\w+ ){0,3}(?:party|movement|outfit|attack|campaign|tirade)\b)|\bscheme\b|\bgovernment order\b|\bg\.o\.\b|\bpolicy\b|\bsanction(?:s|ed)?\b"),
     ("protest", r"\bprotest(?:s|ed|ers)?\b|\bdemonstration\b|\bhunger strike\b|\brally\b|\broad blockade\b"),
     ("speech", r"\baddresses?\b|\bspeech\b|\bpress meet\b|\bpress conference\b|\bremarks?\b"),
 ]
@@ -94,6 +95,41 @@ def stable_event_id(key: str) -> str:
     return f"event_auto_{hashlib.sha256(key.encode('utf-8')).hexdigest()[:18]}"
 
 
+_STOPWORDS = {
+    "the", "and", "for", "with", "from", "that", "this", "into", "over", "after", "amid",
+    "against", "about", "says", "said", "will", "has", "have", "had", "was", "were", "are",
+    "its", "his", "her", "their", "who", "what", "why", "how", "new", "news", "latest",
+    "tamil", "nadu", "chennai", "today", "live", "updates", "video",
+}
+
+
+def headline_tokens(title: str) -> frozenset[str]:
+    # Five-letter prefixes are a cheap stemmer: "detained"/"detain", "arrest"/"arrested".
+    words = re.findall(r"[^\W\d_]{3,}", (title or "").lower())
+    return frozenset(word[:5] for word in words if word not in _STOPWORDS)
+
+
+def same_story(left: frozenset[str], right: frozenset[str]) -> bool:
+    shared = len(left & right)
+    return shared >= 2 and shared / max(1, min(len(left), len(right))) >= 0.5
+
+
+def cluster_candidates(candidates: list[dict]) -> list[list[dict]]:
+    """Split reports of one (person, type, day) into separate stories by headline overlap."""
+    clusters: list[tuple[list[frozenset[str]], list[dict]]] = []
+    for candidate in candidates:
+        tokens = headline_tokens(candidate["title"])
+        for signatures, members in clusters:
+            if any(same_story(tokens, signature) for signature in signatures):
+                members.append(candidate)
+                if len(signatures) < 6:
+                    signatures.append(tokens)
+                break
+        else:
+            clusters.append(([tokens], [candidate]))
+    return [members for _, members in clusters]
+
+
 class EventExtractor:
     def __init__(self, warehouse):
         self.warehouse = warehouse
@@ -110,11 +146,17 @@ class EventExtractor:
         ).fetchall()
         candidates = []
         for row in rows:
+            # Crawled pages with no publication date are reference text, not events.
+            if not row["published_at"] or row["title"] == row["canonical_url"]:
+                continue
             combined = f"{row['title']} {row['body']}"
             event_type = detect_event_type(combined)
             if not event_type:
                 continue
             politician_id = resolve_politician(combined, row["politician_id"])
+            # Crime and court stories enter the timeline only when they touch politics.
+            if politician_id is None and not is_political(row["title"]):
+                continue
             occurred_at, precision, year = normalize_date(row["published_at"])
             candidates.append(
                 {
@@ -137,18 +179,25 @@ class EventExtractor:
         return candidates
 
     def extract_all(self) -> dict:
-        groups = {}
+        buckets = {}
         for candidate in self._candidates():
             key = event_key(
                 candidate["politician_id"],
                 candidate["event_type"],
                 candidate["occurred_at"],
             )
-            groups.setdefault(key, []).append(candidate)
+            buckets.setdefault(key, []).append(candidate)
+        groups = {}
+        for key, bucket in buckets.items():
+            for index, cluster in enumerate(cluster_candidates(bucket)):
+                # The first story keeps the bare key so curated and existing ids stay stable.
+                groups[key if index == 0 else f"{key}|{cluster[0]['raw_item_id']}"] = cluster
 
         upserted = 0
         social_only = 0
         with self.warehouse.transaction():
+            # Automatic events are rebuilt from evidence each run so stale merges disappear.
+            self.warehouse.connection.execute("DELETE FROM events WHERE is_curated = 0")
             for key, candidates in groups.items():
                 non_social = [item for item in candidates if not item["is_social"]]
                 if not non_social:

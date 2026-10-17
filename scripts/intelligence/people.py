@@ -1,35 +1,162 @@
 from __future__ import annotations
 
-DEFAULT_ALIASES = {
-    "m_karunanidhi": ["m. karunanidhi", "karunanidhi", "kalaignar"],
-    "j_jayalalithaa": ["j. jayalalithaa", "jayalalithaa", "amma"],
-    "m_g_ramachandran": ["m. g. ramachandran", "m.g.r.", "mgr"],
-    "mk_stalin": ["m. k. stalin", "m.k. stalin", "mk stalin", "stalin"],
-    "seeman": ["seeman"],
-    "vijay": ["c. joseph vijay", "joseph vijay", "vijay", "thalapathy"],
-    "edappadi_palaniswami": [
-        "edappadi k. palaniswami",
-        "edappadi palaniswami",
-        "palaniswami",
-        "eps",
-    ],
-    "o_panneerselvam": ["o. panneerselvam", "panneerselvam", "ops"],
-    "k_annamalai": ["k. annamalai", "annamalai"],
-    "v_k_sasikala": ["v. k. sasikala", "v.k. sasikala", "sasikala"],
-    "thol_thirumavalavan": ["thol. thirumavalavan", "thirumavalavan"],
-    "udhayanidhi_stalin": ["udhayanidhi stalin", "udhayanidhi"],
+import re
+
+# Scraper ids that predate the frontend dossier ids they describe.
+LEGACY_POLITICIAN_IDS = {
+    "m_k_alagiri": "mk_alagiri",
+    "palanivel_thiaga_rajan": "ptr",
+    "cv_shanmugam": "c_ve_shanmugam",
 }
+
+DEFAULT_ALIASES = {
+    "m_karunanidhi": ["m. karunanidhi", "karunanidhi", "kalaignar", "கருணாநிதி", "கலைஞர்"],
+    "j_jayalalithaa": ["j. jayalalithaa", "jayalalithaa", "jayalalitha", "ஜெயலலிதா"],
+    "m_g_ramachandran": ["m. g. ramachandran", "m.g.r.", "mgr", "எம்ஜிஆர்"],
+    "mk_stalin": ["m. k. stalin", "m.k. stalin", "mk stalin", "stalin", "மு.க.ஸ்டாலின்", "மு.க. ஸ்டாலின்", "ஸ்டாலின்"],
+    "seeman": ["seeman", "சீமான்"],
+    "vijay": [
+        "c. joseph vijay", "joseph vijay", "cm vijay", "chief minister vijay",
+        "tvk chief", "thalapathy", "vijay", "விஜய்",
+    ],
+    "edappadi_palaniswami": [
+        "edappadi k. palaniswami", "edappadi palaniswami", "palaniswami",
+        "edappadi", "EPS", "எடப்பாடி பழனிசாமி", "எடப்பாடி கே.பழனிசாமி", "எடப்பாடி", "பழனிசாமி",
+    ],
+    "o_panneerselvam": ["o. panneerselvam", "panneerselvam", "OPS", "பன்னீர்செல்வம்"],
+    "k_annamalai": ["k. annamalai", "annamalai", "அண்ணாமலை"],
+    "v_k_sasikala": ["v. k. sasikala", "v.k. sasikala", "sasikala", "சசிகலா"],
+    "thol_thirumavalavan": ["thol. thirumavalavan", "thirumavalavan", "திருமாவளவன்"],
+    "udhayanidhi_stalin": ["udhayanidhi stalin", "udhayanidhi", "உதயநிதி ஸ்டாலின்", "உதயநிதி"],
+    "anbumani_ramadoss": ["anbumani ramadoss", "anbumani", "அன்புமணி"],
+    "s_ramadoss": ["s. ramadoss", "ramadoss", "ராமதாஸ்"],
+    "vaiko": ["vaiko", "வைகோ"],
+    "kanimozhi": ["kanimozhi", "கனிமொழி"],
+    "senthil_balaji": ["senthil balaji", "செந்தில் பாலாஜி"],
+    "duraimurugan": ["duraimurugan", "durai murugan", "துரைமுருகன்"],
+    "kamal_haasan": ["kamal haasan", "kamal hassan", "கமல்ஹாசன்"],
+    "ttv_dhinakaran": ["ttv dhinakaran", "t.t.v. dhinakaran", "dhinakaran", "தினகரன்"],
+    "a_raja": ["a. raja"],
+    "tr_baalu": ["t. r. baalu", "t.r. baalu", "tr baalu"],
+    "ptr": ["palanivel thiaga rajan", "palanivel thiagarajan", "ptr"],
+    "sp_velumani": ["s.p. velumani", "sp velumani", "velumani", "வேலுமணி"],
+    "k_ponmudy": ["ponmudy", "ponmudi", "பொன்முடி"],
+    "tamilisai": ["tamilisai", "தமிழிசை"],
+    # Frequently quoted leaders without a dossier yet; tracked so headlines
+    # about them are not credited to the person they answer.
+    "nainar_nagendran": ["nainar nagendran", "nainar", "நயினார் நாகேந்திரன்", "நயினார்"],
+    "aadhav_arjuna": ["aadhav arjuna", "aadhav arjun", "ஆதவ் அர்ஜுனா", "ஆதவ் அர்ஜுன்"],
+    "bussy_anand": ["bussy anand", "bussy n. anand", "புஸ்ஸி ஆனந்த்"],
+    "manickam_tagore": ["manickam tagore", "மாணிக்கம் தாகூர்"],
+    "selvaperunthagai": ["selvaperunthagai", "செல்வப்பெருந்தகை"],
+    "rahul_gandhi": ["rahul gandhi", "ராகுல் காந்தி"],
+    "l_murugan": ["l. murugan", "l murugan", "union minister murugan", "murugan", "எல்.முருகன்"],
+    "premalatha_vijayakanth": ["premalatha vijayakanth", "premalatha", "பிரேமலதா"],
+    "sengottaiyan": ["sengottaiyan", "செங்கோட்டையன்"],
+}
+
+# Party of each tracked politician, as recorded in the frontend dossiers.
+POLITICIAN_PARTY = {
+    "m_karunanidhi": "dmk", "j_jayalalithaa": "aiadmk", "m_g_ramachandran": "aiadmk",
+    "mk_stalin": "dmk", "seeman": "ntk", "vijay": "tvk", "edappadi_palaniswami": "aiadmk",
+    "o_panneerselvam": "ind", "k_annamalai": "tdk", "v_k_sasikala": "ind",
+    "thol_thirumavalavan": "vck", "udhayanidhi_stalin": "dmk", "anbumani_ramadoss": "pmk",
+    "s_ramadoss": "pmk", "vaiko": "mdmk", "kanimozhi": "dmk", "senthil_balaji": "dmk",
+    "duraimurugan": "dmk", "kamal_haasan": "mnm", "ttv_dhinakaran": "ammk", "a_raja": "dmk",
+    "tr_baalu": "dmk", "ptr": "dmk", "sp_velumani": "aiadmk", "k_ponmudy": "dmk",
+    "tamilisai": "bjp", "mk_alagiri": "ind", "c_ve_shanmugam": "aiadmk",
+    "nainar_nagendran": "bjp", "aadhav_arjuna": "tvk", "bussy_anand": "tvk",
+    "manickam_tagore": "congress", "selvaperunthagai": "congress", "rahul_gandhi": "congress",
+    "l_murugan": "bjp", "premalatha_vijayakanth": "dmdk", "sengottaiyan": "tvk",
+}
+
+POLITICIAN_NAMES = {
+    "m_karunanidhi": "M. Karunanidhi", "j_jayalalithaa": "J. Jayalalithaa",
+    "m_g_ramachandran": "M. G. Ramachandran", "mk_stalin": "M. K. Stalin", "seeman": "Seeman",
+    "vijay": "Vijay", "edappadi_palaniswami": "Edappadi K. Palaniswami",
+    "o_panneerselvam": "O. Panneerselvam", "k_annamalai": "K. Annamalai",
+    "v_k_sasikala": "V. K. Sasikala", "thol_thirumavalavan": "Thol. Thirumavalavan",
+    "udhayanidhi_stalin": "Udhayanidhi Stalin", "anbumani_ramadoss": "Anbumani Ramadoss",
+    "s_ramadoss": "S. Ramadoss", "vaiko": "Vaiko", "kanimozhi": "Kanimozhi",
+    "senthil_balaji": "V. Senthil Balaji", "duraimurugan": "Duraimurugan",
+    "kamal_haasan": "Kamal Haasan", "ttv_dhinakaran": "T. T. V. Dhinakaran", "a_raja": "A. Raja",
+    "tr_baalu": "T. R. Baalu", "ptr": "Palanivel Thiaga Rajan", "sp_velumani": "S. P. Velumani",
+    "k_ponmudy": "K. Ponmudy", "tamilisai": "Tamilisai Soundararajan",
+    "mk_alagiri": "M. K. Alagiri", "c_ve_shanmugam": "C. Ve. Shanmugam",
+    "nainar_nagendran": "Nainar Nagendran", "aadhav_arjuna": "Aadhav Arjuna",
+    "bussy_anand": "Bussy N. Anand", "manickam_tagore": "Manickam Tagore",
+    "selvaperunthagai": "K. Selvaperunthagai", "rahul_gandhi": "Rahul Gandhi",
+    "l_murugan": "L. Murugan", "premalatha_vijayakanth": "Premalatha Vijayakanth",
+    "sengottaiyan": "K. A. Sengottaiyan",
+}
+
+# Other public figures who share an alias with a tracked politician.
+_ALIAS_EXCLUSIONS = {
+    "vijay": r"(?:\s+(?:sethupathi|antony|deverakonda|shankar|hazare|mallya|varma|yesudas|vasanth|milton|amritraj)|\s+kumar\s+sinha)",
+    "stalin": r"(?:grad|ist|ism)",
+    "murugan": r"(?:\s+(?:temple|kovil|koil|shrine|devotees?)|\s+idol)",
+    "விஜய": r"(?:காந்த|குமார|பாஸ்கர|சேதுபதி)",
+}
+
+
+def _alias_pattern(alias: str) -> re.Pattern:
+    # Tamil names take case suffixes ("ஸ்டாலின்" -> "ஸ்டாலினின்"), so match the
+    # stem without its final virama.
+    if re.search(r"[஀-௿]", alias):
+        stem = alias.removesuffix("்")
+        exclusion = _ALIAS_EXCLUSIONS.get(stem, "")
+        return re.compile(re.escape(stem) + (f"(?!{exclusion})" if exclusion else ""))
+    exclusion = _ALIAS_EXCLUSIONS.get(alias.lower(), "")
+    suffix = f"(?!{exclusion})" if exclusion else ""
+    # Upper-case acronyms (EPS, OPS) only count when written as acronyms.
+    flags = 0 if alias.isupper() else re.IGNORECASE
+    return re.compile(rf"(?<![\w.]){re.escape(alias)}(?!\w){suffix}", flags)
+
+
+_ALIAS_PATTERNS = [
+    (politician_id, len(alias), _alias_pattern(alias))
+    for politician_id, aliases in DEFAULT_ALIASES.items()
+    for alias in aliases
+]
+
+
+def canonical_politician_id(politician_id: str | None) -> str | None:
+    return LEGACY_POLITICIAN_IDS.get(politician_id, politician_id)
+
+
+def politician_mentions(text: str) -> list[tuple[int, int, str]]:
+    """(start, end, politician id) for each name in the text, left to right.
+
+    A shorter alias inside a longer one ("Stalin" in "Udhayanidhi Stalin") is
+    not a separate mention.
+    """
+    spans = []
+    for politician_id, _, pattern in _ALIAS_PATTERNS:
+        for match in pattern.finditer(text or ""):
+            spans.append((match.start(), -(match.end() - match.start()), match.end(), politician_id))
+    spans.sort()
+    mentions = []
+    covered_until = -1
+    for start, _, end, politician_id in spans:
+        if start < covered_until:
+            continue
+        covered_until = end
+        mentions.append((start, end, politician_id))
+    return mentions
+
+
+def mentioned_politicians(text: str) -> list[str]:
+    """Tracked politicians in the order the text first names them."""
+    ordered: list[str] = []
+    for _, _, politician_id in politician_mentions(text):
+        if politician_id not in ordered:
+            ordered.append(politician_id)
+    return ordered
 
 
 def resolve_politician(text: str, explicit_id: str | None = None) -> str | None:
     if explicit_id and explicit_id != "general":
-        return explicit_id
-    lowered = f" {text.lower()} "
-    matches = []
-    for politician_id, aliases in DEFAULT_ALIASES.items():
-        for alias in aliases:
-            marker = f" {alias.lower()} "
-            if marker in lowered:
-                matches.append((len(alias), politician_id))
-    return max(matches, default=(0, None))[1]
-
+        return canonical_politician_id(explicit_id)
+    # Headlines name their subject first: "EPS slams Stalin" is about EPS.
+    mentions = mentioned_politicians(text)
+    return mentions[0] if mentions else None

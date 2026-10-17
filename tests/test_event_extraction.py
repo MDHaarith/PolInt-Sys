@@ -156,3 +156,76 @@ def test_arrest_and_bail_remain_distinct_linked_events(tmp_path):
     assert types == {"arrest", "bail"}
     link = warehouse.connection.execute("SELECT relationship FROM event_links").fetchone()
     assert link["relationship"] == "legal-follow-up"
+
+
+def test_unrelated_reports_of_one_type_and_day_stay_separate(tmp_path):
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    add_story(
+        warehouse, story_id="murugan-1", politician_id="general",
+        title="L Murugan resigns as Union minister to strengthen BJP",
+        source="News One", url="https://one.test/murugan",
+    )
+    add_story(
+        warehouse, story_id="murugan-2", politician_id="general",
+        title="Murugan resigns as Union minister amid reshuffle buzz",
+        source="News Two", url="https://two.test/murugan",
+    )
+    add_story(
+        warehouse, story_id="mlas", politician_id="general",
+        title="High Court upholds resignation of six former AIADMK MLAs",
+        source="News Three", url="https://three.test/mlas",
+    )
+
+    EventExtractor(warehouse).extract_all()
+
+    sizes = sorted(
+        row[0] for row in warehouse.connection.execute(
+            "SELECT COUNT(*) FROM event_evidence GROUP BY event_id"
+        )
+    )
+    assert sizes == [1, 2]
+
+
+def test_rerun_drops_stale_automatic_events_and_skips_undated_pages(tmp_path):
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    add_story(
+        warehouse, story_id="arrest", title="Police arrest Seeman after protest",
+        source="News One", url="https://one.test/arrest",
+    )
+    warehouse.upsert_raw_item({
+        "id": "page", "url": "https://assembly.test/history", "title": "Speaker addresses the House",
+        "retrievedAt": "2026-06-11T00:00:00Z",
+    })
+    warehouse.connection.commit()
+    extractor = EventExtractor(warehouse)
+    extractor.extract_all()
+    assert warehouse.count("events") == 1
+    warehouse.connection.execute("UPDATE raw_items SET title = 'Seeman visits Madurai', body = '' WHERE external_id = 'arrest'")
+    warehouse.connection.commit()
+    extractor.extract_all()
+
+    assert warehouse.count("events") == 0
+
+
+def test_launching_a_party_is_not_a_policy_event():
+    assert detect_event_type("Annamalai quits BJP, launches new political movement") is None
+
+
+def test_non_political_crime_reports_stay_out_of_the_timeline(tmp_path):
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    add_story(
+        warehouse, story_id="sanders", politician_id="general",
+        title="450 kg of red sanders seized in Vellore; six persons arrested",
+        source="News One", url="https://one.test/sanders",
+    )
+    add_story(
+        warehouse, story_id="functionary", politician_id="general",
+        title="TVK functionary arrested in Nagapattinam",
+        source="News One", url="https://one.test/tvk",
+    )
+
+    EventExtractor(warehouse).extract_all()
+
+    assert [row[0] for row in warehouse.connection.execute("SELECT title FROM events")] == [
+        "TVK functionary arrested in Nagapattinam"
+    ]

@@ -20,19 +20,22 @@ const getEventType = (node) => {
   return "Event";
 };
 
+const TIMELINE_PAGE = 100;
+
 export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEventId = null }) {
   const [detailOpen, setDetailOpen] = useState(() => matchMedia("(min-width: 769px)").matches);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [originFilter, setOriginFilter] = useState("all");
-  const [selectedId, setSelectedId] = useState(
-    focusEventId || rawNodes?.[rawNodes.length - 1]?.id || null,
-  );
-
+  const [visibleLimit, setVisibleLimit] = useState(TIMELINE_PAGE);
   const sortedNodes = useMemo(() => {
-    return [...(rawNodes || [])].sort((a, b) => a.year - b.year || getEventLabel(a).localeCompare(getEventLabel(b)));
+    // Newest first; undated records sink to the end.
+    const when = node => String(node.occurredAt || node.year || "");
+    return [...(rawNodes || [])].sort((a, b) => when(b).localeCompare(when(a)) || getEventLabel(a).localeCompare(getEventLabel(b)));
   }, [rawNodes]);
+
+  const [selectedId, setSelectedId] = useState(() => focusEventId || sortedNodes[0]?.id || null);
 
   const nodeById = useMemo(() => {
     return Object.fromEntries(sortedNodes.map(node => [node.id, node]));
@@ -185,7 +188,7 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
 
       <div className="time-fabric-grid">
         <div className="time-fabric-list">
-          {filteredNodes.map(node => {
+          {filteredNodes.slice(0, visibleLimit).map(node => {
             const active = selectedEvent?.id === node.id;
             const type = getEventType(node);
             return (
@@ -218,6 +221,11 @@ export default function EventGraph({ nodes: rawNodes, edges: rawEdges, focusEven
               </button>
             );
           })}
+          {visibleLimit < filteredNodes.length && (
+            <button type="button" className="load-more-intel-btn" onClick={() => setVisibleLimit(limit => limit + TIMELINE_PAGE)}>
+              Show {Math.min(TIMELINE_PAGE, filteredNodes.length - visibleLimit)} more events
+            </button>
+          )}
           {filteredNodes.length === 0 && (
             <div className="time-fabric-empty">
               <AlertTriangle size={18} />

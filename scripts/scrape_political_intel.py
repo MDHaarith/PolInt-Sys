@@ -5,6 +5,7 @@ Fetches thousands of articles from Google News RSS across hundreds of query
 variations covering every politician, scandal, party event, and topic.
 """
 import os
+import html
 import json
 import urllib.request
 import urllib.error
@@ -21,12 +22,16 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 if __package__:
-    from .intelligence.classify import classify_category
-    from .intelligence.source_config import RECENT_NEWS_QUERIES
+    from .intelligence.classify import classify_category, detect_unverified_signal, is_political, mentions_tamil_nadu, reports_hearsay
+    from .intelligence.models import to_sortable_timestamp
+    from .intelligence.people import resolve_politician
+    from .intelligence.source_config import RECENT_NEWS_QUERIES, REGIONAL_FEED_URLS
     from .intelligence.snapshots import news_sort_key
 else:
-    from intelligence.classify import classify_category
-    from intelligence.source_config import RECENT_NEWS_QUERIES
+    from intelligence.classify import classify_category, detect_unverified_signal, is_political, mentions_tamil_nadu, reports_hearsay
+    from intelligence.models import to_sortable_timestamp
+    from intelligence.people import resolve_politician
+    from intelligence.source_config import RECENT_NEWS_QUERIES, REGIONAL_FEED_URLS
     from intelligence.snapshots import news_sort_key
 
 # ─────────────────────────────────────────────────────────────────────
@@ -399,7 +404,7 @@ POLITICIANS = {
             "Kanimozhi Tamil language advocacy",
         ],
     },
-    "m_k_alagiri": {
+    "mk_alagiri": {
         "name": "M.K. Alagiri",
         "queries": [
             "Alagiri DMK expelled Madurai",
@@ -472,7 +477,7 @@ POLITICIANS = {
             "Anbumani Ramadoss tweet X social media",
         ],
     },
-    "palanivel_thiaga_rajan": {
+    "ptr": {
         "name": "Palanivel Thiaga Rajan",
         "queries": [
             "PTR Palanivel Thiaga Rajan Madurai",
@@ -510,7 +515,7 @@ POLITICIANS = {
             "EV Velu corruption allegations highway",
         ],
     },
-    "cv_shanmugam": {
+    "c_ve_shanmugam": {
         "name": "C. Ve. Shanmugam",
         "queries": [
             "C Ve Shanmugam AIADMK Villupuram",
@@ -716,29 +721,68 @@ stats = {
 def clean_html(text):
     if not text:
         return ""
-    cleaned = re.sub(r"<.*?>", "", text)
+    cleaned = re.sub(r"<.*?>", " ", text, flags=re.DOTALL)
+    cleaned = html.unescape(cleaned).replace("\xa0", " ")
     cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip()
 
 
 def parse_date(date_str):
-    try:
-        parsed_dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z")
-        return parsed_dt.strftime("%B %d, %Y")
-    except Exception:
+    sortable = to_sortable_timestamp(date_str)
+    if not sortable or len(sortable) < 10:
         return date_str
+    return datetime.strptime(sortable[:10], "%Y-%m-%d").strftime("%B %d, %Y")
 
 
-_UNVERIFIED_SIGNAL_PATTERN = re.compile(
-    r"(?<!\w)(?:rumou?rs?|speculations?|buzz|unverified|alleged(?:ly)?|"
-    r"leak(?:s|ed|ing)?|viral|social media|x posts?|tweets?|hashtags?|"
-    r"claim(?:s|ed|ing)?)(?!\w)",
-    re.IGNORECASE,
-)
+def is_relevant(text, *, require_tamil_nadu=False):
+    """Keep items that mention politics or a tracked politician."""
+    if resolve_politician(text) is not None:
+        return True
+    return is_political(text) and (not require_tamil_nadu or mentions_tamil_nadu(text))
 
 
-def detect_unverified_signal(text):
-    return bool(_UNVERIFIED_SIGNAL_PATTERN.search(text))
+def summarize(text, limit=320):
+    text = clean_html(text)
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0]
+    return cut.rstrip(" ,;:") + "…"
+
+
+def _normalize_for_compare(text):
+    return re.sub(r"[\W_]+", " ", (text or "").lower()).strip()
+
+
+def rss_snippet(description, encoded, title, source):
+    """Return real summary text, or "" when the feed only repeats the headline."""
+    for candidate in (description, encoded):
+        text = clean_html(candidate)
+        if source and text.endswith(source):
+            text = text[: -len(source)].strip()
+        if len(text) < 25:
+            continue
+        normalized = _normalize_for_compare(text)
+        headline = _normalize_for_compare(title)
+        if headline and (normalized == headline or normalized.startswith(headline) and len(normalized) - len(headline) < 25):
+            continue
+        return summarize(text)
+    return ""
+
+
+_MEDIA_NS = "{http://search.yahoo.com/mrss/}"
+_CONTENT_ENCODED = "{http://purl.org/rss/1.0/modules/content/}encoded"
+_DC_CREATOR = "{http://purl.org/dc/elements/1.1/}creator"
+_ATOM_AUTHOR_NAME = "{http://www.w3.org/2005/Atom}author/{http://www.w3.org/2005/Atom}name"
+
+
+def rss_image(item):
+    for path in (f"{_MEDIA_NS}thumbnail", f"{_MEDIA_NS}content", "enclosure"):
+        for element in item.findall(path):
+            url = element.get("url") or ""
+            medium = element.get("medium") or element.get("type") or "image"
+            if url.startswith("https://") and "image" in medium:
+                return url
+    return None
 
 
 def iso_to_display_date(value):
@@ -817,7 +861,8 @@ def fetch_bluesky(query, pol_id, pol_name, limit=25, *, raise_errors=False):
         for post in payload.get("posts", []):
             record = post.get("record", {})
             text = clean_html(record.get("text", ""))
-            if not text:
+            # Keyword search also returns marketing and travel posts that only mention the state.
+            if not text or not is_relevant(text):
                 continue
             author = post.get("author", {})
             created_at = record.get("createdAt") or post.get("indexedAt") or ""
@@ -828,7 +873,7 @@ def fetch_bluesky(query, pol_id, pol_name, limit=25, *, raise_errors=False):
 
             items.append({
                 "id": article_id,
-                "politicianId": pol_id,
+                "politicianId": resolve_politician(text, pol_id) or "general",
                 "title": text[:160] + ("..." if len(text) > 160 else ""),
                 "source": source_name,
                 "date": iso_to_display_date(created_at),
@@ -879,16 +924,18 @@ def reddit_submission_to_item(data, query, pol_id):
         if created_utc else ""
     )
     selftext = clean_html(data.get("selftext", ""))
+    if not is_relevant(f"{title} {selftext}"):
+        return None
     subreddit = data.get("subreddit_name_prefixed") or f"r/{data.get('subreddit', 'reddit')}"
 
     return {
         "id": article_id,
-        "politicianId": pol_id,
+        "politicianId": resolve_politician(f"{title} {selftext}", pol_id) or "general",
         "title": title,
         "source": f"Reddit {subreddit}",
         "date": iso_to_display_date(created_raw),
         "publishedAtRaw": created_raw,
-        "snippet": selftext or title,
+        "snippet": summarize(selftext) if selftext else "",
         "url": post_url,
         "category": "social_media",
         "sourceType": "reddit_search",
@@ -1009,12 +1056,13 @@ def fetch_rss(query, pol_id, pol_name, *, feed_url=None, source_name=None, raise
             desc_el = item.find("description")
             source_el = item.find("source")
 
-            raw_title = (title_el.text or "") if title_el is not None else ""
-            link = (link_el.text or "") if link_el is not None else ""
-            if not raw_title.strip() or not link.startswith(("https://", "http://")):
+            raw_title = clean_html(title_el.text or "") if title_el is not None else ""
+            link = (link_el.text or "").strip() if link_el is not None else ""
+            if not raw_title or not link.startswith(("https://", "http://")):
                 continue
-            pub_date = pub_date_el.text if pub_date_el is not None else ""
+            pub_date = (pub_date_el.text or "").strip() if pub_date_el is not None else ""
             desc = desc_el.text if desc_el is not None else ""
+            encoded = item.findtext(_CONTENT_ENCODED) or ""
             item_source = (source_el.text if source_el is not None else None) or source_name or "Google News"
 
             clean_title = raw_title
@@ -1024,17 +1072,18 @@ def fetch_rss(query, pol_id, pol_name, *, feed_url=None, source_name=None, raise
             hash_object = hashlib.md5(link.encode("utf-8"))
             article_id = f"scraped_{hash_object.hexdigest()[:12]}"
 
-            snippet = clean_html(desc)
-            if not snippet or len(snippet) < 10:
-                snippet = f"News coverage regarding {pol_name} from {item_source}."
+            snippet = rss_snippet(desc, encoded, clean_title, item_source)
+            # Classify on the story itself; the search query would tag every result alike.
+            story_text = f"{clean_title} {snippet}"
+            if feed_url and not is_relevant(story_text, require_tamil_nadu=feed_url in REGIONAL_FEED_URLS):
+                continue
+            category = classify_category(story_text)
+            is_unverified_signal = reports_hearsay(story_text)
+            author = item.findtext(_DC_CREATOR) or item.findtext(_ATOM_AUTHOR_NAME)
 
-            category = classify_category(raw_title + " " + query)
-
-            is_unverified_signal = detect_unverified_signal(raw_title + " " + snippet + " " + query)
-
-            items.append({
+            record = {
                 "id": article_id,
-                "politicianId": pol_id,
+                "politicianId": resolve_politician(story_text, pol_id) or "general",
                 "title": clean_title,
                 "source": item_source,
                 "date": parse_date(pub_date),
@@ -1047,7 +1096,14 @@ def fetch_rss(query, pol_id, pol_name, *, feed_url=None, source_name=None, raise
                 "retrievedAt": now_utc_iso(),
                 "isRumor": is_unverified_signal,
                 "verificationStatus": "unverified_chatter" if is_unverified_signal else "source_reported",
-            })
+                "language": "ta" if re.search(r"[\u0b80-\u0bff]", clean_title) else "en",
+            }
+            image_url = rss_image(item)
+            if image_url:
+                record["imageUrl"] = image_url
+            if author and author.strip():
+                record["author"] = {"displayName": clean_html(author)}
+            items.append(record)
 
         with lock:
             stats["fetched"] += len(items)

@@ -51,7 +51,7 @@ jobs:
 
           from scripts.intelligence.models import to_sortable_timestamp
 
-          for name in ('scrapedIntel.mobile.json', 'timeFabric.json', 'policyUpdates.json', 'intelStatus.json'):
+          for name in ('scrapedIntel.mobile.json', 'timeFabric.json', 'policyUpdates.json', 'intelStatus.json', 'storylines.json'):
               path = Path('public') / name
               assert path.stat().st_size < 95_000_000, f'{name} is too large for GitHub'
               json.loads(path.read_text(encoding='utf-8'))
@@ -70,17 +70,17 @@ jobs:
           path: data/intelligence.db
           key: ${{ runner.os }}-intel-warehouse-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Publish four app snapshots with a single-commit history
+      - name: Publish the app snapshots with a single-commit history
         shell: bash
         run: |
           publish_dir=$(mktemp -d "$RUNNER_TEMP/live-data.XXXXXX")
-          for name in scrapedIntel.mobile.json timeFabric.json policyUpdates.json intelStatus.json; do
+          for name in scrapedIntel.mobile.json timeFabric.json policyUpdates.json intelStatus.json storylines.json; do
             cp "public/$name" "$publish_dir/$name"
           done
           git init --initial-branch=live-data "$publish_dir"
           git -C "$publish_dir" config user.name 'github-actions[bot]'
           git -C "$publish_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C "$publish_dir" add scrapedIntel.mobile.json timeFabric.json policyUpdates.json intelStatus.json
+          git -C "$publish_dir" add scrapedIntel.mobile.json timeFabric.json policyUpdates.json intelStatus.json storylines.json
           git -C "$publish_dir" commit -m "Refresh intelligence snapshots $(date -u +%FT%TZ)"
           # Reuse checkout's credential without embedding the token in a remote URL.
           checkout_auth_header=$(git config --get http.https://github.com/.extraheader)

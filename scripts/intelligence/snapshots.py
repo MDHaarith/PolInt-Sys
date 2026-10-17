@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+import html
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 
 from .assembly_status import apply_current_assembly_status
+from .classify import classify_category, is_political, reports_hearsay
+from .events import headline_tokens
 from .models import to_sortable_timestamp
+from .people import canonical_politician_id, resolve_politician
+from .quality import TIER_WEIGHT, source_affiliation, source_tier, story_importance
+from .storylines import build_storylines
 from .warehouse import IntelligenceWarehouse, now_utc_iso
 
 MOBILE_NEWS_LIMIT = 3000
@@ -56,17 +63,149 @@ def atomic_write_json(path: str | Path, value, validator=None) -> None:
         raise
 
 
-def _legacy_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
-    rows = warehouse.connection.execute(
+_PLACEHOLDER_SNIPPET = re.compile(r"^News coverage regarding .* from .*\.$")
+# Broad sources whose items are only published when they carry a political signal.
+_FILTERED_SOURCE_TYPES = {"publisher_rss", "bluesky_search", "reddit_search", "pullpush_reddit_search"}
+
+
+def _title_key(title: str) -> str:
+    return re.sub(r"[\W_]+", " ", title.lower()).strip()
+
+
+def _repeats_title(snippet: str, title: str) -> bool:
+    # Google News descriptions are the headline followed by the outlet name.
+    text, headline = _title_key(snippet), _title_key(title)
+    return text == headline or (text.startswith(headline) and len(text) - len(headline) < 40)
+
+
+def frontend_news_record(row) -> dict | None:
+    """Flatten a warehouse row into the record shape the app reads.
+
+    Collected items store the warehouse dict with the collector's original record
+    nested under rawMetadata; legacy imports store the original record directly.
+    """
+    stored = json.loads(row["raw_metadata_json"] or "{}")
+    original = stored.get("rawMetadata") if isinstance(stored.get("rawMetadata"), dict) else stored
+    title = (row["title"] or original.get("title") or "").strip()
+    if not title or title == row["canonical_url"]:
+        return None
+    snippet = " ".join(html.unescape(original.get("snippet") or original.get("body") or row["body"] or "").split())
+    if _PLACEHOLDER_SNIPPET.match(snippet) or _repeats_title(snippet, title):
+        snippet = ""
+    source_type = original.get("sourceType") or row["collector"]
+    story_text = f"{title} {snippet}"
+    politician_id = canonical_politician_id(original.get("politicianId") or row["politician_id"]) or "general"
+    if politician_id == "general":
+        politician_id = resolve_politician(story_text) or "general"
+    if source_type in _FILTERED_SOURCE_TYPES and politician_id == "general" and not is_political(story_text):
+        return None
+    is_social = bool(row["is_social"])
+    category = "social_media" if is_social else classify_category(story_text)
+    # Older collections flagged reports from the search query text, not the story.
+    verification = original.get("verificationStatus") or row["verification_status"]
+    if not is_social and verification in ("source_reported", "unverified_chatter"):
+        verification = "unverified_chatter" if reports_hearsay(story_text) else "source_reported"
+    published = row["published_at"]
+    record = {
+        "id": original.get("id") or row["external_id"] or row["id"],
+        "rawId": row["id"],
+        "title": title,
+        "snippet": snippet,
+        "url": original.get("url") or row["canonical_url"],
+        "source": original.get("source") or "Unknown source",
+        "sourceType": source_type,
+        "platform": original.get("platform") or row["platform"],
+        "category": category,
+        "politicianId": politician_id,
+        "publishedAt": published,
+        "date": published,
+        "retrievedAt": row["retrieved_at"],
+        "verificationStatus": verification,
+        "isRumor": verification == "unverified_chatter",
+    }
+    for key in ("imageUrl", "engagement", "author", "language"):
+        if original.get(key):
+            record[key] = original[key]
+    return {key: value for key, value in record.items() if value not in (None, "")}
+
+
+# Rewrites of one wire story share most of their headline words.
+_NEAR_DUPLICATE_WINDOW_SECONDS = 36 * 3600
+
+
+def _near_duplicate(left: frozenset[str], right: frozenset[str]) -> bool:
+    shared = len(left & right)
+    return shared >= 3 and shared / max(1, len(left | right)) >= 0.6
+
+
+def _epoch(value: str | None) -> float | None:
+    from datetime import datetime
+
+    try:
+        return datetime.fromisoformat((value or "").replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def _lead_rank(record: dict) -> tuple:
+    # The copy shown is the best-sourced one; the rest become "also reported by".
+    return (TIER_WEIGHT[record["sourceTier"]], len(record.get("snippet") or "") >= 80, bool(record.get("imageUrl")))
+
+
+def _merge_copy(lead: dict, copy: dict) -> dict:
+    if _lead_rank(copy) > _lead_rank(lead):
+        lead, copy = copy | {"alsoReportedBy": lead.pop("alsoReportedBy", []), "outletCount": lead["outletCount"]}, lead
+    seen = {lead["source"], *(other["source"] for other in lead.get("alsoReportedBy", []))}
+    if copy["source"] not in seen:
+        lead["outletCount"] += 1
+        if len(lead.setdefault("alsoReportedBy", [])) < 6:
+            lead["alsoReportedBy"].append({"source": copy["source"], "url": copy.get("url")})
+    return lead
+
+
+def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
+    cursor = warehouse.connection.execute(
         """
-        SELECT raw_metadata_json
+        SELECT id, canonical_url, collector, platform, external_id, title, body,
+               published_at, retrieved_at, politician_id, verification_status,
+               is_social, raw_metadata_json
         FROM raw_items
         ORDER BY published_at IS NULL, published_at DESC, retrieved_at DESC, id DESC
-        LIMIT ?
-        """,
-        (limit,),
-    ).fetchall()
-    return [json.loads(row["raw_metadata_json"]) for row in rows]
+        """
+    )
+    news: list[dict] = []
+    by_title: dict[str, int] = {}
+    # Recent leads, for matching reworded copies: (epoch, tokens, index).
+    window: list[tuple[float, frozenset[str], int]] = []
+    for row in cursor:
+        record = frontend_news_record(row)
+        if record is None:
+            continue
+        record["sourceTier"] = source_tier(record["source"], is_social=bool(row["is_social"]))
+        record["outletCount"] = 1
+        key = _title_key(record["title"])
+        index = by_title.get(key)
+        tokens = headline_tokens(record["title"])
+        published = _epoch(record.get("publishedAt"))
+        if index is None and published is not None and record["sourceTier"] != "social":
+            window = [entry for entry in window if entry[0] - published <= _NEAR_DUPLICATE_WINDOW_SECONDS]
+            index = next((entry[2] for entry in window if _near_duplicate(tokens, entry[1])), None)
+        if index is not None:
+            news[index] = _merge_copy(news[index], record)
+            by_title[key] = index
+            continue
+        if len(news) >= limit:
+            break
+        by_title[key] = len(news)
+        if published is not None and record["sourceTier"] != "social":
+            window.append((published, tokens, len(news)))
+        news.append(record)
+    for record in news:
+        affiliation = source_affiliation(record["source"])
+        if affiliation:
+            record["sourceAffiliation"] = affiliation
+        record["importance"] = story_importance(record)
+    return news
 
 
 def _event_rows(warehouse: IntelligenceWarehouse) -> list[dict]:
@@ -188,7 +327,7 @@ def generate_snapshots(
     }
 
     compatibility = {
-        "news": _legacy_news(warehouse, recent_news_limit),
+        "news": _frontend_news(warehouse, recent_news_limit),
         "evidence": warehouse.get_state("evidence", []),
         "mlas": warehouse.get_state("mlas", []),
         "rosterMeta": warehouse.get_state("rosterMeta"),
@@ -233,4 +372,5 @@ def generate_snapshots(
     atomic_write_json(output / "timeFabric.json", time_fabric)
     atomic_write_json(output / "policyUpdates.json", policy_updates)
     atomic_write_json(output / "intelStatus.json", status)
+    atomic_write_json(output / "storylines.json", build_storylines(compatibility["news"], generated_at))
     return {"raw_items": raw_count, "events": event_count}
