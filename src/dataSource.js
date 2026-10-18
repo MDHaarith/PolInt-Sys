@@ -9,6 +9,7 @@ export const fullIntelFile = isMobileBuild ? null : "/scrapedIntel.json";
 export const statusFile = "/intelStatus.json";
 export const storylinesFile = "/storylines.json";
 export const vectorIndexFile = "/vectorIndex.json";
+export const evidencePackFile = "/evidencePack.json";
 
 const fetchJson = async (url, options) => {
   const response = await fetch(`${url}?t=${Date.now()}`, options);

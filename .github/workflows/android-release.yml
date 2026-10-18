@@ -24,6 +24,12 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      # build_mobile_data.py trims the feed with the pipeline's own code, which needs numpy.
+      - run: pip install -r requirements.txt
 
       - run: npm ci
         env:

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import PoliticianSpace from "./components/PoliticianSpace";
 import EventGraph from "./components/EventGraph";
 import IntelligenceFeed from "./components/IntelligenceFeed";
+import EvidenceChat from "./components/EvidenceChat";
 import PolicyImpactDashboard from "./components/PolicyImpactDashboard";
 import { 
   seedPoliticians, seedParties, generateEventGraphData, seedAdministrations 
@@ -11,7 +12,7 @@ import { minimizeApp, onBackButton } from "./native";
 import { fullIntelFile, isMobileBuild, loadData, normalizeStory, recentIntelFile, statusFile, storylinesFile, vectorIndexFile } from "./dataSource";
 import { relativeTime, formatDateTime, textLanguage, indianNumber } from "./components/dateLabels";
 import { 
-  Users, GitBranch, Search, ChevronRight, Newspaper, Sun, Moon, Monitor, ClipboardList, RefreshCw, ChevronDown
+  Users, GitBranch, Search, ChevronRight, Newspaper, Sun, Moon, Monitor, ClipboardList, RefreshCw, ChevronDown, MessageCircle
 } from "lucide-react";
 
 // Helper to determine deceased politician end year of political activity
@@ -289,7 +290,7 @@ export default function App() {
     };
   });
 
-  const [workspaceMode, setWorkspaceMode] = useState("intelligence"); // "intelligence" | "policies" | "politician" | "events"
+  const [workspaceMode, setWorkspaceMode] = useState("intelligence"); // "intelligence" | "ask" | "policies" | "politician" | "events"
   const [theme, setTheme] = useState(() => {
     try { return ["light", "dark", "system"].includes(localStorage.getItem("polint-theme")) ? localStorage.getItem("polint-theme") : "light"; }
     catch { return "light"; }
@@ -601,6 +602,15 @@ export default function App() {
             <span className="mode-label-desktop">Feed</span><span className="mode-label-mobile">Feed</span>
           </button>
           <button
+            className={`sidebar-mode-btn ${workspaceMode === "ask" ? "active" : ""}`}
+            aria-current={workspaceMode === "ask" ? "page" : undefined}
+            aria-label="Ask"
+            onClick={() => setWorkspaceMode("ask")}
+          >
+            <MessageCircle size={16} />
+            <span className="mode-label-desktop">Ask</span><span className="mode-label-mobile">Ask</span>
+          </button>
+          <button
             className={`sidebar-mode-btn ${workspaceMode === "policies" ? "active" : ""}`}
             aria-current={workspaceMode === "policies" ? "page" : undefined}
             aria-label="Policy Impact"
@@ -753,6 +763,8 @@ export default function App() {
             onSelectPolitician={handleSelectPolitician}
             onSelectEvent={handleSelectEvent}
           />
+        ) : workspaceMode === "ask" ? (
+          <EvidenceChat />
         ) : workspaceMode === "policies" ? (
           <PolicyImpactDashboard />
         ) : workspaceMode === "politician" ? (

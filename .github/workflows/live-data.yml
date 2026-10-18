@@ -57,6 +57,21 @@ jobs:
           --max-social-queries 18 --social-limit 15
           --embed-seconds 420 --embed-limit 2500
 
+      # Quotable passages from trusted outlets, with their proof, for chat on the phone.
+      # Only new passages are embedded; a failure here never holds back the rest.
+      - name: Restore evidence store
+        uses: actions/cache/restore@v4
+        with:
+          path: data/evidence.db
+          key: ${{ runner.os }}-evidence-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ${{ runner.os }}-evidence-v1-
+
+      - name: Build the evidence pack
+        id: evidence
+        continue-on-error: true
+        run: python3 scripts/build_evidence.py --database data/intelligence.db --days 30 --deadline 300 --limit 2500
+
       - name: Validate data before publishing
         run: |
           python3 - <<'PY'
@@ -85,6 +100,13 @@ jobs:
           path: data/intelligence.db
           key: ${{ runner.os }}-intel-warehouse-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
+      - name: Persist evidence store
+        if: steps.evidence.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: data/evidence.db
+          key: ${{ runner.os }}-evidence-v1-${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Publish the app snapshots with a single-commit history
         shell: bash
         run: |
@@ -92,10 +114,13 @@ jobs:
           for name in scrapedIntel.mobile.json timeFabric.json policyUpdates.json intelStatus.json storylines.json vectorIndex.json; do
             cp "public/$name" "$publish_dir/$name"
           done
+          if [ "${{ steps.evidence.outcome }}" = success ] && python3 -c "import json; json.load(open('public/evidencePack.json'))"; then
+            cp public/evidencePack.json "$publish_dir/evidencePack.json"
+          fi
           git init --initial-branch=live-data "$publish_dir"
           git -C "$publish_dir" config user.name 'github-actions[bot]'
           git -C "$publish_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C "$publish_dir" add scrapedIntel.mobile.json timeFabric.json policyUpdates.json intelStatus.json storylines.json vectorIndex.json
+          git -C "$publish_dir" add .
           git -C "$publish_dir" commit -m "Refresh intelligence snapshots $(date -u +%FT%TZ)"
           # Reuse checkout's credential without embedding the token in a remote URL.
           checkout_auth_header=$(git config --get http.https://github.com/.extraheader)
