@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { AutoProcessor, AutoTokenizer, pipeline } from "@huggingface/transformers";
+import { AutoTokenizer, pipeline } from "@huggingface/transformers";
 import { embedTexts, PROMPTS, truncate } from "./embeddings/gemma.mjs";
 import { chatMessages, decodeEvidencePack, evidenceFor, readReply } from "../src/evidenceChat.js";
 
@@ -54,8 +54,12 @@ for (const model of models) {
   try {
     generate = await pipeline("text-generation", model, { device: "cpu", dtype });
     tokenizer = await AutoTokenizer.from_pretrained(model);
-    // Some exports keep the chat template in chat_template.jinja, which the processor reads.
-    if (!tokenizer.chat_template) tokenizer.chat_template = (await AutoProcessor.from_pretrained(model)).chat_template;
+    // Some exports keep the chat template only in chat_template.jinja.
+    if (!tokenizer.chat_template) {
+      const response = await fetch(`https://huggingface.co/${model}/resolve/main/chat_template.jinja`);
+      if (!response.ok) throw new Error(`no chat template (HTTP ${response.status})`);
+      tokenizer.chat_template = await response.text();
+    }
   } catch (error) {
     report.models[model] = { dtype, error: String(error).slice(0, 300) };
     console.log(`\n${model}: could not load: ${report.models[model].error}`);
