@@ -29,8 +29,10 @@ class RssCollector:
                 except Exception as exc:
                     self.health["failed_jobs"] += 1
                     self.health["status"] = "degraded"
-                    self.health["reason"] = f"{type(exc).__name__}: {exc}"
                     query = futures[future][0]
+                    # Name the feed or query, so a site that blocks the runner is easy to find.
+                    self.health["reason"] = f"{query}: {type(exc).__name__}: {exc}"
+                    self.health.setdefault("failed", []).append(str(query))
                     print(f"[{self.name}] {query!r}: {type(exc).__name__}: {exc}", file=sys.stderr)
                     continue
                 if not items:

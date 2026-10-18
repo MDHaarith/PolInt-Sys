@@ -355,6 +355,7 @@ def _coverage_gaps(warehouse: IntelligenceWarehouse, collector_health: list[dict
                     "status": health.get("status") or collector["status"],
                     "reason": health.get("reason"),
                     "pageFailures": health.get("pageFailures", []),
+                    "failed": health.get("failed", []),
                 }
             )
     failures = warehouse.connection.execute(

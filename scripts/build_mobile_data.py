@@ -17,6 +17,7 @@ SOURCE = PROJECT_ROOT / "public"
 DESTINATION = PROJECT_ROOT / "mobile-public"
 COPIED_FILES = (
     "favicon.svg", "icons.svg", "timeFabric.json", "policyUpdates.json", "intelStatus.json", "storylines.json", "vectorIndex.json",
+    "evidencePack.json",
 )
 
 

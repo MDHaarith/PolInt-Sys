@@ -77,7 +77,8 @@ def test_all_failed_jobs_are_unavailable_and_counted_in_run(tmp_path, collector_
         result = CollectorRunner(warehouse).run([collector])
         assert result == {"items_seen": 0, "items_added": 0, "errors": 1}
         assert collector.health["status"] == "unavailable"
-        assert collector.health["reason"] == "RuntimeError: HTTP 403"
+        assert collector.health["reason"] == "politics: RuntimeError: HTTP 403"
+        assert collector.health["failed"] == ["politics"]
     finally:
         warehouse.close()
 

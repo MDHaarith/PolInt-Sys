@@ -13,8 +13,8 @@ on:
       - 'vite.config.js'
       - 'capacitor.config.json'
       - 'scripts/build_mobile_data.py'
-      - 'scripts/intelligence/snapshots.py'
-      - 'scripts/intelligence/storylines.py'
+      - 'scripts/intelligence/**'
+      - 'requirements.txt'
       - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 
@@ -22,7 +22,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: android-apk
+  # A newer build of the same branch replaces an older one; branches never cancel main.
+  group: android-apk-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -41,6 +42,12 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      # build_mobile_data.py trims the feed with the pipeline's own code, which needs numpy.
+      - run: pip install -r requirements.txt
 
       # Same key on every build, so phones accept each new APK as an update.
       - name: Install signing key
@@ -63,8 +70,18 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug -PversionCode=${{ github.run_number }} --no-daemon
 
+      # Every build can be downloaded from its run page; only main replaces the
+      # release phones update from.
+      - name: Keep the APK with this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: PolInt-${{ github.run_number }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
       # One rolling release keeps the download link fixed.
       - name: Publish to the apk-latest release
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
