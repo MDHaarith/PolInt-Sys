@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   classifyCategory, isPolitical, isRelevant, mentionedPoliticians, mentionsTamilNadu, reportsHearsay, sourceTier,
 } from '../src/collect/rules.js';
+import { passages, textKey } from '../src/collect/evidence.js';
 
 // How the server's Python rules read real headlines (scripts/build_collect_config.py).
 const read = (name) => JSON.parse(fs.readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
@@ -21,6 +22,8 @@ test('the phone reads real headlines exactly as the server does', () => {
       hearsay: reportsHearsay(text),
       politicians: mentionedPoliticians(text),
       relevantRegional: isRelevant(text, { requireTamilNadu: true }),
+      textKey: textKey(text),
+      passages: passages({ title: 'Fixed headline for the test', snippet: text }),
     };
     for (const key of Object.keys(expected)) {
       if (JSON.stringify(actual[key]) !== JSON.stringify(expected[key])) differences.push({ key, text: text.slice(0, 90), python: expected[key], javascript: actual[key] });

@@ -9,7 +9,10 @@ import {
   seedPoliticians, seedParties, generateEventGraphData, seedAdministrations 
 } from "./data/politicalDatabase";
 import { mergeTimeFabricData } from "./data/timeFabricData";
-import { minimizeApp, onBackButton } from "./native";
+import { isNativeApp, minimizeApp, onBackButton } from "./native";
+import { collect, newStories } from "./collect/collect";
+import { loadStories, saveRun } from "./collect/store";
+import { savePassages } from "./collect/evidence";
 import { fullIntelFile, isMobileBuild, loadData, normalizeStory, recentIntelFile, statusFile, storylinesFile, vectorIndexFile } from "./dataSource";
 import { relativeTime, formatDateTime, textLanguage, indianNumber } from "./components/dateLabels";
 import { 
@@ -449,6 +452,51 @@ export default function App() {
     }
   }, [applyFreshIntel, showToast]);
 
+  // Collecting on the phone: when the reader refreshes, the app also runs the
+  // server's collectors itself (src/collect/) and keeps what they find on the
+  // phone. Opening the app only loads the published files, to spare data.
+  const [localNews, setLocalNews] = useState([]);
+  const [collecting, setCollecting] = useState(null);
+  const [localVersion, setLocalVersion] = useState(0);
+  const collectingRef = useRef(false);
+  const newsRef = useRef(db.news);
+  useEffect(() => { newsRef.current = db.news; }, [db.news]);
+
+  useEffect(() => {
+    loadStories().then(setLocalNews).catch(() => {});
+  }, []);
+
+  const collectOnPhone = useCallback(async () => {
+    if (!isNativeApp || collectingRef.current) return;
+    collectingRef.current = true;
+    setCollecting({ done: 0, total: 0 });
+    try {
+      const run = await collect({ onProgress: setCollecting });
+      await saveRun(run);
+      await savePassages(run.stories);
+      setLocalNews(await loadStories());
+      setLocalVersion(version => version + 1);
+      const added = newStories(newsRef.current, run.stories).length;
+      showToast(strings(language).collectedToast(added), added ? "success" : "info");
+    } catch (error) {
+      showToast(strings(language).collectFailed(String(error.message || error)), "error");
+    } finally {
+      collectingRef.current = false;
+      setCollecting(null);
+    }
+  }, [language, showToast]);
+
+  const refreshEverything = useCallback(() => {
+    void refreshIntel({ force: true });
+    void collectOnPhone();
+  }, [refreshIntel, collectOnPhone]);
+
+  // The published feed, plus what the phone collected that the feed does not have yet.
+  const feedNews = useMemo(
+    () => (localNews.length ? [...db.news, ...normalizeIntelRecords(newStories(db.news, localNews))] : db.news),
+    [db.news, localNews],
+  );
+
   useEffect(() => {
     let active = true;
     // Deferring also avoids a duplicate launch request during StrictMode's setup check.
@@ -577,7 +625,7 @@ export default function App() {
             <span className="brand-tagline">{t.tagline}</span>
             <span className={`app-freshness ${offline ? "is-offline" : ""}`} role="status" title={db.intelUpdatedAt ? `Data updated ${formatDateTime(db.intelUpdatedAt)}` : undefined}>
               
-              {offline ? (db.lastIntelSync ? "Offline · showing saved data" : "Offline · unable to load feed") : refreshing ? "Checking for updates…" : db.intelUpdatedAt ? `Updated ${relativeTime(db.intelUpdatedAt, now)}` : "Saved intelligence snapshot"}
+              {collecting ? t.collecting(collecting.done, collecting.total) : offline ? (db.lastIntelSync ? "Offline · showing saved data" : "Offline · unable to load feed") : refreshing ? "Checking for updates…" : db.intelUpdatedAt ? `Updated ${relativeTime(db.intelUpdatedAt, now)}` : "Saved intelligence snapshot"}
             </span>
           </div>
           <button
@@ -599,8 +647,8 @@ export default function App() {
           >
             {theme === "light" ? <Sun size={18} aria-hidden="true" /> : theme === "dark" ? <Moon size={18} aria-hidden="true" /> : <Monitor size={18} aria-hidden="true" />}
           </button>
-          <button type="button" className="app-refresh-btn" onClick={() => refreshIntel({ force: true })} disabled={refreshing} aria-label={refreshing ? "Refreshing intelligence" : "Refresh intelligence"} title="Refresh intelligence">
-            <RefreshCw size={18} className={refreshing ? "spin-icon" : ""} aria-hidden="true" />
+          <button type="button" className="app-refresh-btn" onClick={refreshEverything} disabled={refreshing || Boolean(collecting)} aria-label={refreshing || collecting ? "Refreshing intelligence" : "Refresh intelligence"} title="Refresh intelligence">
+            <RefreshCw size={18} className={refreshing || collecting ? "spin-icon" : ""} aria-hidden="true" />
           </button>
         </div>
 
@@ -767,7 +815,7 @@ export default function App() {
       <main className="workspace-content-pane" id="main-content" aria-label="Selected workspace">
         {workspaceMode === "intelligence" ? (
           <IntelligenceFeed
-            news={db.news}
+            news={feedNews}
             politicians={db.politicians}
             parties={db.parties}
             events={eventNodes}
@@ -776,7 +824,7 @@ export default function App() {
             lastIntelSync={db.lastIntelSync}
             loading={intelLoadState === "loading"}
             loadError={intelLoadState === "error"}
-            onRefresh={() => refreshIntel({ force: true })}
+            onRefresh={refreshEverything}
             status={intelStatus}
             refreshing={refreshing}
             now={now}
@@ -784,7 +832,7 @@ export default function App() {
             onSelectEvent={handleSelectEvent}
           />
         ) : workspaceMode === "ask" ? (
-          <EvidenceChat language={language} storylines={storylines} />
+          <EvidenceChat language={language} storylines={storylines} localVersion={localVersion} />
         ) : workspaceMode === "policies" ? (
           <PolicyImpactDashboard />
         ) : workspaceMode === "politician" ? (

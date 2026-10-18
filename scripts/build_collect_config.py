@@ -8,7 +8,7 @@ server pipeline. Rather than copying keyword lists, names and outlet tiers into
 JavaScript by hand, they are exported from the Python modules that own them;
 tests/collect_parity.test.mjs checks that both sides read real headlines alike.
 Rerun after changing scrape_political_intel.py, source_config.py, classify.py,
-people.py or quality.py (build:mobile does it).
+people.py or quality.py; tests/test_collect_config.py fails until you do.
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts import scrape_political_intel as legacy  # noqa: E402
-from scripts.intelligence import classify, people, quality  # noqa: E402
+from scripts.intelligence import classify, evidence, people, quality  # noqa: E402
 from scripts.intelligence.source_config import NEWS_RSS_FEEDS, REGIONAL_FEED_URLS  # noqa: E402
 from scripts.intelligence.warehouse import recover_json_document  # noqa: E402
 
@@ -93,6 +93,9 @@ def parity_cases(limit: int = 1500) -> dict:
                 "hearsay": classify.reports_hearsay(text),
                 "politicians": people.mentioned_politicians(text),
                 "relevantRegional": legacy.is_relevant(text, require_tamil_nadu=True),
+                "textKey": evidence.text_key(text),
+                # The text as a story's body under a fixed headline: which sentences are quotable.
+                "passages": evidence.passages(evidence.Story(id="s", title="Fixed headline for the test", text=text, source="", url="", published_at="")),
             }
             for text in texts
         ],
