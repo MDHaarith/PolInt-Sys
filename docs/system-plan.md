@@ -43,7 +43,7 @@ Status: plan only, nothing built. Date: 16/10/2026.
 
 ## 3. Info vector DB (content) — phase A
 - Runs where the pipeline runs, at **full f32**. Table `embeddings(item_id, content_hash, modality, model_rev, prompt_ver, dim, vec BLOB f32)`; key `(content_hash, modality, model_rev, prompt_ver)` so re-scrapes never re-embed.
-- Text = `title + body[:~1500 chars]` with the document prompt. Images only once collectors store `media_url` (RSS `media:*`/enclosure, `og:image`, Bluesky/Reddit previews, YouTube thumbs); Google News items need the publisher URL resolved first.
+- Text = `title + body[:~1500 chars]` with the search prompt, which links stories better than the document prompt ([embedding-experiments.md](embedding-experiments.md)). Images only once collectors store `media_url` (RSS `media:*`/enclosure, `og:image`, Bluesky/Reddit previews, YouTube thumbs); Google News items need the publisher URL resolved first.
 - Budgeted, resumable backfill: each run embeds newest-first for at most N minutes, so CI never blows its 25 min limit (24k items ≈ 55 min on this PC; incremental 100–500 items ≈ 15–70 s).
 - Derived outputs (pure numpy, no new vector engine needed at 24k rows):
   - **Story threads**: incremental clustering, cosine to time-decayed centroids, 72 h window; same-image hit = strong merge. Threshold tuned from measured duplicate vs random cosine distributions.

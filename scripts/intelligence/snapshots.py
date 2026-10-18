@@ -225,6 +225,12 @@ def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
 
 
 APP_VECTOR_DIMENSIONS = 256
+# The app removes the index's mean and its strongest shared direction from
+# stories and queries before comparing them ("all-but-the-top"). On the
+# hand-checked groups this lifts search by meaning from precision@10 0.70 to
+# 0.75 and "Similar" from 0.71 to 0.76; at 256 dimensions removing more
+# directions strips meaning too (scripts/embedding_experiments.py).
+APP_SHARED_DIRECTIONS = 1
 
 
 def story_vectors(warehouse: IntelligenceWarehouse, raw_ids: list[str]) -> dict[str, np.ndarray]:
@@ -238,6 +244,9 @@ def app_vector_index(vectors: dict[str, np.ndarray], generated_at: str) -> dict:
 
     Matryoshka training keeps the first 256 of 768 dimensions useful on their
     own; each vector is then scaled to int8, so 3,000 stories take about 1 MB.
+    `centre` and `directions` are what the app removes before comparing,
+    fitted on the vectors as the app decodes them; older app versions ignore
+    them and compare the stored vectors as they are.
     """
     ids = list(vectors)
     if not ids:
@@ -245,7 +254,7 @@ def app_vector_index(vectors: dict[str, np.ndarray], generated_at: str) -> dict:
     matrix = truncate(np.stack([vectors[i] for i in ids]), APP_VECTOR_DIMENSIONS)
     scales = 127 / np.maximum(np.abs(matrix).max(axis=1), 1e-9)
     quantised = np.clip(np.rint(matrix * scales[:, None]), -127, 127).astype(np.int8)
-    return {
+    index = {
         "model": MODEL_NAME,
         "dimensions": APP_VECTOR_DIMENSIONS,
         "generatedAt": generated_at,
@@ -253,6 +262,13 @@ def app_vector_index(vectors: dict[str, np.ndarray], generated_at: str) -> dict:
         "scales": [round(float(value), 4) for value in scales],
         "vectors": base64.b64encode(quantised.tobytes()).decode("ascii"),
     }
+    if len(ids) > APP_SHARED_DIRECTIONS:
+        decoded = quantised / scales[:, None]
+        centre = decoded.mean(axis=0)
+        _, _, components = np.linalg.svd(decoded - centre, full_matrices=False)
+        index["centre"] = [round(float(value), 5) for value in centre]
+        index["directions"] = [[round(float(value), 5) for value in row] for row in components[:APP_SHARED_DIRECTIONS]]
+    return index
 
 
 def _event_rows(warehouse: IntelligenceWarehouse) -> list[dict]:

@@ -106,6 +106,9 @@ text 174 MB, vision 109 MB, audio 189 MB, cached in `data/models/hf/`.
    `{"title", "publishedAt", "politicianId"}`.
 2. *Embed*: newest first, within a time budget (`--embed-seconds`), so a
    backlog fills in over several runs. Failures are retried up to three times.
+   Stories are embedded with the model's search prompt (`task: search result |
+   query: …`), which links reports of one issue better than its document
+   prompt; changing the prompt re-embeds every story.
 3. *Store*: vectors live in the SQLite warehouse (`media_items`, `vectors`
    tables, float16). Search is exact cosine similarity with numpy, which takes
    milliseconds at this size.
@@ -124,7 +127,10 @@ python3 scripts/search_intel.py --stats
 the phone. The pipeline publishes `vectorIndex.json` (the recent stories cut
 to 256 dimensions by Matryoshka truncation and stored as int8, about 1 MB).
 The first time it is used, the app downloads the text encoder once and keeps
-it in the browser cache. After that, queries never leave the device.
+it in the browser cache. After that, queries never leave the device. The index
+also carries the stories' mean and strongest shared direction, which the app
+removes from stories and queries before comparing them; it lifts both search
+and *Similar* by about 0.05 precision@10.
 
 **Storylines** also use the vectors, centred by subtracting the corpus mean.
 Every headline shares a broad "Tamil Nadu politics" direction, and without
@@ -133,15 +139,21 @@ joins a storyline when its meaning is close to the storyline's centre, even
 with no shared words, and storylines with near-identical centres merge
 (thresholds and their measurements are in `storylines.py`). On the
 hand-checked same-issue groups in `tests/fixtures/same_issue_clusters.json`
-(`python3 scripts/eval_embeddings.py`):
+(`python3 scripts/embedding_experiments.py`; every variant tried, from model
+precision to prompts and post-processing, is in
+[docs/embedding-experiments.md](docs/embedding-experiments.md)):
 
-| Method | Precision@10 | Cross-language top-1 | Same-issue pair F1 |
-| --- | ---: | ---: | ---: |
-| Word overlap (before) | 0.64 | 0.20 | 0.39 |
-| EmbeddingGemma 2, document prompt, 768-d | 0.67 | 0.69 | 0.83 |
-| EmbeddingGemma 2, document prompt, 256-d | 0.68 | 0.68 | 0.83 |
-| EmbeddingGemma 2, document prompt, 768-d, centred | 0.70 | 0.71 | 0.84 |
-| EmbeddingGemma 2, clustering prompt, 256-d | 0.62 | 0.66 | 0.69 |
+| Method | Precision@10 | Cross-language top-1 | Pair F1 | Pair AP |
+| --- | ---: | ---: | ---: | ---: |
+| Word overlap | 0.64 | 0.20 | 0.64 | 0.63 |
+| Document prompt, 768-d, centred (before) | 0.70 | 0.71 | 0.85 | 0.92 |
+| Search prompt, 768-d, centred (storylines) | 0.74 | 0.73 | 0.89 | 0.95 |
+| Search prompt, 768-d, 3 shared directions removed (datasets) | 0.77 | 0.74 | 0.92 | 0.97 |
+| Search prompt, 256-d int8, 1 shared direction removed (app) | 0.76 | 0.73 | 0.91 | 0.96 |
+
+End to end (`python3 scripts/eval_storylines.py`), storylines now put 83% of
+same-issue gold pairs in one storyline (63% before, 42% with words alone),
+still never joining two different issues.
 
 **Datasets and training**:
 
@@ -151,8 +163,12 @@ python3 scripts/train_move_classifier.py data/datasets/polint-YYYYMMDD
 ```
 
 The dataset folder holds labelled stories, weak move labels, contrastive story
-triples, hand-checked gold pairs, photo–headline and audio pairs, and the
-vectors, with a dataset card (`README.md`) describing provenance and limits.
+triples, pairs mined by meaning, hand-checked gold pairs, photo–headline and
+audio pairs, and the vectors, with a dataset card (`README.md`) describing
+provenance and limits. Each card reports how often the triples and mined pairs
+agree with the hand-checked groups. Triple negatives must be unlike their
+anchor: same-actor stories from another storyline were the same issue 80% of
+the time, because storylines split one issue into several threads.
 
 ## Releasing the Android app
 

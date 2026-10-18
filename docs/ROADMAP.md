@@ -22,6 +22,12 @@ shipped so the plan stays honest.
   in the app; centred embeddings in storyline linking; a same-issue benchmark
   (`scripts/eval_embeddings.py`); a dataset builder and a first action
   classifier (`scripts/build_datasets.py`, `scripts/train_move_classifier.py`).
+- Embedding set-up chosen by measurement ([docs/embedding-experiments.md](embedding-experiments.md)):
+  stories use the model's search prompt, storyline thresholds re-measured
+  (same-issue gold pairs in one storyline 63% → 83%), shared-direction
+  removal in the app's search and *Similar*, triple negatives checked for
+  similarity (correct 20% → 100%), mined same-issue pairs, label agreement in
+  every dataset card, and an end-to-end storyline check (`scripts/eval_storylines.py`).
 
 ## 1. Algorithm
 
@@ -43,13 +49,15 @@ rules remain the fallback.
 
 ### 1.3 Embeddings: next steps
 - Grow the hand-checked benchmark beyond 10 groups, and add groups where
-  embeddings currently fail (analysis pieces, opinion columns).
-- Use the action classifier (70% agreement with high-confidence rule labels
-  after three weeks of data) for headlines the rules cannot read, once a
-  hand-labelled set shows it beats the rules there.
-- Fine-tune on `story_pairs.jsonl` and `gold_pairs.jsonl` (e.g. a small
-  linear adapter on top of the frozen vectors) when there are a few thousand
-  pairs.
+  embeddings currently fail (analysis pieces, opinion columns). With ten
+  issues, gains under about 0.02 precision@10 cannot be told from noise, and
+  several set-ups tried were within that.
+- Use the action classifier (about 74% agreement with held-out rule labels)
+  for headlines the rules cannot read, once a hand-labelled set shows it beats
+  the rules there.
+- Fine-tune on `story_pairs.jsonl`, `mined_pairs.jsonl` and `gold_pairs.jsonl`
+  when there are a few thousand pairs. A linear adapter trained on a few
+  hundred triples did not beat the frozen vectors in October 2026.
 - Add audio sources: Tamil news podcasts and bulletin feeds with enclosures,
   or a YouTube transcript-free audio pipeline for speeches.
 

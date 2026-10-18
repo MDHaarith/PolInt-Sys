@@ -87,6 +87,33 @@ def test_embedding_stores_vectors_retries_failures_and_searches_across_modalitie
         warehouse.close()
 
 
+def test_stories_embedded_with_another_prompt_are_embedded_again(tmp_path, monkeypatch):
+    from scripts.intelligence import vectors as vector_module
+
+    warehouse = IntelligenceWarehouse(tmp_path / "intel.db")
+    try:
+        collect(warehouse, id="a", title="Farmers protest over Cauvery water", url="https://x.test/a",
+                source="The Hindu", publishedAtRaw="2026-10-16T07:00:00Z")
+        store = VectorStore(warehouse.connection)
+        store.discover(inbox=None)
+        prompts = []
+
+        def worker(jobs, deadline_seconds=None):
+            prompts.extend(job["prompt"] for job in jobs)
+            return {job["id"]: unit(1, 0) for job in jobs}
+
+        assert store.embed_pending(worker=worker)["embedded"] == 1
+        assert prompts == [vector_module.TEXT_PROMPT]
+        # Even stories outside the discovery window are queued again, and their old vectors dropped.
+        monkeypatch.setattr(vector_module, "TEXT_PROMPT", "document")
+        assert store.discover(since="2026-10-17", inbox=None)["text"] == 1
+        assert store.load()[0] == [] and [row["modality"] for row in store.pending()] == ["text"]
+        store.embed_pending(worker=worker)
+        assert prompts[-1] == "document" and store.discover(since="2026-10-17", inbox=None)["text"] == 0
+    finally:
+        warehouse.close()
+
+
 def test_app_index_is_small_and_ranks_like_the_full_vectors():
     rng = np.random.default_rng(1)
     vectors = {f"raw_{i}": v / np.linalg.norm(v) for i, v in enumerate(rng.normal(size=(50, 768)).astype(np.float32))}
@@ -96,6 +123,17 @@ def test_app_index_is_small_and_ranks_like_the_full_vectors():
     decoded = data / np.array(index["scales"])[:, None]
     query = truncate(vectors["raw_7"][None, :], 256)[0]
     assert index["ids"][int(np.argmax(decoded @ query))] == "raw_7"
+    # What the app removes before comparing: the mean and one shared unit direction.
+    centre, directions = np.array(index["centre"]), np.array(index["directions"])
+    assert centre.shape == (256,) and directions.shape == (1, 256)
+    assert abs(np.linalg.norm(directions[0]) - 1) < 1e-3
+
+    def prepare(matrix):
+        shifted = matrix - centre
+        shifted -= shifted @ directions.T @ directions
+        return shifted / np.linalg.norm(shifted, axis=-1, keepdims=True)
+
+    assert index["ids"][int(np.argmax(prepare(decoded) @ prepare(query)))] == "raw_7"
 
 
 def story(story_id, title, date, vector=None):

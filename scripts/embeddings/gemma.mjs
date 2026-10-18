@@ -28,6 +28,8 @@ export const PROMPTS = {
   similarity: (text) => `task: sentence similarity | query: ${text}`,
   clustering: (text) => `task: clustering | query: ${text}`,
   classification: (text) => `task: classification | query: ${text}`,
+  // Already formatted by the caller (scripts/embedding_experiments.py).
+  raw: (text) => text,
 };
 
 const loaded = new Map();
