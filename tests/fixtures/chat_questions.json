@@ -1,0 +1,31 @@
+{
+  "description": "Questions for choosing the on-device chat model, written from the hand-checked same-issue groups (10-17 Oct 2026). 'group' names the group whose stories answer the question; null means the evidence should not answer it and the right reply picks no passage. First draft, written by Claude; to be checked by a person.",
+  "questions": [
+    {"question": "What did Stalin say about TVK after the meth seizure?", "group": "meth_haul_row"},
+    {"question": "மெத்தம்பெட்டமைன் பறிமுதல் குறித்து ஆ.ராசா என்ன குற்றம் சாட்டினார்?", "group": "meth_haul_row"},
+    {"question": "Who claims credit for the Periyar Arivulagam in Coimbatore?", "group": "periyar_arivulagam"},
+    {"question": "கோவை பெரியார் அறிவுலகம் பற்றி ஸ்டாலின் என்ன சொன்னார்?", "group": "periyar_arivulagam"},
+    {"question": "Why did L Murugan resign as Union Minister?", "group": "l_murugan_resignation"},
+    {"question": "எல்.முருகன் ஏன் மத்திய அமைச்சர் பதவியை ராஜினாமா செய்தார்?", "group": "l_murugan_resignation"},
+    {"question": "What honours did the government announce for composer Deva?", "group": "composer_deva_death"},
+    {"question": "இசையமைப்பாளர் தேவாவுக்கு அஞ்சலி செலுத்தியவர்கள் யார்?", "group": "composer_deva_death"},
+    {"question": "Who flagged off the first Chennai Metro phase II train?", "group": "chennai_metro_phase2"},
+    {"question": "சென்னை மெட்ரோ இரண்டாம் கட்ட ரயிலை யார் தொடங்கி வைத்தனர்?", "group": "chennai_metro_phase2"},
+    {"question": "What did Palaniswami allege about the power purchase deal?", "group": "power_purchase_row"},
+    {"question": "மின் கொள்முதல் விவகாரத்தில் எடப்பாடி பழனிசாமி என்ன குற்றச்சாட்டு வைத்தார்?", "group": "power_purchase_row"},
+    {"question": "Does VCK accept PMK joining the TVK alliance?", "group": "vck_pmk_alliance"},
+    {"question": "தவெக கூட்டணியில் பாமக சேருவது பற்றி விசிக நிலைப்பாடு என்ன?", "group": "vck_pmk_alliance"},
+    {"question": "What did Vijay discuss with Andhra CM Naidu about river linking?", "group": "cauvery_river"},
+    {"question": "காவிரி விவகாரத்தில் விஜய் மவுனம் காப்பதாக யார் விமர்சித்தார்?", "group": "cauvery_river"},
+    {"question": "How did AIADMK mark its 55th foundation day?", "group": "aiadmk_55th_year"},
+    {"question": "அதிமுக 55-வது ஆண்டு விழா எப்படி கொண்டாடப்பட்டது?", "group": "aiadmk_55th_year"},
+    {"question": "What did Vijay do about the fishermen arrested by Sri Lanka?", "group": "fishermen_arrests"},
+    {"question": "மீனவர்கள் கைது தொடர்பாக எடப்பாடி பழனிசாமி என்ன விமர்சனம் செய்தார்?", "group": "fishermen_arrests"},
+    {"question": "Did Vijay meet Vladimir Putin in Moscow this week?", "group": null},
+    {"question": "What did Rajinikanth say when he launched his new political party?", "group": null},
+    {"question": "Which film won the national award for best Tamil film this year?", "group": null},
+    {"question": "சீமான் பாஜகவில் இணைந்தது எப்போது?", "group": null},
+    {"question": "விஜய் ஜப்பான் பயணத்தில் யாரைச் சந்தித்தார்?", "group": null},
+    {"question": "கமல்ஹாசன் முதல்வர் வேட்பாளராக அறிவிக்கப்பட்டாரா?", "group": null}
+  ]
+}
