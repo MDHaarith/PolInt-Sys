@@ -784,7 +784,7 @@ export default function App() {
             onSelectEvent={handleSelectEvent}
           />
         ) : workspaceMode === "ask" ? (
-          <EvidenceChat language={language} />
+          <EvidenceChat language={language} storylines={storylines} />
         ) : workspaceMode === "policies" ? (
           <PolicyImpactDashboard />
         ) : workspaceMode === "politician" ? (

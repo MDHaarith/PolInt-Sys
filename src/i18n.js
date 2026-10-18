@@ -45,6 +45,8 @@ export const STRINGS = {
     readAloud: "Read aloud",
     stopReading: "Stop reading",
     reports: (source) => `${source} reports:`,
+    connectionsTitle: "How it connects",
+    connectionsNote: "Connected by PolInt's storyline rules from the reports, not written by AI. The quotes below are the evidence.",
   },
   ta: {
     switchLanguage: "English",
@@ -85,6 +87,8 @@ export const STRINGS = {
     readAloud: "உரக்கப் படி",
     stopReading: "படிப்பதை நிறுத்து",
     reports: (source) => `${source} செய்தி:`,
+    connectionsTitle: "தொடர்புகள்",
+    connectionsNote: "செய்திகளிலிருந்து PolInt-இன் விதிகள் இணைத்தவை; AI எழுதியவை அல்ல. கீழே உள்ள மேற்கோள்களே சான்று.",
   },
 };
 

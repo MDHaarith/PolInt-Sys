@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Mic, Send, Square, Volume2 } from "lucide-react";
 import { MODEL_DOWNLOAD_MB, VOICE_DOWNLOAD_MB, canEncodeQueries, loadQueryEncoder, loadVoiceEncoder } from "../semanticSearch";
 import { VOICE_ANSWER_BAR, answerFor, decodeEvidencePack } from "../evidenceChat";
+import { connectionLines, gatherConnections } from "../connections";
 import { evidencePackFile, loadData } from "../dataSource";
 import { SPEECH_LOCALE, strings } from "../i18n";
 import { canRecord, canSpeak, speak, startRecording, stopSpeaking } from "../voice";
@@ -13,8 +14,9 @@ const onnxProgress = (set) => (event) => {
 
 // Ask a question, typed or spoken; EmbeddingGemma 2 finds the passages from
 // trusted outlets that answer it, shown word for word with outlet, date and
-// link, and read aloud on request. Nothing is generated. See src/evidenceChat.js.
-export default function EvidenceChat({ language = "en" }) {
+// link, with how they connect in PolInt's storylines (src/connections.js), and
+// read aloud on request. Nothing is generated. See src/evidenceChat.js.
+export default function EvidenceChat({ language = "en", storylines = null }) {
   const t = strings(language);
   const [pack, setPack] = useState({ status: "loading", decoded: null });
   const [gpuReady, setGpuReady] = useState(null);
@@ -74,10 +76,10 @@ export default function EvidenceChat({ language = "en" }) {
     await stopSpeaking();
     setSpeaking(index);
     const parts = turn.status === "answered"
-      ? turn.quotes.flatMap((quote) => [
+      ? connectionLines(turn.connections, language).map((text) => ({ text, locale: SPEECH_LOCALE[language] })).concat(turn.quotes.flatMap((quote) => [
         { text: t.reports(quote.source), locale: SPEECH_LOCALE[language] },
         { text: quote.text, locale: SPEECH_LOCALE[quote.language] || SPEECH_LOCALE.en },
-      ])
+      ]))
       : [{ text: t.askNoEvidence, locale: SPEECH_LOCALE[language] }];
     try {
       await speak(parts);
@@ -91,7 +93,7 @@ export default function EvidenceChat({ language = "en" }) {
     try {
       const vector = await embed(pack.decoded.dimensions);
       const quotes = answerFor(pack.decoded, vector, bar ? { bar } : undefined);
-      const turn = { question: shownQuestion, spoken, status: quotes.length ? "answered" : "no_evidence", quotes };
+      const turn = { question: shownQuestion, spoken, status: quotes.length ? "answered" : "no_evidence", quotes, connections: gatherConnections(quotes, storylines) };
       const index = turnsRef.current.length;
       setTurns((previous) => [...previous, turn]);
       // A spoken question gets a spoken answer.
@@ -198,6 +200,16 @@ export default function EvidenceChat({ language = "en" }) {
               {turn.spoken && <Mic size={14} aria-hidden="true" />} {turn.question}
             </p>
             {turn.status === "answered" ? (
+              <>
+              {turn.connections && (
+                <section className="evidence-reasoning" aria-label={t.connectionsTitle}>
+                  <h2>{t.connectionsTitle}</h2>
+                  <ul>
+                    {connectionLines(turn.connections, language).map((line) => <li key={line}>{line}</li>)}
+                  </ul>
+                  <p className="evidence-reasoning-note">{t.connectionsNote}</p>
+                </section>
+              )}
               <ul className="evidence-quotes">
                 {turn.quotes.map((quote) => (
                   <li key={quote.id} className={`evidence-quote evidence-${quote.kind}`}>
@@ -216,6 +228,7 @@ export default function EvidenceChat({ language = "en" }) {
                   </li>
                 ))}
               </ul>
+              </>
             ) : (
               <p className="evidence-none">
                 {turn.status === "error" ? t.askError(turn.message) : t.askNoEvidence}
