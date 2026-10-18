@@ -12,9 +12,14 @@
             different issue), as typed records checked by Python. A linear
             adapter trained on them is scored on the hand-checked groups. Worth
             it if precision@10 improves with a 95% interval above zero.
+  hard      The same judge on the gold pairs the embeddings get most wrong:
+            same-issue pairs with the lowest similarity (often Tamil beside
+            English) and different-issue pairs with the highest (same people,
+            different story). The embeddings score near zero here by design, so
+            there is no bar; it shows how far the model can be trusted.
 
     pip install data-designer
-    NVIDIA_API_KEY=... python3 scripts/data_designer_pilot.py [--model ...] [--pairs 200] [--seeds 400]
+    NVIDIA_API_KEY=... python3 scripts/data_designer_pilot.py [--model ...] [--pairs 200] [--seeds 400] [--tests judge hard generate]
 
 Any OpenAI-compatible endpoint works with --endpoint and --key-env (e.g. a
 local server or OpenRouter). Results go to data/data-designer-pilot/.
@@ -61,7 +66,7 @@ def designer(args):
     return DataDesigner(artifact_path=OUT / "artifacts", model_providers=[provider]), model
 
 
-def run(args, df, column_name, prompt, output_format, system_prompt):
+def run(args, df, column_name, prompt, output_format, system_prompt, dataset_name=None):
     import data_designer.config as dd
 
     engine, model = designer(args)
@@ -71,7 +76,7 @@ def run(args, df, column_name, prompt, output_format, system_prompt):
         name=column_name, model_alias="pilot", prompt=prompt, system_prompt=system_prompt, output_format=output_format,
     ))
     started = time.time()
-    result = engine.create(builder, num_records=len(df), dataset_name=column_name)
+    result = engine.create(builder, num_records=len(df), dataset_name=dataset_name or column_name)
     return result.load_dataset(), time.time() - started
 
 
@@ -94,7 +99,7 @@ def benchmark():
     return ids, records, texts, label, normalise(matrix)
 
 
-def judge_test(args, ids, records, label, vectors) -> dict:
+def judge_test(args, ids, records, label, vectors, hardest=False) -> dict:
     import pandas as pd
     from pydantic import BaseModel, Field
 
@@ -112,10 +117,13 @@ def judge_test(args, ids, records, label, vectors) -> dict:
     for position, left in enumerate(labelled):
         for right in labelled[position + 1:]:
             similarity = float(processed[left] @ processed[right])
-            if abs(similarity - cut) < JUDGE_BAND:
+            if hardest or abs(similarity - cut) < JUDGE_BAND:
                 (same if label[ids[left]] == label[ids[right]] else different).append((left, right, similarity))
     half = args.pairs // 2
-    pairs = rng.sample(same, min(half, len(same))) + rng.sample(different, min(half, len(different)))
+    if hardest:
+        pairs = sorted(same, key=lambda pair: pair[2])[:half] + sorted(different, key=lambda pair: -pair[2])[:half]
+    else:
+        pairs = rng.sample(same, min(half, len(same))) + rng.sample(different, min(half, len(different)))
     rng.shuffle(pairs)
     df = pd.DataFrame([{
         "headline_a": records[left][0], "headline_b": records[right][0],
@@ -129,6 +137,7 @@ def judge_test(args, ids, records, label, vectors) -> dict:
         "general topic is not enough; they must be about the same development.",
         Verdict,
         "You read Tamil Nadu political news in Tamil and English. Answer only from the headlines.",
+        "hard-verdict" if hardest else "verdict",
     )
     verdicts = [as_dict(value) for value in rows["verdict"]]
     valid = np.array([verdict is not None for verdict in verdicts])
@@ -143,14 +152,17 @@ def judge_test(args, ids, records, label, vectors) -> dict:
 
     embedding = balanced(similarity >= cut)
     accuracy = balanced(predicted)
+    accuracy_tamil = balanced(predicted, tamil) if tamil.any() else None
+    embedding_tamil = balanced(similarity >= cut, tamil) if tamil.any() else None
+    worth_it = accuracy >= embedding + JUDGE_MARGIN and (accuracy_tamil is None or accuracy_tamil >= embedding_tamil + JUDGE_MARGIN)
     return {
         "pairs": len(rows), "same_issue_pairs": int(truth.sum()), "valid_records": float(valid.mean()),
         "cut": round(float(cut), 3), "model_accuracy": accuracy,
-        "model_accuracy_tamil_pairs": balanced(predicted, tamil) if tamil.any() else None,
-        "embedding_accuracy": embedding, "embedding_accuracy_tamil_pairs": balanced(similarity >= cut, tamil) if tamil.any() else None,
-        "worth_it": accuracy >= embedding + JUDGE_MARGIN,
+        "model_accuracy_tamil_pairs": accuracy_tamil,
+        "embedding_accuracy": embedding, "embedding_accuracy_tamil_pairs": embedding_tamil,
+        "worth_it": None if hardest else bool(worth_it),
         "seconds": round(seconds), "examples_wrong": rows.assign(predicted=predicted)[predicted != truth][
-            ["headline_a", "headline_b", "truth"]].head(5).to_dict("records"),
+            ["headline_a", "headline_b", "truth", "similarity"]].head(8).to_dict("records"),
     }
 
 
@@ -279,22 +291,26 @@ def main() -> None:
     parser.add_argument("--pairs", type=int, default=200)
     parser.add_argument("--seeds", type=int, default=400)
     parser.add_argument("--parallel", type=int, default=4)
-    parser.add_argument("--tests", nargs="+", default=["judge", "generate"], choices=["judge", "generate"])
+    parser.add_argument("--tests", nargs="+", default=["judge", "generate"], choices=["judge", "hard", "generate"])
     args = parser.parse_args()
     if not os.environ.get(args.key_env):
         raise SystemExit(f"{args.key_env} is not set; no model was called.")
     OUT.mkdir(parents=True, exist_ok=True)
     CACHE.mkdir(parents=True, exist_ok=True)
     ids, records, texts, label, vectors = benchmark()
-    report = {"model": args.model, "endpoint": args.endpoint}
+    path = OUT / f"report-{re.sub(r'[^a-z0-9]+', '-', args.model.lower())}.json"
+    report = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}  # keep tests not re-run
+    report.update(model=args.model, endpoint=args.endpoint)
     if "judge" in args.tests:
         report["judge"] = judge_test(args, ids, records, label, vectors)
         print(json.dumps({"judge": report["judge"]}, indent=2, ensure_ascii=False))
+    if "hard" in args.tests:
+        report["hard"] = judge_test(args, ids, records, label, vectors, hardest=True)
+        print(json.dumps({"hard": report["hard"]}, indent=2, ensure_ascii=False))
     if "generate" in args.tests:
         report["generate"] = generate_test(args, ids, records, texts, label, vectors)
         print(json.dumps({"generate": report["generate"]}, indent=2, ensure_ascii=False))
-    (OUT / f"report-{re.sub(r'[^a-z0-9]+', '-', args.model.lower())}.json").write_text(
-        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 if __name__ == "__main__":
