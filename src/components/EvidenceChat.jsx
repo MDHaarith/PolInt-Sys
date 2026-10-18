@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Send } from "lucide-react";
 import { MODEL_DOWNLOAD_MB, canEncodeQueries, loadQueryEncoder } from "../semanticSearch";
-import { CHAT_MODEL, chatMessages, decodeEvidencePack, evidenceFor, loadChatModel, readReply } from "../evidenceChat";
+import { answerFor, decodeEvidencePack } from "../evidenceChat";
 import { evidencePackFile, loadData } from "../dataSource";
 import { formatDateTime } from "./dateLabels";
 
 const KIND_LABEL = { report: "Report", claim: "Party outlet's claim" };
 
-// Ask a question; the answer is passages from trusted outlets, word for word,
-// each with its outlet, date and link. See src/evidenceChat.js.
+// Ask a question; EmbeddingGemma 2 finds the passages from trusted outlets
+// that answer it, shown word for word with outlet, date and link. Nothing is
+// generated. See src/evidenceChat.js.
 export default function EvidenceChat() {
   const [pack, setPack] = useState({ status: "loading", decoded: null });
   const [gpuReady, setGpuReady] = useState(null);
@@ -17,7 +18,6 @@ export default function EvidenceChat() {
   const [turns, setTurns] = useState([]);
   const [busy, setBusy] = useState(false);
   const encoderRef = useRef(null);
-  const chatRef = useRef(null);
 
   useEffect(() => {
     loadData(evidencePackFile)
@@ -28,15 +28,12 @@ export default function EvidenceChat() {
 
   const startModels = async () => {
     setModels({ status: "loading", progress: 0, message: "" });
-    // Search model first, then the chat model; each counts for half the bar.
-    const progress = (offset) => (event) => {
-      if (event.status === "progress" && event.file?.includes(".onnx")) {
-        setModels({ status: "loading", progress: Math.round(offset + (event.progress || 0) / 2), message: "" });
-      }
-    };
     try {
-      encoderRef.current = await loadQueryEncoder(progress(0));
-      chatRef.current = await loadChatModel(progress(50));
+      encoderRef.current = await loadQueryEncoder((event) => {
+        if (event.status === "progress" && event.file?.includes(".onnx")) {
+          setModels({ status: "loading", progress: Math.round(event.progress || 0), message: "" });
+        }
+      });
       setModels({ status: "ready", progress: 100, message: "" });
     } catch (error) {
       setModels({ status: "error", progress: 0, message: String(error.message || error) });
@@ -51,19 +48,14 @@ export default function EvidenceChat() {
     setQuestion("");
     try {
       const vector = await encoderRef.current(text, pack.decoded.dimensions);
-      const passages = evidenceFor(pack.decoded, vector);
-      const shown = passages.length
-        ? readReply(await chatRef.current(chatMessages(text, passages)), text, passages)
-        : { status: "no_evidence", quotes: [], summary: null };
-      setTurns((previous) => [...previous, { question: text, ...shown }]);
+      const quotes = answerFor(pack.decoded, vector);
+      setTurns((previous) => [...previous, { question: text, status: quotes.length ? "answered" : "no_evidence", quotes }]);
     } catch (error) {
       setTurns((previous) => [...previous, { question: text, status: "error", quotes: [], message: String(error.message || error) }]);
     } finally {
       setBusy(false);
     }
   };
-
-  const downloadMb = useMemo(() => MODEL_DOWNLOAD_MB + CHAT_MODEL.downloadMb, []);
 
   return (
     <section className="evidence-chat" aria-labelledby="evidence-chat-title">
@@ -83,14 +75,14 @@ export default function EvidenceChat() {
             <p>Asking questions needs WebGPU, which this device does not offer.</p>
           ) : models.status === "loading" ? (
             <>
-              <p>Downloading the models… {models.progress}%</p>
+              <p>Downloading EmbeddingGemma 2… {models.progress}%</p>
               <progress max="100" value={models.progress} />
             </>
           ) : (
             <>
               <p>
-                Ask runs on this phone. It downloads two models once (about {downloadMb} MB, best on Wi-Fi): one finds the
-                evidence, the other picks the passages that answer you.
+                Ask runs on this phone with EmbeddingGemma 2, the same model as search by meaning. It downloads once
+                ({MODEL_DOWNLOAD_MB} MB, best on Wi-Fi).
               </p>
               {models.status === "error" && <p className="meaning-error">Download failed: {models.message}</p>}
               <button type="button" className="load-more-intel-btn" onClick={startModels} disabled={gpuReady === null}>
@@ -107,12 +99,6 @@ export default function EvidenceChat() {
             <p className="evidence-question">{turn.question}</p>
             {turn.status === "answered" ? (
               <div className="evidence-answer">
-                {turn.summary && (
-                  <p className="evidence-summary">
-                    <span className="evidence-summary-label">Summary, checked against the quotes below</span>
-                    {turn.summary}
-                  </p>
-                )}
                 <ul className="evidence-quotes">
                   {turn.quotes.map((quote) => (
                     <li key={quote.id} className={`evidence-quote evidence-${quote.kind}`}>
@@ -138,9 +124,7 @@ export default function EvidenceChat() {
               <p className="evidence-none">
                 {turn.status === "error"
                   ? `Something went wrong: ${turn.message}`
-                  : turn.status === "unreadable"
-                    ? "The model's reply could not be read. Try asking again in other words."
-                    : "No trusted source in the evidence answers this."}
+                  : "No trusted source in the evidence answers this."}
               </p>
             )}
           </li>

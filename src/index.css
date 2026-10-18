@@ -657,8 +657,6 @@ small, [style*="font-size: 0."], [style*="font-size:0."] { font-size: .875rem !i
 .evidence-chat-header p { margin: 0; color: var(--text-secondary); font-size: .875rem; line-height: 1.5; }
 .evidence-turns { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; flex: 1; }
 .evidence-question { margin: 0 0 8px auto; max-width: 85%; width: fit-content; padding: 8px 12px; border-radius: 12px 12px 2px 12px; background: var(--bg-elevated); color: var(--text-primary); }
-.evidence-summary { margin: 0 0 8px; padding: 10px 12px; border-left: 3px solid var(--accent-color); background: var(--bg-panel); line-height: 1.5; }
-.evidence-summary-label { display: block; font-size: .75rem; color: var(--text-secondary); margin-bottom: 2px; }
 .evidence-quotes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .evidence-quote { padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--bg-panel); }
 .evidence-quote.evidence-claim { border-style: dashed; }
