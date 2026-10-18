@@ -106,7 +106,7 @@ def judge_test(args, ids, records, label, vectors, hardest=False) -> dict:
     class Verdict(BaseModel):
         same_issue: bool
         confidence: Literal["low", "medium", "high"]
-        reason: str = Field(max_length=400)
+        reason: str = Field(max_length=600, description="One short sentence")
 
     processed = fit_directions(vectors, 3)(vectors)
     labelled = [i for i, story_id in enumerate(ids) if story_id in label]
@@ -133,8 +133,9 @@ def judge_test(args, ids, records, label, vectors, hardest=False) -> dict:
     rows, seconds = run(
         args, df, "verdict",
         "Headline A: {{ headline_a }}\nHeadline B: {{ headline_b }}\n\n"
-        "Do these two headlines report the same specific issue or event? Sharing a party, a person or a "
-        "general topic is not enough; they must be about the same development.",
+        "Are these two headlines about the same news issue? One issue is one event or development together "
+        "with the coverage it sets off: reports of it, reactions, accusations, defences and follow-ups about "
+        "it. Sharing only a party, a person or a general topic is not enough. Give the reason in one short sentence.",
         Verdict,
         "You read Tamil Nadu political news in Tamil and English. Answer only from the headlines.",
         "hard-verdict" if hardest else "verdict",
