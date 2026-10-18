@@ -63,7 +63,7 @@ export const unescapeHtml = (text) => text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/
   return ENTITIES[code.toLowerCase()] ?? whole;
 });
 
-export const cleanHtml = (text) => (text ? unescapeHtml(text.replace(/<[\s\S]*?>/g, " ")).replace(/ /g, " ").replace(/\s+/g, " ").trim() : "");
+export const cleanHtml = (text) => (text ? unescapeHtml(text.replace(/<[\s\S]*?>/g, " ")).replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim() : "");
 
 export const summarize = (text, limit = 320) => {
   const cleaned = cleanHtml(text);
