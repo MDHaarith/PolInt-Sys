@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, Mic, Send, Square, Volume2 } from "lucide-react";
 import { MODEL_DOWNLOAD_MB, VOICE_DOWNLOAD_MB, canEncodeQueries, loadQueryEncoder, loadVoiceEncoder } from "../semanticSearch";
 import { VOICE_ANSWER_BAR, answerFor, decodeEvidencePack } from "../evidenceChat";
 import { connectionLines, gatherConnections } from "../connections";
+import { embedPending, withLocalEvidence } from "../collect/evidence";
+import { getAll } from "../collect/store";
 import { evidencePackFile, loadData } from "../dataSource";
 import { SPEECH_LOCALE, strings } from "../i18n";
 import { canRecord, canSpeak, speak, startRecording, stopSpeaking } from "../voice";
@@ -16,7 +18,7 @@ const onnxProgress = (set) => (event) => {
 // trusted outlets that answer it, shown word for word with outlet, date and
 // link, with how they connect in PolInt's storylines (src/connections.js), and
 // read aloud on request. Nothing is generated. See src/evidenceChat.js.
-export default function EvidenceChat({ language = "en", storylines = null }) {
+export default function EvidenceChat({ language = "en", storylines = null, localVersion = 0 }) {
   const t = strings(language);
   const [pack, setPack] = useState({ status: "loading", decoded: null });
   const [gpuReady, setGpuReady] = useState(null);
@@ -27,6 +29,8 @@ export default function EvidenceChat({ language = "en", storylines = null }) {
   const [turns, setTurns] = useState([]);
   const [busy, setBusy] = useState(false);
   const [speaking, setSpeaking] = useState(null);
+  const [localPassages, setLocalPassages] = useState([]);
+  const [localEmbedding, setLocalEmbedding] = useState(null);
   const encoderRef = useRef(null);
   const recorderRef = useRef(null);
   const turnsRef = useRef(turns);
@@ -45,6 +49,27 @@ export default function EvidenceChat({ language = "en", storylines = null }) {
     const timer = setInterval(() => setRecording((current) => current && { ...current, seconds: current.seconds + 1 }), 1000);
     return () => clearInterval(timer);
   }, [recording]);
+
+  // Reports the phone collected (src/collect/) join the published evidence once
+  // EmbeddingGemma 2 has embedded them; until then Ask searches what it has.
+  useEffect(() => {
+    getAll("passages").then(setLocalPassages).catch(() => {});
+  }, [localVersion]);
+
+  useEffect(() => {
+    if (models.status !== "ready" || !encoderRef.current || !localPassages.some((passage) => !passage.vector)) return undefined;
+    let cancelled = false;
+    const dimensions = pack.decoded?.dimensions || 256;
+    embedPending((text, size) => encoderRef.current.text(text, size), dimensions, { onProgress: (progress) => !cancelled && setLocalEmbedding(progress) })
+      .then(() => getAll("passages"))
+      .then((rows) => { if (!cancelled) setLocalPassages(rows); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLocalEmbedding(null); });
+    return () => { cancelled = true; };
+  }, [models.status, localPassages, pack.decoded]);
+
+  const searchIndex = useMemo(() => withLocalEvidence(pack.decoded, localPassages, pack.decoded?.dimensions || 256), [pack.decoded, localPassages]);
+  const hasEvidence = searchIndex.ids.length > 0;
 
   const startModels = async () => {
     setModels({ status: "loading", progress: 0, message: "" });
@@ -91,8 +116,8 @@ export default function EvidenceChat({ language = "en", storylines = null }) {
   const answer = async (shownQuestion, embed, { bar, spoken = false } = {}) => {
     setBusy(true);
     try {
-      const vector = await embed(pack.decoded.dimensions);
-      const quotes = answerFor(pack.decoded, vector, bar ? { bar } : undefined);
+      const vector = await embed(searchIndex.dimensions);
+      const quotes = answerFor(searchIndex, vector, bar ? { bar } : undefined);
       const turn = { question: shownQuestion, spoken, status: quotes.length ? "answered" : "no_evidence", quotes, connections: gatherConnections(quotes, storylines) };
       const index = turnsRef.current.length;
       setTurns((previous) => [...previous, turn]);
@@ -108,7 +133,7 @@ export default function EvidenceChat({ language = "en", storylines = null }) {
   const ask = async (event) => {
     event.preventDefault();
     const text = question.trim();
-    if (text.length < 3 || busy || !pack.decoded || models.status !== "ready") return;
+    if (text.length < 3 || busy || !hasEvidence || models.status !== "ready") return;
     setQuestion("");
     await answer(text, (dimensions) => encoderRef.current.text(text, dimensions));
   };
@@ -143,7 +168,7 @@ export default function EvidenceChat({ language = "en", storylines = null }) {
     }
   };
 
-  const ready = models.status === "ready" && Boolean(pack.decoded);
+  const ready = models.status === "ready" && hasEvidence;
   const kindLabel = { report: t.kindReport, claim: t.kindClaim };
 
   return (
@@ -153,9 +178,10 @@ export default function EvidenceChat({ language = "en", storylines = null }) {
         <p>{t.askIntro(pack.days)}</p>
       </header>
 
-      {pack.status === "missing" && <div className="meaning-panel" role="status"><p>{t.askMissing}</p></div>}
+      {pack.status === "missing" && !localPassages.length && <div className="meaning-panel" role="status"><p>{t.askMissing}</p></div>}
+      {localEmbedding && <p className="evidence-recording" role="status">{t.localEvidence(localEmbedding.done, localEmbedding.total)}</p>}
 
-      {pack.status === "ready" && models.status !== "ready" && (
+      {(pack.status === "ready" || localPassages.length > 0) && models.status !== "ready" && (
         <div className="meaning-panel" role="status">
           {gpuReady === false ? (
             <p>{t.askNeedsGpu}</p>
