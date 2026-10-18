@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { AutoTokenizer, pipeline } from "@huggingface/transformers";
+import { AutoProcessor, AutoTokenizer, pipeline } from "@huggingface/transformers";
 import { embedTexts, PROMPTS, truncate } from "./embeddings/gemma.mjs";
 import { chatMessages, decodeEvidencePack, evidenceFor, readReply } from "../src/evidenceChat.js";
 
@@ -54,6 +54,8 @@ for (const model of models) {
   try {
     generate = await pipeline("text-generation", model, { device: "cpu", dtype });
     tokenizer = await AutoTokenizer.from_pretrained(model);
+    // Some exports keep the chat template in chat_template.jinja, which the processor reads.
+    if (!tokenizer.chat_template) tokenizer.chat_template = (await AutoProcessor.from_pretrained(model)).chat_template;
   } catch (error) {
     report.models[model] = { dtype, error: String(error).slice(0, 300) };
     console.log(`\n${model}: could not load: ${report.models[model].error}`);
@@ -102,5 +104,5 @@ for (const model of models) {
   console.log(`\n${model}: ${JSON.stringify(report.models[model])}`);
   fs.writeFileSync(path.join(root, `data/chat-bakeoff/${model.split("/").pop()}.json`), JSON.stringify(rows, null, 2));
   await generate.dispose();
+  fs.writeFileSync(path.join(root, "data/chat-bakeoff/report.json"), JSON.stringify(report, null, 2));
 }
-fs.writeFileSync(path.join(root, "data/chat-bakeoff/report.json"), JSON.stringify(report, null, 2));
