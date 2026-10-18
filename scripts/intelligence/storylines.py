@@ -580,14 +580,18 @@ def _core(thread: dict) -> set[str]:
 # Story vectors are centred (the corpus mean subtracted) before comparison:
 # every headline here shares a "Tamil Nadu politics" direction, and without
 # centring a large thread's centre resembles every political story. Measured on
-# the hand-checked groups in tests/fixtures/same_issue_clusters.json, a group's
-# centred centre scores its own stories at a median 0.54-0.67 and the rest of
-# the feed below 0.42-0.56 (99.9th percentile). A move joins a thread on meaning
-# alone above SEMANTIC_LINK, or above SEMANTIC_LINK_WITH_CONTEXT when it also
-# names the thread's issue (#sir, #cauvery, ...).
-SEMANTIC_LINK = 0.58
-SEMANTIC_LINK_WITH_CONTEXT = 0.50
-SEMANTIC_MERGE = 0.72
+# the hand-checked groups in tests/fixtures/same_issue_clusters.json with the
+# search-prompt vectors (vectors.TEXT_PROMPT), a group's centred centre scores
+# its own stories at a median 0.46-0.74 and the rest of the feed below
+# 0.26-0.70 (99.9th percentile). A move joins a thread on meaning alone above
+# SEMANTIC_LINK, or above SEMANTIC_LINK_WITH_CONTEXT when it also names the
+# thread's issue (#sir, #cauvery, ...); both let in 0.1% of off-topic stories.
+# Threads merge when their centres pass SEMANTIC_MERGE: two halves of one issue
+# score 0.77-0.98, different issues at most 0.20, and 0.55-0.65 all join the
+# Tamil and English threads of one issue (0.70 and above leave them apart).
+SEMANTIC_LINK = 0.61
+SEMANTIC_LINK_WITH_CONTEXT = 0.52
+SEMANTIC_MERGE = 0.60
 
 
 def _centred(vectors: dict) -> dict:

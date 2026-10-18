@@ -4,7 +4,8 @@
 //   node scripts/embeddings/worker.mjs jobs.jsonl results.jsonl [--deadline SECONDS]
 //
 // Each job line: {"id", "modality": "text"|"image"|"audio", "input", "prompt"?, "title"?}
-//   text:  input is the text; prompt is one of PROMPTS (document by default)
+//   text:  input is the text; prompt is one of PROMPTS (document by default; raw
+//          sends the input as it is)
 //   image: input is a URL or file path
 //   audio: input is a URL or file path; any format ffmpeg reads
 // Each result line: {"id", "vector": base64 float32} or {"id", "error"}.

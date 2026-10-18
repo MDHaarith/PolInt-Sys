@@ -27,16 +27,42 @@ export const storyVector = (decoded, id) => {
   return Float32Array.from(vectors.subarray(row * dimensions, (row + 1) * dimensions), (value) => value / scales[row]);
 };
 
+// Every story shares a "Tamil Nadu politics" direction that drowns the
+// differences between them. Indexes that carry `centre` and `directions` say
+// what to remove from stories and queries alike before comparing; older
+// indexes are compared as stored.
+const remover = (centre, directions) => {
+  if (!centre?.length) return (vector) => vector;
+  return (vector) => {
+    const out = Float32Array.from(vector, (value, column) => value - centre[column]);
+    for (const direction of directions || []) {
+      let along = 0;
+      for (let column = 0; column < out.length; column += 1) along += out[column] * direction[column];
+      for (let column = 0; column < out.length; column += 1) out[column] -= along * direction[column];
+    }
+    let norm = 0;
+    for (const value of out) norm += value * value;
+    norm = Math.sqrt(norm) || 1;
+    return out.map((value) => value / norm);
+  };
+};
+
 export const decodeVectorIndex = (index) => {
   if (!index?.ids?.length || !index.vectors) return null;
   const bytes = Uint8Array.from(atob(index.vectors), (char) => char.charCodeAt(0));
-  return {
+  const decoded = {
     ids: index.ids,
     rows: new Map(index.ids.map((id, row) => [id, row])),
     dimensions: index.dimensions,
     vectors: new Int8Array(bytes.buffer),
     scales: Float32Array.from(index.scales),
+    prepare: remover(index.centre, index.directions),
   };
+  // Stories are prepared once; each query is prepared as it arrives.
+  const prepared = new Float32Array(index.ids.length * index.dimensions);
+  index.ids.forEach((id, row) => prepared.set(decoded.prepare(storyVector(decoded, id)), row * index.dimensions));
+  decoded.prepared = prepared;
+  return decoded;
 };
 
 // Matryoshka: the leading dimensions, renormalised, are a valid smaller vector.
@@ -46,14 +72,15 @@ export const truncate = (vector, dimensions) => {
   return head.map((value) => value / norm);
 };
 
+// `query` is a typed query's vector or a story's own (storyVector), as stored.
 export const searchVectorIndex = (decoded, query, { limit = 60, minScore = 0 } = {}) => {
-  const { ids, dimensions, vectors, scales } = decoded;
+  const { ids, dimensions, prepared } = decoded;
+  const target = decoded.prepare(query);
   const results = [];
   for (let row = 0; row < ids.length; row += 1) {
-    let total = 0;
+    let score = 0;
     const offset = row * dimensions;
-    for (let column = 0; column < dimensions; column += 1) total += vectors[offset + column] * query[column];
-    const score = total / scales[row];
+    for (let column = 0; column < dimensions; column += 1) score += prepared[offset + column] * target[column];
     if (score >= minScore) results.push({ id: ids[row], score });
   }
   return results.sort((a, b) => b.score - a.score).slice(0, limit);

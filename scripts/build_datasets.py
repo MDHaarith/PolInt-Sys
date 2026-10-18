@@ -9,8 +9,10 @@ Writes data/datasets/polint-YYYYMMDD/ with:
   move_labels.jsonl   headline -> actor, action, objective, intent (weak labels
                       from the rules, with their confidence) for classifiers
   story_pairs.jsonl   anchor/positive/negative headlines for contrastive
-                      training: positives share a storyline, negatives share
-                      an actor but not a storyline
+                      training: positives share a storyline, negatives are
+                      same-actor stories outside it that are also unlike it
+  mined_pairs.jsonl   same-issue pairs found by meaning alone (mutual nearest
+                      neighbours within three days), many across languages
   gold_pairs.jsonl    same-issue pairs from the hand-checked groups in
                       tests/fixtures/same_issue_clusters.json
   image_text.jsonl    news photo URL paired with its headline
@@ -37,10 +39,26 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.intelligence.snapshots import _frontend_news, story_vectors  # noqa: E402
 from scripts.intelligence.storylines import build_storylines, read_move  # noqa: E402
-from scripts.intelligence.vectors import MODEL_NAME, VectorStore  # noqa: E402
+from scripts.intelligence.vectors import MODEL_NAME, VectorStore, without_shared_directions  # noqa: E402
 from scripts.intelligence.warehouse import IntelligenceWarehouse, now_utc_iso  # noqa: E402
 
 TAMIL = re.compile(r"[஀-௿]")
+GOLD_FIXTURE = PROJECT_ROOT / "tests/fixtures/same_issue_clusters.json"
+
+# Label quality was checked against the hand-checked groups (see the dataset
+# card). Storyline positives were the same issue in all 91 checkable pairs. A
+# same-actor story outside the storyline is the informative negative, but
+# storylines split one issue into several threads, so only 20% of those were
+# really a different issue. A negative must therefore also be unlike the
+# anchor: the most similar same-actor story below NEGATIVE_CEILING was a
+# different issue in every checkable case. Similarities are cosines between
+# story vectors with the shared directions removed.
+NEGATIVE_CEILING = 0.15
+# Mutual nearest neighbours published within MINED_PAIR_DAYS of each other at
+# MINED_PAIR_FLOOR or above: 99% pair precision at this cut on the groups, and
+# all 43 checkable mined pairs were the same issue.
+MINED_PAIR_FLOOR = 0.35
+MINED_PAIR_DAYS = 3
 
 
 def write_jsonl(path: Path, rows) -> int:
@@ -54,6 +72,51 @@ def write_jsonl(path: Path, rows) -> int:
 
 def language(text: str) -> str:
     return "ta" if TAMIL.search(text or "") else "en"
+
+
+def _epoch(value: str | None) -> float:
+    try:
+        return datetime.fromisoformat((value or "").replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return float("nan")
+
+
+def label_check(triples: list[dict], mined: list[dict], gold_group: dict) -> str:
+    """How often each kind of label agrees with the hand-checked groups, where both stories are in them."""
+    def share(checks):
+        return f"{sum(checks) / len(checks):.0%} of {len(checks)}" if checks else "none checkable"
+
+    def same(left, right):
+        return gold_group[left] == gold_group[right]
+
+    positives = [same(t["anchorId"], t["positiveId"]) for t in triples if t["anchorId"] in gold_group and t["positiveId"] in gold_group]
+    negatives = [not same(t["anchorId"], t["negativeId"]) for t in triples if t["anchorId"] in gold_group and t["negativeId"] in gold_group]
+    pairs = [same(p["leftId"], p["rightId"]) for p in mined if p["leftId"] in gold_group and p["rightId"] in gold_group]
+    return f"triple positives {share(positives)}, triple negatives {share(negatives)}, mined pairs {share(pairs)}"
+
+
+def mined_pairs(stories: list[dict], processed: dict) -> list[dict]:
+    """Stories that are each other's nearest neighbour by meaning, close in time and similar enough."""
+    usable = [story for story in stories if story["id"] in processed and story["sourceTier"] != "social"]
+    if len(usable) < 2:
+        return []
+    matrix = np.stack([processed[story["id"]] for story in usable])
+    similarity = matrix @ matrix.T
+    np.fill_diagonal(similarity, -np.inf)
+    times = np.array([_epoch(story["publishedAt"]) for story in usable])
+    similarity[~(np.abs(times[:, None] - times[None, :]) <= MINED_PAIR_DAYS * 86400)] = -np.inf
+    nearest = np.argmax(similarity, axis=1)
+    pairs = []
+    for row, column in enumerate(nearest):
+        if row < column and nearest[column] == row and similarity[row, column] >= MINED_PAIR_FLOOR:
+            left, right = usable[row], usable[column]
+            pairs.append({
+                "leftId": left["id"], "rightId": right["id"], "left": left["title"], "right": right["title"],
+                "similarity": round(float(similarity[row, column]), 3),
+                "crossLanguage": left["language"] != right["language"],
+                "inGoldSet": left["inGoldSet"] or right["inGoldSet"], "labelSource": "embeddings",
+            })
+    return pairs
 
 
 def build(database: Path, out_root: Path, *, days: int, seed: int = 7) -> dict:
@@ -75,6 +138,9 @@ def build(database: Path, out_root: Path, *, days: int, seed: int = 7) -> dict:
         )
         moves = storylines["storyMoves"]
         thread_of = {story_id: move["threadId"] for story_id, move in moves.items() if move.get("threadId")}
+        groups = json.loads(GOLD_FIXTURE.read_text(encoding="utf-8"))["clusters"] if GOLD_FIXTURE.exists() else {}
+        gold_group = {item["rawId"]: name for name, items in groups.items() for item in items}
+        gold_ids = set(gold_group)
 
         stories = []
         for story in news:
@@ -95,6 +161,8 @@ def build(database: Path, out_root: Path, *, days: int, seed: int = 7) -> dict:
                 "unverified": story.get("isRumor", False),
                 "move": move,
                 "threadId": thread_of.get(story["rawId"]),
+                # In the hand-checked evaluation groups: leave out of training when scoring on gold_pairs.
+                "inGoldSet": story["rawId"] in gold_ids,
             })
         counts = {"stories": write_jsonl(out / "stories.jsonl", stories)}
 
@@ -113,30 +181,59 @@ def build(database: Path, out_root: Path, *, days: int, seed: int = 7) -> dict:
                 })
         counts["move_labels"] = write_jsonl(out / "move_labels.jsonl", labels)
 
-        # Contrastive triples from storylines.
+        # Contrastive triples from storylines (see NEGATIVE_CEILING).
+        story_ids = {story["id"] for story in stories}
+        keyed = [story_id for story_id in vectors if story_id in story_ids]
+        processed = dict(zip(keyed, without_shared_directions(np.stack([vectors[k] for k in keyed])))) if len(keyed) > 3 else {}
+
+        def similarity(left, right):
+            if left["id"] in processed and right["id"] in processed:
+                return round(float(processed[left["id"]] @ processed[right["id"]]), 3)
+            return None
+
         by_thread, by_actor = defaultdict(list), defaultdict(list)
         for story in stories:
             if story["threadId"]:
                 by_thread[story["threadId"]].append(story)
             if story["move"]:
                 by_actor[story["move"]["actor"]].append(story)
+        published = [story for story in stories if story["sourceTier"] != "social"]
         triples = []
         for thread_id, members in by_thread.items():
             for anchor in members:
                 positives = [item for item in members if item["id"] != anchor["id"]]
-                negatives = [item for item in by_actor.get(anchor["move"]["actor"], []) if item["threadId"] != thread_id]
-                if positives and negatives:
-                    positive, negative = random.choice(positives), random.choice(negatives)
-                    triples.append({
-                        "anchor": anchor["title"], "positive": positive["title"], "negative": negative["title"],
-                        "crossLanguage": anchor["language"] != positive["language"], "labelSource": "storylines",
-                    })
+                if not positives:
+                    continue
+                if anchor["id"] in processed:
+                    candidates = [
+                        (similarity(anchor, item), item) for item in by_actor.get(anchor["move"]["actor"], [])
+                        if item["threadId"] != thread_id and item["id"] in processed
+                    ]
+                    candidates = [pair for pair in candidates if pair[0] < NEGATIVE_CEILING]
+                    negative = max(candidates, key=lambda pair: pair[0])[1] if candidates else None
+                    source = "same actor, unlike the anchor"
+                else:
+                    # Without vectors, a random story outside the storyline (88% correct on the groups).
+                    pool = [item for item in published if item["threadId"] != thread_id]
+                    negative = random.choice(pool) if pool else None
+                    source = "random"
+                if negative is None:
+                    continue
+                positive = random.choice(positives)
+                triples.append({
+                    "anchorId": anchor["id"], "positiveId": positive["id"], "negativeId": negative["id"],
+                    "anchor": anchor["title"], "positive": positive["title"], "negative": negative["title"],
+                    "positiveSimilarity": similarity(anchor, positive), "negativeSimilarity": similarity(anchor, negative),
+                    "crossLanguage": anchor["language"] != positive["language"], "negativeSource": source,
+                    "inGoldSet": any(item["inGoldSet"] for item in (anchor, positive, negative)),
+                    "labelSource": "storylines",
+                })
         counts["story_pairs"] = write_jsonl(out / "story_pairs.jsonl", triples)
+        mined = mined_pairs(stories, processed)
+        counts["mined_pairs"] = write_jsonl(out / "mined_pairs.jsonl", mined)
 
-        fixture = PROJECT_ROOT / "tests/fixtures/same_issue_clusters.json"
         gold = []
-        if fixture.exists():
-            groups = json.loads(fixture.read_text(encoding="utf-8"))["clusters"]
+        if groups:
             for name, items in groups.items():
                 for left_index, left in enumerate(items):
                     for right in items[left_index + 1:]:
@@ -183,7 +280,8 @@ Built by `scripts/build_datasets.py` from the PolInt warehouse
 | --- | ---: | --- |
 | stories.jsonl | {counts['stories']} | Published stories with source tier, politician, category and the rule reading of the move |
 | move_labels.jsonl | {counts['move_labels']} | Headline → actor, action, objective, intent (weak labels) |
-| story_pairs.jsonl | {counts['story_pairs']} | Anchor / same-storyline positive / same-actor negative headlines |
+| story_pairs.jsonl | {counts['story_pairs']} | Anchor / same-storyline positive / unlike same-actor negative, with ids and similarities |
+| mined_pairs.jsonl | {counts['mined_pairs']} | Same-issue pairs found by meaning ({sum(pair['crossLanguage'] for pair in mined)} across languages) |
 | gold_pairs.jsonl | {counts['gold_pairs']} | Hand-checked same-issue and different-issue headline pairs |
 | image_text.jsonl | {counts['image_text']} | News photo URL with its headline |
 | audio.jsonl | {counts['audio']} | Audio clip with its story or file title |
@@ -191,14 +289,30 @@ Built by `scripts/build_datasets.py` from the PolInt warehouse
 
 Languages: {dict(languages)}. Move actions: {dict(actions.most_common())}.
 Label confidence: {dict(confidence)}.
+Agreement with the hand-checked groups in this build: {label_check(triples, mined, gold_group)}.
 
 ## How labels were made
 - **Weak labels** (`labelSource: rules`, `storylines`) come from the rule-based
   reader in `scripts/intelligence/storylines.py`. They are useful for training
   and for spotting rule gaps, but they carry the rules' mistakes; prefer
   `confidence: high` rows, and check a sample before trusting a metric.
+- **Story triples**: positives share a storyline (the same issue in all 91
+  pairs that could be checked against the hand-checked groups). Negatives are
+  stories by the same actor outside the storyline whose similarity to the
+  anchor is below {NEGATIVE_CEILING}: storylines split one issue into several
+  threads, and without that check only 20% of same-actor negatives were a
+  different issue; with it, all checkable ones were. Rows without vectors use
+  a random story outside the storyline (`negativeSource: random`, 88% correct).
+- **Mined pairs** (`labelSource: embeddings`) are mutual nearest neighbours by
+  meaning, published within {MINED_PAIR_DAYS} days, at similarity
+  {MINED_PAIR_FLOOR} or above (all 43 checkable pairs were the same issue).
+  They come from the same model they would train, so they suit other models
+  (classifiers, rerankers, translation-pair data) better than fine-tuning it.
+- Similarities are cosines between {MODEL_NAME} story vectors with the shared
+  directions removed (`vectors.without_shared_directions`).
 - **Gold pairs** (`labelSource: hand-checked`) come from same-issue groups that
-  were read and checked by hand. Use them for evaluation, not training.
+  were read and checked by hand. Use them for evaluation, not training: drop
+  rows with `inGoldSet: true` from training when scoring on them.
 
 ## Limits and use
 Headlines, summaries and photos belong to their publishers. This dataset is for

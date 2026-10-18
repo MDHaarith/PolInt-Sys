@@ -32,6 +32,14 @@ from .warehouse import now_utc_iso
 
 MODEL_NAME = "embeddinggemma-2"
 DIMENSIONS = 768
+# Stories are embedded with the model's search prompt ("task: search result |
+# query: ..."), which its own config also uses for matching translations. On
+# the hand-checked same-issue groups it links stories better than the document
+# prompt (precision@10 0.74 vs 0.70, centred) and lets storylines join the Tamil
+# and English halves of an issue; search by meaning stays as good and photos
+# find their story slightly more often (scripts/embedding_experiments.py).
+# Changing it re-embeds every story; see VectorStore.discover.
+TEXT_PROMPT = "query"
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 WORKER = PROJECT_ROOT / "scripts" / "embeddings" / "worker.mjs"
 DEFAULT_INBOX = PROJECT_ROOT / "data" / "media" / "inbox"
@@ -161,6 +169,9 @@ class VectorStore:
         ).fetchone()
         if existing and existing[0] == content_hash:
             return False
+        if existing:
+            # A vector of the old content must not be compared with new ones.
+            self.connection.execute("DELETE FROM vectors WHERE item_id = ?", (item_id,))
         self.connection.execute(
             """
             INSERT INTO media_items (id, raw_item_id, modality, source, title, published_at, politician_id,
@@ -193,7 +204,7 @@ class VectorStore:
                 snippet = ""
             text = story_document(row["title"], snippet)
             common = (row["title"], row["published_at"], row["politician_id"])
-            added["text"] += self._upsert(f"text:{row['id']}", row["id"], "text", text, *common, _hash("text", text))
+            added["text"] += self._upsert(f"text:{row['id']}", row["id"], "text", text, *common, _hash("text", TEXT_PROMPT, text))
             image = original.get("imageUrl")
             if image and image.startswith("https://"):
                 added["image"] += self._upsert(f"image:{row['id']}", row["id"], "image", image, *common, _hash("image", image))
@@ -214,6 +225,16 @@ class VectorStore:
                     meta.get("title") or path.stem, meta.get("publishedAt"), meta.get("politicianId"),
                     _hash(modality, digest),
                 )
+        # Older stories embedded with another prompt are queued again, newest first.
+        for row in self.connection.execute("SELECT id, source, content_hash FROM media_items WHERE modality = 'text'").fetchall():
+            content_hash = _hash("text", TEXT_PROMPT, row["source"])
+            if row["content_hash"] != content_hash:
+                self.connection.execute("DELETE FROM vectors WHERE item_id = ?", (row["id"],))
+                self.connection.execute(
+                    "UPDATE media_items SET content_hash = ?, status = 'pending', attempts = 0, error = NULL, updated_at = ? WHERE id = ?",
+                    (content_hash, now_utc_iso(), row["id"]),
+                )
+                added["text"] += 1
         self.connection.commit()
         return added
 
@@ -245,8 +266,7 @@ class VectorStore:
                     except Exception as error:  # noqa: BLE001 - recorded per item and retried later
                         results[row["id"]] = f"download failed: {error}"[:300]
                         continue
-                jobs.append({"id": row["id"], "modality": row["modality"], "input": source,
-                             "prompt": "document", "title": "none"})
+                jobs.append({"id": row["id"], "modality": row["modality"], "input": source, "prompt": TEXT_PROMPT})
             if jobs:
                 results.update(worker(jobs, deadline_seconds=deadline_seconds))
         now = now_utc_iso()
@@ -326,6 +346,23 @@ def truncate(matrix: np.ndarray, dimensions: int) -> np.ndarray:
     """Matryoshka truncation: keep the leading dimensions and renormalise."""
     head = matrix[:, :dimensions]
     return head / np.maximum(np.linalg.norm(head, axis=1, keepdims=True), 1e-12)
+
+
+def without_shared_directions(matrix: np.ndarray, count: int = 3) -> np.ndarray:
+    """Centre, drop the `count` strongest shared directions and renormalise ("all-but-the-top").
+
+    Every story shares a broad "Tamil Nadu politics" direction. Removing the
+    mean and the three strongest directions makes same-issue pairs stand out
+    more than centring alone: on the hand-checked groups, pairs at cosine 0.20
+    and above are the same issue 94% of the time, and 99% at 0.35 and above
+    (scripts/embedding_experiments.py). Centroid-based linking in storylines
+    gains nothing from it, so storylines still only centre.
+    """
+    centred = matrix - matrix.mean(axis=0)
+    _, _, components = np.linalg.svd(centred, full_matrices=False)
+    top = components[:count]
+    shifted = centred - centred @ top.T @ top
+    return shifted / np.maximum(np.linalg.norm(shifted, axis=1, keepdims=True), 1e-12)
 
 
 def guess_modality(path: str) -> str | None:
