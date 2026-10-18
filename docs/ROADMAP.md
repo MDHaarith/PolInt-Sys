@@ -48,6 +48,8 @@ a day. It needs an `ANTHROPIC_API_KEY` secret in the data workflow, and the
 rules remain the fallback.
 
 ### 1.3 Embeddings: next steps
+The order and the tests that decide each step are in
+[training-data-plan.md](training-data-plan.md).
 - Grow the hand-checked benchmark beyond 10 groups, and add groups where
   embeddings currently fail (analysis pieces, opinion columns). With ten
   issues, gains under about 0.02 precision@10 cannot be told from noise, and
