@@ -86,6 +86,7 @@ small, [style*="font-size: 0."], [style*="font-size:0."] { font-size: .875rem !i
 .brand-tagline { font-family: var(--font-title); font-size: .9rem; margin-top: 6px; }
 .app-freshness { margin-top: 16px; color: var(--text-secondary); font-size: .875rem; line-height: 1.5; }
 .app-refresh-btn { border: 0; background: transparent; min-width: 44px; padding: 10px; margin-right: -10px; }
+.app-theme-btn { display: none; }
 .theme-control { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: .875rem; color: var(--text-secondary); margin-top: 18px; padding-bottom: 16px; border-bottom: 3px double var(--border-color); }
 .theme-control select { background: transparent; padding: 8px; min-width: 105px; }
 .sidebar-mode-toggle { display: flex; flex-direction: column; padding: 18px 0; border-bottom: 1px solid var(--border-color); gap: 0; }
@@ -590,3 +591,62 @@ small, [style*="font-size: 0."], [style*="font-size:0."] { font-size: .875rem !i
   .storyline-card { padding: 14px; }
   .chain-head time { margin-left: 0; }
 }
+
+/* ── Phone app shell ───────────────────────────────────────────────── */
+/* A slim app bar, an icon tab bar and horizontally swiped storylines,
+   following Android's navigation-bar pattern. */
+@media (max-width: 768px) {
+  .app-sidebar { padding: calc(8px + env(safe-area-inset-top)) 16px 8px; border-bottom: 1px solid var(--border-color); }
+  .sidebar-brand-group { align-items: center; gap: 2px; }
+  .sidebar-brand-copy { flex: 1; padding-right: 0; display: flex; flex-direction: column; }
+  .sidebar-logo-text { font-size: 1.6rem; line-height: 1.1; }
+  .brand-tagline { display: none; }
+  .app-freshness { margin-top: 0; font-size: .78rem; }
+  .theme-control { display: none !important; }
+  .app-theme-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--text-primary); }
+  .app-refresh-btn { margin: 0 -10px 0 0; align-self: center; }
+
+  .sidebar-mode-toggle { padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); height: auto; box-shadow: 0 -2px 12px rgb(0 0 0 / .06); }
+  .sidebar-mode-btn { flex-direction: column; gap: 4px; padding: 0; min-height: 56px; border: 0; background: transparent; font-size: .75rem; font-weight: 600; color: var(--text-secondary); }
+  .sidebar-mode-btn svg { display: block; box-sizing: content-box; width: 22px; height: 22px; padding: 4px 18px; border-radius: 999px; transition: background-color .2s; }
+  .sidebar-mode-btn.active { color: var(--text-primary); }
+  .sidebar-mode-btn.active svg { background: color-mix(in srgb, var(--accent-color) 16%, transparent); color: var(--accent-color); }
+  .mode-label-mobile { padding: 0; border: 0; }
+  .sidebar-mode-btn.active .mode-label-mobile { border: 0; }
+  .workspace-content-pane { padding: 16px 16px calc(84px + env(safe-area-inset-bottom)); }
+  .toast-notification { bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+  .briefing-head { gap: 8px; padding-bottom: 12px; }
+  .briefing-head h1 { font-size: 1.6rem; }
+  .briefing-stats { gap: 18px; }
+  .briefing-stats dd { font-size: 1.15rem; }
+  .briefing-stats dt { font-size: .75rem; }
+  .section-head p { display: none; }
+
+  .storyline-grid { grid-auto-flow: column; grid-auto-columns: 88%; grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -16px; padding: 0 16px 6px; scroll-padding-inline: 16px; }
+  .storyline-grid > * { scroll-snap-align: start; }
+  .storyline-card { padding: 14px; gap: 10px; }
+  .storyline-analysis { font-size: .8125rem; }
+
+  .feed-toolbar { top: -16px; padding-top: 10px; gap: 8px; }
+  .feed-toolbar .segmented { width: auto; flex: 1 1 0; min-width: 0; }
+  .feed-toolbar .segmented:first-of-type { flex: 0 1 auto; }
+  .feed-toolbar .segmented button { padding: 7px 8px; font-size: .8125rem; }
+  .feed-chips, .briefing-rail .rank-list { margin-inline: -16px; padding-inline: 16px; }
+  .story-row { padding: 14px 0; }
+  .story-snippet { font-size: .875rem; }
+  .story-thumb { width: 76px; height: 76px; border-radius: 6px; }
+
+  .profile-tabs-selector { flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; }
+  .profile-tab-btn { flex: none; white-space: nowrap; }
+  .playbook-grid { gap: 18px; }
+}
+
+/* ── Search by meaning ─────────────────────────────────────────────── */
+.meaning-toggle { display: inline-flex; align-items: center; gap: 4px; flex: none; min-height: 30px; padding: 2px 10px; border: 1px solid var(--border-subtle); border-radius: 999px; background: transparent; font-size: .8125rem; color: var(--text-secondary); }
+.meaning-toggle[aria-pressed="true"] { border-color: var(--accent-color); background: color-mix(in srgb, var(--accent-color) 12%, transparent); color: var(--accent-color); }
+.meaning-panel { margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--bg-panel); font-size: .875rem; line-height: 1.5; }
+.meaning-panel p + p, .meaning-panel p + button { margin-top: 10px; }
+.meaning-panel progress { width: 100%; margin-top: 8px; accent-color: var(--accent-color); }
+.meaning-error { color: var(--accent-color); }
+@media (max-width: 768px) { .meaning-toggle span { display: none; } }

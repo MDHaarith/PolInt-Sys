@@ -94,7 +94,7 @@ export function StorylineCard({ thread, now, onPerson, isKnown = () => true, def
       )}
       <ol className="chain" aria-label="Moves in order">
         {!open && thread.steps.length > preview && (
-          <li className="chain-more" aria-hidden="true">{formatCount(thread.steps.length - preview)} earlier moves</li>
+          <li className="chain-more" aria-hidden="true">{formatCount((thread.stepCount || thread.steps.length) - preview)} earlier moves</li>
         )}
         {steps.map(step => <StepRow key={step.storyId} step={step} now={now} onPerson={onPerson} isKnown={isKnown} />)}
       </ol>
@@ -104,7 +104,7 @@ export function StorylineCard({ thread, now, onPerson, isKnown = () => true, def
         )}
         {(thread.steps.length > preview || (thread.analysis || []).length > 1) && (
           <button type="button" className="link-button storyline-toggle" aria-expanded={open} onClick={() => setOpen(value => !value)}>
-            {open ? "Show fewer" : "Show the whole chain"}<ChevronDown size={14} aria-hidden="true" />
+            {open ? "Show fewer" : thread.stepCount > thread.steps.length ? `Show the latest ${formatCount(thread.steps.length)}` : "Show the whole chain"}<ChevronDown size={14} aria-hidden="true" />
           </button>
         )}
       </footer>

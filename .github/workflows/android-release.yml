@@ -1,0 +1,63 @@
+name: Release Android app
+
+on:
+  push:
+    # Tag a version (git tag v1.0.0 && git push origin v1.0.0) to publish a signed release.
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository == 'MDHaarith/PolInt-Sys'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL_CUDA: skip
+      - run: npm run build:mobile
+
+      # Version releases: an APK to sideload and an App Bundle for Google Play.
+      - name: Build signed release
+        working-directory: android
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Set ANDROID_RELEASE_KEYSTORE_B64, ANDROID_RELEASE_KEYSTORE_PASSWORD, ANDROID_RELEASE_KEY_ALIAS and ANDROID_RELEASE_KEY_PASSWORD to publish a release."
+            exit 1
+          fi
+          export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.keystore"
+          echo "$KEYSTORE_B64" | base64 --decode > "$ANDROID_KEYSTORE_FILE"
+          version="${GITHUB_REF_NAME#v}"
+          # 1.2.3 -> 10203, so every later version installs as an update.
+          IFS=. read -r major minor patch <<< "${version%%-*}"
+          code=$(( major * 10000 + ${minor:-0} * 100 + ${patch:-0} ))
+          ./gradlew assembleRelease bundleRelease -PversionCode="$code" -PversionName="$version" --no-daemon
+          rm -f "$ANDROID_KEYSTORE_FILE"
+
+      - name: Publish the version release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cp android/app/build/outputs/apk/release/app-release.apk "PolInt-$version.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "PolInt-$version.aab"
+          gh release create "$GITHUB_REF_NAME" "PolInt-$version.apk" "PolInt-$version.aab" \
+            --title "PolInt $version" --generate-notes --verify-tag

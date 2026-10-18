@@ -10,7 +10,7 @@ LEGACY_POLITICIAN_IDS = {
 }
 
 DEFAULT_ALIASES = {
-    "m_karunanidhi": ["m. karunanidhi", "karunanidhi", "kalaignar", "கருணாநிதி", "கலைஞர்"],
+    "m_karunanidhi": ["m. karunanidhi", "karunanidhi", "kalaignar", "கருணாநிதி"],
     "j_jayalalithaa": ["j. jayalalithaa", "jayalalithaa", "jayalalitha", "ஜெயலலிதா"],
     "m_g_ramachandran": ["m. g. ramachandran", "m.g.r.", "mgr", "எம்ஜிஆர்"],
     "mk_stalin": ["m. k. stalin", "m.k. stalin", "mk stalin", "stalin", "மு.க.ஸ்டாலின்", "மு.க. ஸ்டாலின்", "ஸ்டாலின்"],
@@ -53,6 +53,16 @@ DEFAULT_ALIASES = {
     "l_murugan": ["l. murugan", "l murugan", "union minister murugan", "murugan", "எல்.முருகன்"],
     "premalatha_vijayakanth": ["premalatha vijayakanth", "premalatha", "பிரேமலதா"],
     "sengottaiyan": ["sengottaiyan", "செங்கோட்டையன்"],
+    # Dossier subjects the collectors search for by name.
+    "kn_nehru": ["k.n. nehru", "k. n. nehru", "kn nehru", "கே.என்.நேரு", "கே.என். நேரு"],
+    "ma_subramanian": ["ma. subramanian", "ma subramanian", "மா.சுப்பிரமணியன்", "மா. சுப்பிரமணியன்"],
+    "ev_velu": ["e.v. velu", "e. v. velu", "ev velu", "எ.வ.வேலு", "எ.வ. வேலு"],
+    "c_ve_shanmugam": ["c.ve. shanmugam", "c. ve. shanmugam", "c ve shanmugam", "cv shanmugam", "சி.வி.சண்முகம்", "சி.வி. சண்முகம்"],
+    "mk_alagiri": ["m.k. alagiri", "m. k. alagiri", "mk alagiri", "alagiri", "அழகிரி"],
+    "k_kamaraj": ["kamarajar", "kamaraj", "காமராஜர்", "காமராசர்"],
+    "cn_annadurai": ["c.n. annadurai", "annadurai", "அண்ணாதுரை", "பேரறிஞர் அண்ணா"],
+    "c_rajagopalachari": ["rajagopalachari", "rajaji", "ராஜாஜி"],
+    "periyar": ["thanthai periyar", "e.v. ramasamy", "periyar", "தந்தை பெரியார்", "பெரியார்"],
 }
 
 # Party of each tracked politician, as recorded in the frontend dossiers.
@@ -68,6 +78,8 @@ POLITICIAN_PARTY = {
     "nainar_nagendran": "bjp", "aadhav_arjuna": "tvk", "bussy_anand": "tvk",
     "manickam_tagore": "congress", "selvaperunthagai": "congress", "rahul_gandhi": "congress",
     "l_murugan": "bjp", "premalatha_vijayakanth": "dmdk", "sengottaiyan": "tvk",
+    "kn_nehru": "dmk", "ma_subramanian": "dmk", "ev_velu": "dmk", "k_kamaraj": "congress",
+    "cn_annadurai": "dmk", "c_rajagopalachari": "congress", "periyar": "dk",
 }
 
 POLITICIAN_NAMES = {
@@ -88,14 +100,21 @@ POLITICIAN_NAMES = {
     "selvaperunthagai": "K. Selvaperunthagai", "rahul_gandhi": "Rahul Gandhi",
     "l_murugan": "L. Murugan", "premalatha_vijayakanth": "Premalatha Vijayakanth",
     "sengottaiyan": "K. A. Sengottaiyan",
+    "kn_nehru": "K. N. Nehru", "ma_subramanian": "Ma. Subramanian", "ev_velu": "E. V. Velu",
+    "k_kamaraj": "K. Kamaraj", "cn_annadurai": "C. N. Annadurai", "c_rajagopalachari": "C. Rajagopalachari",
+    "periyar": "Periyar E. V. Ramasamy",
 }
 
 # Other public figures who share an alias with a tracked politician.
 _ALIAS_EXCLUSIONS = {
     "vijay": r"(?:\s+(?:sethupathi|antony|deverakonda|shankar|hazare|mallya|varma|yesudas|vasanth|milton|amritraj)|\s+kumar\s+sinha)",
     "stalin": r"(?:grad|ist|ism)",
+    # Places and institutions named after Periyar are not stories about him.
+    "periyar": r"(?:'s)?\s+(?:arivulagam|knowledge|centre|center|university|river|dam|bus|nagar|samathuvapuram|memorial|library|statue)",
+    "பெரியார": r"(?:\s*அறிவுலக|\s*பல்கலை|\s*பேருந்து|\s*நகர்|\s*சிலை|\s*அணை)",
     "murugan": r"(?:\s+(?:temple|kovil|koil|shrine|devotees?)|\s+idol)",
-    "விஜய": r"(?:காந்த|குமார|பாஸ்கர|சேதுபதி)",
+    # "கலைஞர்" alone is the ordinary word for artist, so it is not an alias.
+    "விஜய": r"(?:காந்த|குமார|பாஸ்கர|சேதுபதி|ஆண்டனி|வசந்த|தேவரகொண்டா)",
 }
 
 
@@ -105,7 +124,8 @@ def _alias_pattern(alias: str) -> re.Pattern:
     if re.search(r"[஀-௿]", alias):
         stem = alias.removesuffix("்")
         exclusion = _ALIAS_EXCLUSIONS.get(stem, "")
-        return re.compile(re.escape(stem) + (f"(?!{exclusion})" if exclusion else ""))
+        # The other person's name may follow after the virama and a space: "விஜய் சேதுபதி".
+        return re.compile(re.escape(stem) + (f"(?!்?\\s*{exclusion})" if exclusion else ""))
     exclusion = _ALIAS_EXCLUSIONS.get(alias.lower(), "")
     suffix = f"(?!{exclusion})" if exclusion else ""
     # Upper-case acronyms (EPS, OPS) only count when written as acronyms.

@@ -66,3 +66,26 @@ test('legacy warehouse-shaped stories are lifted into the flat shape', async () 
   const flat = { id: 'x', title: 'Flat' };
   assert.equal(normalizeStory(flat), flat);
 });
+
+test('mobile prefers the last saved download over the older bundled copy', async (t) => {
+  t.mock.method(console, 'warn', () => {});
+  const store = new Map();
+  globalThis.caches = {
+    open: async () => ({ put: async (key, response) => store.set(key, await response.text()) }),
+    match: async (key) => (store.has(key) ? new Response(store.get(key)) : undefined),
+  };
+  t.after(() => { delete globalThis.caches; });
+  let online = true;
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    if (url.startsWith('https://')) {
+      if (!online) throw new TypeError('offline');
+      return { ok: true, json: async () => ({ generatedAt: '2026-10-17T10:00:00Z', fresh: true }) };
+    }
+    return { ok: true, json: async () => ({ generatedAt: '2026-10-01T00:00:00Z', bundled: true }) };
+  });
+  const { loadData } = await loadModule({ MODE: 'mobile' });
+  await loadData('/intelStatus.json');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  online = false;
+  assert.deepEqual(await loadData('/intelStatus.json'), { generatedAt: '2026-10-17T10:00:00Z', fresh: true });
+});

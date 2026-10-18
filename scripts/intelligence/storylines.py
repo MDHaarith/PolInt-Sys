@@ -186,6 +186,39 @@ _NAME_TOKENS = {
 }
 
 
+# Issues named differently in English and Tamil headlines; a shared concept lets
+# a Tamil report join the English storyline about the same issue.
+_CONCEPTS = {
+    "sir": (r"\bSIR\b|special intensive revision|electoral rolls?", r"எஸ்ஐஆர்|எஸ்.ஐ.ஆர்|வாக்காளர் பட்டியல் திருத்த"),
+    "cec": (r"chief election commissioner|\bCEC\b|gyanesh", r"தலைமைத் தேர்தல் ஆணையர்|ஞானேஷ்"),
+    "ballot": (r"ballot papers?|\bEVMs?\b", r"வாக்குச்சீட்டு|மின்னணு வாக்குப்பதிவு"),
+    "drugs": (r"\bmeth\b|methamphetamine|drugs?|narcotics?|ganja", r"போதை|மெத்|கஞ்சா"),
+    "power": (r"power (?:purchase|procurement|cuts?)|electricity (?:purchase|tariff)|tangedco", r"மின்சார கொள்முதல்|மின் கொள்முதல்|மின்வெட்டு|மின் கட்டண"),
+    "prices": (r"price rise|prices of|inflation|essential commodities", r"விலைவாசி|விலை உயர்வு"),
+    "metro": (r"\bmetro\b", r"மெட்ரோ"),
+    "periyar_centre": (r"periyar arivulagam|periyar knowledge", r"பெரியார் அறிவுலகம்"),
+    "bypoll": (r"bypolls?|by-?elections?|bye-elections?", r"இடைத்தேர்தல்"),
+    "fishermen": (r"fisherm[ae]n", r"மீனவர்"),
+    "neet": (r"\bNEET\b", r"நீட்"),
+    "cauvery": (r"cauvery|mekedatu", r"காவிரி|மேகதாது"),
+    "delimitation": (r"delimitation", r"தொகுதி மறுவரையறை"),
+    "language": (r"\bhindi\b|three-language|\bNEP\b", r"இந்தி திணிப்பு|மும்மொழி"),
+    "reshuffle": (r"reshuffle", r"அமைச்சரவை மாற்றம்"),
+    "seat_sharing": (r"seat[- ]sharing", r"தொகுதிப் பங்கீடு"),
+    "liquor": (r"tasmac|liquor|hooch", r"டாஸ்மாக்|மதுபான|கள்ளச்சாராய"),
+    "floods": (r"floods?|cyclone|heavy rain", r"வெள்ள|புயல்|கனமழை"),
+    "reinduction": (r"re-?induct|reunification|merger of factions", r"மீண்டும் இணை|ஒருங்கிணைப்பு"),
+}
+_CONCEPT_PATTERNS = {
+    concept: re.compile(f"(?:{english})|(?:{tamil})", re.IGNORECASE)
+    for concept, (english, tamil) in _CONCEPTS.items()
+}
+
+
+def concept_tokens(text: str) -> list[str]:
+    return [f"#{concept}" for concept, pattern in _CONCEPT_PATTERNS.items() if pattern.search(text or "")]
+
+
 def _is_action_word(word: str) -> bool:
     return any(english.fullmatch(word) for _, _, english, _ in _ACTION_PATTERNS)
 
@@ -497,12 +530,16 @@ _CONFIDENCE_WEIGHT = {"high": 1.0, "medium": 0.7, "low": 0.3}
 def _thread_reading(steps: list[dict], reference: datetime) -> dict:
     actors = Counter(step["actor"] for step in steps)
     last = _parse(steps[-1]["date"]) or reference
-    recent = sum(1 for step in steps if (_parse(step["date"]) or reference) >= reference - timedelta(days=3))
-    earlier = len(steps) - recent
-    if (reference - last).days >= 4:
+    # Pace is outlets per day: the last 24 hours against the three days before.
+    ages = [(reference - (_parse(step["date"]) or reference)).total_seconds() / 3600 for step in steps]
+    last_day = sum(step["outlets"] for step, age in zip(steps, ages) if age <= 24)
+    daily_before = sum(step["outlets"] for step, age in zip(steps, ages) if 24 < age <= 96) / 3
+    if (reference - last).total_seconds() > 3 * 86400:
         momentum = "cooling"
-    elif recent > earlier:
+    elif last_day >= max(2, 1.5 * daily_before):
         momentum = "escalating"
+    elif last_day == 0 and daily_before > 0:
+        momentum = "cooling"
     else:
         momentum = "active"
     exchanges = []
@@ -530,13 +567,99 @@ def _thread_reading(steps: list[dict], reference: datetime) -> dict:
         lines.append(f"It has moved from {OBJECTIVES[shift[0]].lower()} to {OBJECTIVES[shift[-1]].lower()}.")
     return {
         "momentum": momentum,
+        "pace": {"last24h": last_day, "dailyBefore": round(daily_before, 1)},
         "analysis": lines,
         "watchFor": _NEXT_MOVES.get(steps[-1]["action"]),
     }
 
 
-def _link_score(tokens: Counter, bag: Counter, idf: dict[str, float]) -> float:
-    return sum(idf.get(token, 0.0) for token in tokens if token in bag)
+def _core(thread: dict) -> set[str]:
+    return {token for token, count in thread["tokens"].items() if count >= 2}
+
+
+# Story vectors are centred (the corpus mean subtracted) before comparison:
+# every headline here shares a "Tamil Nadu politics" direction, and without
+# centring a large thread's centre resembles every political story. Measured on
+# the hand-checked groups in tests/fixtures/same_issue_clusters.json, a group's
+# centred centre scores its own stories at a median 0.54-0.67 and the rest of
+# the feed below 0.42-0.56 (99.9th percentile). A move joins a thread on meaning
+# alone above SEMANTIC_LINK, or above SEMANTIC_LINK_WITH_CONTEXT when it also
+# names the thread's issue (#sir, #cauvery, ...).
+SEMANTIC_LINK = 0.58
+SEMANTIC_LINK_WITH_CONTEXT = 0.50
+SEMANTIC_MERGE = 0.72
+
+
+def _centred(vectors: dict) -> dict:
+    if len(vectors) < 2:
+        return dict(vectors)
+    mean = sum(vectors.values()) / len(vectors)
+    out = {}
+    for key, vector in vectors.items():
+        shifted = vector - mean
+        out[key] = shifted / max(float((shifted @ shifted) ** 0.5), 1e-9)
+    return out
+
+
+def _centroid(thread: dict):
+    if not thread.get("vectors"):
+        return None
+    total = sum(thread["vectors"])
+    return total / max(float((total @ total) ** 0.5), 1e-9)
+
+
+def _same_issue(left: dict, right: dict) -> bool:
+    left_centre, right_centre = _centroid(left), _centroid(right)
+    if left_centre is not None and right_centre is not None and float(left_centre @ right_centre) >= SEMANTIC_MERGE:
+        return True
+    left_core, right_core = _core(left), _core(right)
+    shared = left_core & right_core
+    # Relative overlap, so a thread that has already absorbed others cannot snowball.
+    if len(shared) >= 2 and len(shared) / max(1, min(len(left_core), len(right_core))) >= 0.4:
+        return True
+    # A Tamil and an English thread share no words, only concepts; a recurring
+    # concept in both plus a common participant marks the same issue.
+    if _language(left) == _language(right):
+        return False
+    concepts = {token for token in shared if token.startswith("#")}
+    return bool(concepts) and bool(left["people"] & right["people"])
+
+
+def _language(thread: dict) -> str:
+    tamil = sum(1 for step in thread["steps"] if _TAMIL.search(step["title"] or ""))
+    return "ta" if tamil * 2 > len(thread["steps"]) else "en"
+
+
+def _merge_threads(threads: list[dict]) -> list[dict]:
+    """Join threads that turned out to follow the same issue.
+
+    Threading is greedy and chronological, so one issue can split when its
+    early reports used different words. Two threads merge when they overlap in
+    time and share at least two recurring words or concepts.
+    """
+    merged: list[dict] = []
+    for thread in sorted(threads, key=lambda item: item["steps"][0]["date"] if item["steps"] else ""):
+        if not thread["steps"]:
+            continue
+        start = _parse(thread["steps"][0]["date"])
+        target = next(
+            (
+                other for other in merged
+                if start and start - other["last"] <= timedelta(days=3)
+                and _same_issue(thread, other)
+            ),
+            None,
+        )
+        if target is None:
+            merged.append(thread)
+            continue
+        target["steps"] = sorted(target["steps"] + thread["steps"], key=lambda step: step["date"] or "")
+        target["tokens"].update(thread["tokens"])
+        target["storyIds"].extend(thread["storyIds"])
+        target["people"] |= thread["people"]
+        target["vectors"] = (target.get("vectors", []) + thread.get("vectors", []))[-12:]
+        target["last"] = max(target["last"], thread["last"])
+    return merged
 
 
 def build_storylines(
@@ -545,11 +668,14 @@ def build_storylines(
     *,
     window_days: int = 45,
     max_threads: int = 60,
+    vectors: dict | None = None,
 ) -> dict:
     """Moves, storylines and per-politician playbooks for the recent window."""
     dated = [(record, _parse(record.get("publishedAt"))) for record in news]
-    dated = [(record, when) for record, when in dated if when is not None]
-    reference = max((when for _, when in dated), default=_parse(generated_at) or datetime.now(timezone.utc))
+    # Clients set their own post dates; nothing may claim to come from the future.
+    generated = _parse(generated_at) or datetime.now(timezone.utc)
+    dated = [(record, when) for record, when in dated if when is not None and when <= generated + timedelta(hours=1)]
+    reference = min(generated, max((when for _, when in dated), default=generated))
     cutoff = reference - timedelta(days=window_days)
     recent = sorted(
         ((record, when) for record, when in dated if when >= cutoff and record.get("sourceTier") != "social"),
@@ -560,15 +686,26 @@ def build_storylines(
     for record, when in recent:
         move = read_move(record)
         if move is not None:
-            moves.append((record, when, move, Counter(_word_tokens(record.get("title", "")))))
+            title = record.get("title", "")
+            tokens = Counter(_word_tokens(title))
+            tokens.update(concept_tokens(f"{title} {_first_sentence(record.get('snippet') or '')}"))
+            moves.append((record, when, move, tokens))
+    # Story embeddings (EmbeddingGemma 2), when the pipeline has them, link
+    # reports that share a meaning but no words, such as a Tamil and an
+    # English account of one statement.
+    vectors = _centred(vectors or {})
+    vector_of = {
+        id(record): vectors.get(record.get("rawId")) for record, *_ in moves
+    }
 
     # Words most stories use ("DMK", "alliance") cannot tie two stories together.
     document_frequency = Counter(token for *_, tokens in moves for token in tokens)
     total = max(1, len(moves))
+    # Concepts are named issues, so they may recur more often and still mean something.
     idf = {
         token: math.log(total / count)
         for token, count in document_frequency.items()
-        if 2 <= count <= max(4, 0.03 * total)
+        if 2 <= count <= max(4, (0.12 if token.startswith("#") else 0.03) * total)
     }
 
     threads: list[dict] = []
@@ -584,10 +721,20 @@ def build_storylines(
             # Once a thread has a theme, new moves must share its recurring words.
             needed = 2 if len(thread["steps"]) >= 3 else 1
             shared = [token for token in distinctive if bag[token] >= needed]
-            # Two distinctive words in common; people alone do not make a storyline.
-            if len(shared) < 2:
+            vector = vector_of[id(record)]
+            # Against the thread's centre, so a chain of near neighbours cannot drift off-topic.
+            centre = _centroid(thread)
+            meaning = float(vector @ centre) if vector is not None and centre is not None else 0.0
+            # Two distinctive words in common, or a close match in meaning;
+            # people alone do not make a storyline.
+            # The same named issue (SIR, Cauvery, ...); leading figures appear in too many threads to count.
+            context = any(token.startswith("#") and bag[token] for token in distinctive)
+            if len(shared) >= 2:
+                score = sum(idf[token] for token in shared) + max(0.0, meaning - SEMANTIC_LINK_WITH_CONTEXT) * 20
+            elif meaning >= SEMANTIC_LINK or (context and meaning >= SEMANTIC_LINK_WITH_CONTEXT):
+                score = 7.0 + (meaning - SEMANTIC_LINK_WITH_CONTEXT) * 20
+            else:
                 continue
-            score = sum(idf[token] for token in shared)
             if move["actor"] in thread["people"] or any(
                 c[1:] in thread["people"] for c in move["counterparts"] if c.startswith("@")
             ):
@@ -595,7 +742,7 @@ def build_storylines(
             if score > best_score:
                 best, best_score = thread, score
         if best is None or best_score < 7.0:
-            best = {"recent": [], "people": set(), "steps": [], "last": when}
+            best = {"recent": [], "people": set(), "steps": [], "last": when, "tokens": Counter(), "storyIds": [], "vectors": []}
             threads.append(best)
         step = _step(record, move)
         repeat = next(
@@ -613,9 +760,15 @@ def build_storylines(
         else:
             best["steps"].append(step)
             best["recent"] = (best["recent"] + [distinctive])[-6:]
+        best["tokens"].update(distinctive)
+        if vector_of[id(record)] is not None:
+            best["vectors"] = (best["vectors"] + [vector_of[id(record)]])[-12:]
+        best["storyIds"].append(step["storyId"])
         best["people"].add(move["actor"])
         best["people"].update(c[1:] for c in move["counterparts"] if c.startswith("@"))
         best["last"] = when
+
+    threads = _merge_threads(threads)
 
     published = []
     for thread in threads:
@@ -646,11 +799,13 @@ def build_storylines(
             "score": round(weight, 1),
             "steps": steps[-30:],
             "stepCount": len(steps),
+            "storyIds": thread["storyIds"],
             **_thread_reading(steps, reference),
         })
     published.sort(key=lambda thread: thread["score"], reverse=True)
     published = published[:max_threads]
-    thread_of = {step["storyId"]: thread["id"] for thread in published for step in thread["steps"]}
+    # Rewrites folded into a step still belong to the thread.
+    thread_of = {story_id: thread["id"] for thread in published for story_id in thread.pop("storyIds")}
 
     people: dict[str, dict] = {}
     relations: Counter = Counter()

@@ -785,6 +785,17 @@ def rss_image(item):
     return None
 
 
+def rss_audio(item):
+    """Podcast and bulletin audio attached to a feed item."""
+    for path in ("enclosure", f"{_MEDIA_NS}content"):
+        for element in item.findall(path):
+            url = element.get("url") or ""
+            kind = element.get("type") or element.get("medium") or ""
+            if url.startswith("https://") and kind.startswith("audio"):
+                return url
+    return None
+
+
 def iso_to_display_date(value):
     if not value:
         return ""
@@ -1101,6 +1112,9 @@ def fetch_rss(query, pol_id, pol_name, *, feed_url=None, source_name=None, raise
             image_url = rss_image(item)
             if image_url:
                 record["imageUrl"] = image_url
+            audio_url = rss_audio(item)
+            if audio_url:
+                record["audioUrl"] = audio_url
             if author and author.strip():
                 record["author"] = {"displayName": clean_html(author)}
             items.append(record)

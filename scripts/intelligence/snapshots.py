@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import html
 import json
 import os
@@ -7,13 +8,16 @@ import re
 import tempfile
 from pathlib import Path
 
+import numpy as np
+
 from .assembly_status import apply_current_assembly_status
 from .classify import classify_category, is_political, reports_hearsay
 from .events import headline_tokens
 from .models import to_sortable_timestamp
-from .people import canonical_politician_id, resolve_politician
+from .people import DEFAULT_ALIASES, canonical_politician_id, mentioned_politicians, resolve_politician
 from .quality import TIER_WEIGHT, source_affiliation, source_tier, story_importance
 from .storylines import build_storylines
+from .vectors import MODEL_NAME, VectorStore, truncate
 from .warehouse import IntelligenceWarehouse, now_utc_iso
 
 MOBILE_NEWS_LIMIT = 3000
@@ -95,7 +99,9 @@ def frontend_news_record(row) -> dict | None:
     source_type = original.get("sourceType") or row["collector"]
     story_text = f"{title} {snippet}"
     politician_id = canonical_politician_id(original.get("politicianId") or row["politician_id"]) or "general"
-    if politician_id == "general":
+    # Collectors tag results with the politician they searched for; keep that
+    # only when the story itself names them.
+    if politician_id in DEFAULT_ALIASES and politician_id not in mentioned_politicians(story_text) or politician_id == "general":
         politician_id = resolve_politician(story_text) or "general"
     if source_type in _FILTERED_SOURCE_TYPES and politician_id == "general" and not is_political(story_text):
         return None
@@ -123,7 +129,7 @@ def frontend_news_record(row) -> dict | None:
         "verificationStatus": verification,
         "isRumor": verification == "unverified_chatter",
     }
-    for key in ("imageUrl", "engagement", "author", "language"):
+    for key in ("imageUrl", "audioUrl", "engagement", "author", "language"):
         if original.get(key):
             record[key] = original[key]
     return {key: value for key, value in record.items() if value not in (None, "")}
@@ -145,6 +151,13 @@ def _epoch(value: str | None) -> float | None:
         return datetime.fromisoformat((value or "").replace("Z", "+00:00")).timestamp()
     except ValueError:
         return None
+
+
+def _within_window(lead: dict, published: float | None) -> bool:
+    lead_time = _epoch(lead.get("publishedAt"))
+    if lead_time is None or published is None:
+        return lead_time is None and published is None
+    return abs(lead_time - published) <= _NEAR_DUPLICATE_WINDOW_SECONDS
 
 
 def _lead_rank(record: dict) -> tuple:
@@ -184,9 +197,12 @@ def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
         record["sourceTier"] = source_tier(record["source"], is_social=bool(row["is_social"]))
         record["outletCount"] = 1
         key = _title_key(record["title"])
-        index = by_title.get(key)
         tokens = headline_tokens(record["title"])
         published = _epoch(record.get("publishedAt"))
+        # Only copies close in time are one story; social posts never merge on title alone.
+        index = by_title.get(key) if record["sourceTier"] != "social" else None
+        if index is not None and not _within_window(news[index], published):
+            index = None
         if index is None and published is not None and record["sourceTier"] != "social":
             window = [entry for entry in window if entry[0] - published <= _NEAR_DUPLICATE_WINDOW_SECONDS]
             index = next((entry[2] for entry in window if _near_duplicate(tokens, entry[1])), None)
@@ -206,6 +222,37 @@ def _frontend_news(warehouse: IntelligenceWarehouse, limit: int) -> list[dict]:
             record["sourceAffiliation"] = affiliation
         record["importance"] = story_importance(record)
     return news
+
+
+APP_VECTOR_DIMENSIONS = 256
+
+
+def story_vectors(warehouse: IntelligenceWarehouse, raw_ids: list[str]) -> dict[str, np.ndarray]:
+    """Text vectors for these stories, keyed by story id; empty without embeddings."""
+    meta, matrix = VectorStore(warehouse.connection).load(modality="text", raw_item_ids=raw_ids)
+    return {item["raw_item_id"]: matrix[index] for index, item in enumerate(meta)}
+
+
+def app_vector_index(vectors: dict[str, np.ndarray], generated_at: str) -> dict:
+    """A small index the app searches on the device.
+
+    Matryoshka training keeps the first 256 of 768 dimensions useful on their
+    own; each vector is then scaled to int8, so 3,000 stories take about 1 MB.
+    """
+    ids = list(vectors)
+    if not ids:
+        return {"model": MODEL_NAME, "dimensions": APP_VECTOR_DIMENSIONS, "generatedAt": generated_at, "ids": [], "scales": [], "vectors": ""}
+    matrix = truncate(np.stack([vectors[i] for i in ids]), APP_VECTOR_DIMENSIONS)
+    scales = 127 / np.maximum(np.abs(matrix).max(axis=1), 1e-9)
+    quantised = np.clip(np.rint(matrix * scales[:, None]), -127, 127).astype(np.int8)
+    return {
+        "model": MODEL_NAME,
+        "dimensions": APP_VECTOR_DIMENSIONS,
+        "generatedAt": generated_at,
+        "ids": ids,
+        "scales": [round(float(value), 4) for value in scales],
+        "vectors": base64.b64encode(quantised.tobytes()).decode("ascii"),
+    }
 
 
 def _event_rows(warehouse: IntelligenceWarehouse) -> list[dict]:
@@ -371,6 +418,10 @@ def generate_snapshots(
     atomic_write_json(output / "scrapedIntel.mobile.json", mobile_intel(compatibility))
     atomic_write_json(output / "timeFabric.json", time_fabric)
     atomic_write_json(output / "policyUpdates.json", policy_updates)
+    mobile = mobile_intel(compatibility)
+    vectors = story_vectors(warehouse, [story["rawId"] for story in mobile["news"]])
+    atomic_write_json(output / "storylines.json", build_storylines(compatibility["news"], generated_at, vectors=vectors))
+    atomic_write_json(output / "vectorIndex.json", app_vector_index(vectors, generated_at))
+    # Clients key refreshes on the status file, so it is written last.
     atomic_write_json(output / "intelStatus.json", status)
-    atomic_write_json(output / "storylines.json", build_storylines(compatibility["news"], generated_at))
     return {"raw_items": raw_count, "events": event_count}

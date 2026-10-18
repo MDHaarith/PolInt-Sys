@@ -78,11 +78,25 @@ const launchScraper = (reason = 'scheduled') => {
   return true;
 };
 
+// Transformers.js loads the ONNX runtime's WebAssembly from jsdelivr when
+// "search by meaning" is first used (alongside the model download), so the
+// 27 MB copy Vite would otherwise emit is never requested. Dropping it keeps
+// the Android app small.
+const dropOnnxRuntimeWasm = () => ({
+  name: 'drop-onnxruntime-wasm',
+  generateBundle(_, bundle) {
+    for (const name of Object.keys(bundle)) {
+      if (/ort-wasm.*\.wasm$/.test(name)) delete bundle[name];
+    }
+  },
+});
+
 export default defineConfig(({ mode }) => ({
   // Android build bundles the trimmed snapshot from mobile-public/ instead of the 56 MB public/ folder.
   publicDir: mode === 'mobile' ? 'mobile-public' : 'public',
   build: { outDir: mode === 'mobile' ? 'dist-mobile' : 'dist' },
   plugins: [
+    dropOnnxRuntimeWasm(),
     react(),
     {
       name: 'scraper-api-middleware',
