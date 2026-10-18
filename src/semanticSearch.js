@@ -114,3 +114,36 @@ export const loadQueryEncoder = (onProgress) => {
   });
   return loading;
 };
+
+// Voice: the same model with its audio encoder. Text weights come from the
+// browser cache, so turning voice on downloads only the encoder. One model
+// then embeds both typed and spoken questions into the same space.
+export const VOICE_DOWNLOAD_MB = 181;
+let voiceLoading = null;
+
+export const loadVoiceEncoder = (onProgress) => {
+  voiceLoading ??= (async () => {
+    const { AutoConfig, AutoModel, AutoProcessor, AutoTokenizer, env } = await import("@huggingface/transformers");
+    env.allowLocalModels = false;
+    env.useBrowserCache = true;
+    const options = { revision: MODEL_REVISION, progress_callback: onProgress };
+    const config = await AutoConfig.from_pretrained(MODEL_ID, options);
+    config.vision_config = null;
+    if (!(await gpuAdapter())) throw new Error("This device has no WebGPU support");
+    const model = await AutoModel.from_pretrained(MODEL_ID, { ...options, config, device: "webgpu", dtype: "q4" });
+    const tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID, options);
+    const processor = await AutoProcessor.from_pretrained(MODEL_ID, options);
+    return {
+      text: async (text, dimensions) => {
+        const inputs = await tokenizer([`task: search result | query: ${text}`], { padding: true, truncation: true });
+        return truncate((await model(inputs)).sentence_embedding.data, dimensions);
+      },
+      // 16 kHz mono samples (src/voice.js); no prompt, as the model was trained.
+      audio: async (samples, dimensions) => truncate((await model(await processor(null, null, samples))).sentence_embedding.data, dimensions),
+    };
+  })().catch((error) => {
+    voiceLoading = null;
+    throw error;
+  });
+  return voiceLoading;
+};

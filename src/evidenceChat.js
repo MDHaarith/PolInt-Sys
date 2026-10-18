@@ -18,6 +18,12 @@
 import { decodeVectorIndex, searchVectorIndex } from "./semanticSearch.js";
 
 export const ANSWER_BAR = 0.5;
+// A spoken question is embedded by the audio encoder and lands further from
+// the text than the typed words would. At 0.37 the same 26 questions, read
+// aloud, answered 14 of 20 (9 of 10 in English, 5 of 10 in Tamil), showed no
+// passage from another hand-checked issue and declined all six without evidence;
+// at 0.33 one of those six showed an answer.
+export const VOICE_ANSWER_BAR = 0.37;
 export const ANSWER_MARGIN = 0.1;
 export const MAX_SHOWN = 5;
 
@@ -45,7 +51,7 @@ export const findEvidence = (decoded, queryVector, { limit = MAX_SHOWN, minScore
 };
 
 // What Ask shows: the passages close enough to answer, or none.
-export const answerFor = (decoded, queryVector, { margin = ANSWER_MARGIN, limit = MAX_SHOWN } = {}) => {
-  const found = findEvidence(decoded, queryVector, { limit, minScore: ANSWER_BAR });
+export const answerFor = (decoded, queryVector, { bar = ANSWER_BAR, margin = ANSWER_MARGIN, limit = MAX_SHOWN } = {}) => {
+  const found = findEvidence(decoded, queryVector, { limit, minScore: bar });
   return found.length ? found.filter((passage) => passage.score >= found[0].score - margin) : [];
 };

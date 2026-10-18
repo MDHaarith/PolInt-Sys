@@ -42,3 +42,6 @@ data/models/
 data/datasets/
 data/media/
 data/data-designer-pilot/artifacts/
+
+# Built by scripts/build_evidence.py and published to the live-data branch
+public/evidencePack.json

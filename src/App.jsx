@@ -3,6 +3,7 @@ import PoliticianSpace from "./components/PoliticianSpace";
 import EventGraph from "./components/EventGraph";
 import IntelligenceFeed from "./components/IntelligenceFeed";
 import EvidenceChat from "./components/EvidenceChat";
+import { LANGUAGES, strings } from "./i18n";
 import PolicyImpactDashboard from "./components/PolicyImpactDashboard";
 import { 
   seedPoliticians, seedParties, generateEventGraphData, seedAdministrations 
@@ -291,6 +292,15 @@ export default function App() {
   });
 
   const [workspaceMode, setWorkspaceMode] = useState("intelligence"); // "intelligence" | "ask" | "policies" | "politician" | "events"
+  const [language, setLanguage] = useState(() => {
+    try { return LANGUAGES.includes(localStorage.getItem("polint-language")) ? localStorage.getItem("polint-language") : "en"; }
+    catch { return "en"; }
+  });
+  useEffect(() => {
+    document.documentElement.lang = language;
+    try { localStorage.setItem("polint-language", language); } catch { /* Storage may be disabled. */ }
+  }, [language]);
+  const t = strings(language);
   const [theme, setTheme] = useState(() => {
     try { return ["light", "dark", "system"].includes(localStorage.getItem("polint-theme")) ? localStorage.getItem("polint-theme") : "light"; }
     catch { return "light"; }
@@ -564,12 +574,22 @@ export default function App() {
           
           <div className="sidebar-brand-copy">
             <span className="sidebar-logo-text">PolInt<span>.</span></span>
-            <span className="brand-tagline">Tamil Nadu, in context</span>
+            <span className="brand-tagline">{t.tagline}</span>
             <span className={`app-freshness ${offline ? "is-offline" : ""}`} role="status" title={db.intelUpdatedAt ? `Data updated ${formatDateTime(db.intelUpdatedAt)}` : undefined}>
               
               {offline ? (db.lastIntelSync ? "Offline · showing saved data" : "Offline · unable to load feed") : refreshing ? "Checking for updates…" : db.intelUpdatedAt ? `Updated ${relativeTime(db.intelUpdatedAt, now)}` : "Saved intelligence snapshot"}
             </span>
           </div>
+          <button
+            type="button"
+            className="app-language-btn"
+            onClick={() => setLanguage(current => (current === "ta" ? "en" : "ta"))}
+            aria-label={t.switchLanguageLabel}
+            title={t.switchLanguageLabel}
+            lang={language === "ta" ? "en" : "ta"}
+          >
+            {t.switchLanguage}
+          </button>
           <button
             type="button"
             className="app-theme-btn"
@@ -599,7 +619,7 @@ export default function App() {
             onClick={() => setWorkspaceMode("intelligence")}
           >
             <Newspaper size={16} />
-            <span className="mode-label-desktop">Feed</span><span className="mode-label-mobile">Feed</span>
+            <span className="mode-label-desktop">{t.navFeed}</span><span className="mode-label-mobile">{t.navFeed}</span>
           </button>
           <button
             className={`sidebar-mode-btn ${workspaceMode === "ask" ? "active" : ""}`}
@@ -608,7 +628,7 @@ export default function App() {
             onClick={() => setWorkspaceMode("ask")}
           >
             <MessageCircle size={16} />
-            <span className="mode-label-desktop">Ask</span><span className="mode-label-mobile">Ask</span>
+            <span className="mode-label-desktop">{t.navAsk}</span><span className="mode-label-mobile">{t.navAsk}</span>
           </button>
           <button
             className={`sidebar-mode-btn ${workspaceMode === "policies" ? "active" : ""}`}
@@ -617,7 +637,7 @@ export default function App() {
             onClick={() => setWorkspaceMode("policies")}
           >
             <ClipboardList size={16} />
-            <span className="mode-label-desktop">Policies</span><span className="mode-label-mobile">Policies</span>
+            <span className="mode-label-desktop">{t.navPolicies}</span><span className="mode-label-mobile">{t.navPolicies}</span>
           </button>
           <button 
             className={`sidebar-mode-btn ${workspaceMode === "politician" ? "active" : ""}`}
@@ -626,7 +646,7 @@ export default function App() {
             onClick={() => setWorkspaceMode("politician")}
           >
             <Users size={16} />
-            <span className="mode-label-desktop">People</span><span className="mode-label-mobile">People</span>
+            <span className="mode-label-desktop">{t.navPeople}</span><span className="mode-label-mobile">{t.navPeople}</span>
           </button>
           <button 
             className={`sidebar-mode-btn ${workspaceMode === "events" ? "active" : ""}`}
@@ -635,7 +655,7 @@ export default function App() {
             onClick={() => setWorkspaceMode("events")}
           >
             <GitBranch size={16} />
-            <span className="mode-label-desktop">Timeline</span><span className="mode-label-mobile">Timeline</span>
+            <span className="mode-label-desktop">{t.navTimeline}</span><span className="mode-label-mobile">{t.navTimeline}</span>
           </button>
         </nav>
 
@@ -764,7 +784,7 @@ export default function App() {
             onSelectEvent={handleSelectEvent}
           />
         ) : workspaceMode === "ask" ? (
-          <EvidenceChat />
+          <EvidenceChat language={language} storylines={storylines} />
         ) : workspaceMode === "policies" ? (
           <PolicyImpactDashboard />
         ) : workspaceMode === "politician" ? (
