@@ -35,3 +35,15 @@ test('the phone grades every outlet as the server does', () => {
   assert.ok(parity.sources.length > 100);
   assert.deepEqual(differences, []);
 });
+
+test('the phone parses saved Google News and publisher feeds into the records the server makes', async () => {
+  const { rssRecords } = await import('../src/collect/fetch.js');
+  const { feeds, expected } = read('collect_feeds.json');
+  for (const feed of feeds) {
+    const records = rssRecords(feed.xml, { query: feed.query, feedUrl: feed.feedUrl, sourceName: feed.sourceName });
+    const fields = expected[feed.name].map((record) => Object.keys(record));
+    const actual = records.map((record, index) => Object.fromEntries(fields[index]?.map((key) => [key, record[key] ?? null]) || []));
+    assert.equal(records.length, expected[feed.name].length, feed.name);
+    assert.deepEqual(actual, expected[feed.name], feed.name);
+  }
+});

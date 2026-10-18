@@ -26,6 +26,8 @@ from scripts.intelligence.warehouse import recover_json_document  # noqa: E402
 
 OUTPUT = PROJECT_ROOT / "src/data/collectConfig.json"
 PARITY = PROJECT_ROOT / "tests/fixtures/collect_parity.json"
+FEEDS = PROJECT_ROOT / "tests/fixtures/collect_feeds.json"
+FEED_FIELDS = ("title", "url", "source", "snippet", "category", "politicianId", "isRumor", "verificationStatus", "language", "imageUrl", "audioUrl")
 # The data workflow runs 18 social queries a refresh; the phone does the same.
 MAX_SOCIAL_QUERIES = 18
 SOCIAL_LIMIT = 15
@@ -98,10 +100,25 @@ def parity_cases(limit: int = 1500) -> dict:
     }
 
 
+def feed_records() -> dict:
+    """What the Python collector makes of the saved feeds in collect_feeds.json."""
+    from unittest import mock
+
+    expected = {}
+    for feed in json.loads(FEEDS.read_text(encoding="utf-8"))["feeds"]:
+        with mock.patch.object(legacy, "http_get", return_value=feed["xml"].encode("utf-8")), mock.patch.object(legacy.time, "sleep"):
+            records = legacy.fetch_rss(feed["query"], "general", feed["sourceName"] or "Tamil Nadu Politics",
+                                       feed_url=feed["feedUrl"], source_name=feed["sourceName"], raise_errors=True)
+        expected[feed["name"]] = [{key: record.get(key) for key in FEED_FIELDS} for record in records]
+    return expected
+
+
 def main() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(config(), ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     PARITY.write_text(json.dumps(parity_cases(), ensure_ascii=False) + "\n", encoding="utf-8")
+    feeds = json.loads(FEEDS.read_text(encoding="utf-8"))
+    FEEDS.write_text(json.dumps({**feeds, "expected": feed_records()}, ensure_ascii=False) + "\n", encoding="utf-8")
     jobs = config()["jobs"]
     print(f"{OUTPUT.relative_to(PROJECT_ROOT)}: {len(jobs['googleNews'])} Google News, "
           f"{len(jobs['directFeeds'])} direct feeds, {len(jobs['social'])} social queries")
