@@ -61,7 +61,7 @@ def designer(args):
     provider = dd.ModelProvider(name="pilot", endpoint=args.endpoint, provider_type="openai", api_key=args.key_env)
     model = dd.ModelConfig(
         alias="pilot", model=args.model, provider="pilot",
-        inference_parameters=dd.ChatCompletionInferenceParams(temperature=0.3, max_tokens=600, max_parallel_requests=args.parallel),
+        inference_parameters=dd.ChatCompletionInferenceParams(temperature=0.3, max_tokens=2000, max_parallel_requests=args.parallel),
     )
     return DataDesigner(artifact_path=OUT / "artifacts", model_providers=[provider]), model
 
