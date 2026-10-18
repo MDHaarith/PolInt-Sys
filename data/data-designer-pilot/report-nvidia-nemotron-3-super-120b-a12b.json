@@ -2,41 +2,64 @@
   "model": "nvidia/nemotron-3-super-120b-a12b",
   "endpoint": "https://integrate.api.nvidia.com/v1",
   "judge": {
-    "pairs": 199,
-    "same_issue_pairs": 99,
+    "pairs": 200,
+    "same_issue_pairs": 100,
     "valid_records": 1.0,
     "cut": 0.19,
-    "model_accuracy": 0.586,
-    "model_accuracy_tamil_pairs": 0.578,
-    "embedding_accuracy": 0.713,
+    "model_accuracy": 0.65,
+    "model_accuracy_tamil_pairs": 0.648,
+    "embedding_accuracy": 0.715,
     "embedding_accuracy_tamil_pairs": 0.729,
     "worth_it": false,
-    "seconds": 578,
+    "seconds": 494,
     "examples_wrong": [
       {
         "headline_a": "TVK functionary arrested over 135 kg meth trafficking in Nagapattinam",
         "headline_b": "இதுதான் போதைப்பொருள் ஒழிப்பு லட்சணமா? - உதயநிதி கேள்வி",
-        "truth": true
+        "truth": true,
+        "similarity": 0.22099338471889496
       },
       {
         "headline_a": "Tamil Nadu CM Vijay urges PM Modi to sanction Metro Rail from Hosur to Karnataka’s Bommasandra",
         "headline_b": "Palaniswami recalls efforts by AIADMK government towards Phase II Chennai Metro Rail project",
-        "truth": true
-      },
-      {
-        "headline_a": "'Breaking Bad Party’: Stalin targets Vijay's TVK after 135 kg meth seized from functionary | India News",
-        "headline_b": "இதுதான் போதைப்பொருள் ஒழிப்பு லட்சணமா? - உதயநிதி கேள்வி",
-        "truth": true
+        "truth": true,
+        "similarity": 0.19939884543418884
       },
       {
         "headline_a": "மாணவர்களோடு மெட்ரோ ரயிலில் பயணிக்கும் மோடியின் விளம்பர அரசியல் தமிழ்நாட்டில் எடுபடாது",
         "headline_b": "Video | Chennai Metro Opening Sparks Credit War Between DMK and AIADMK",
-        "truth": true
+        "truth": true,
+        "similarity": 0.22639548778533936
       },
       {
-        "headline_a": "TVK is not just bad, it’s a ‘Breaking Bad’ party: Stalin",
-        "headline_b": "கட்சியினரை மெத் கடத்தவிட்டு வேடிக்கை பார்ப்பதுதான் போதைப்பொருள் ஒழிப்பு லட்சணமா? உதயநிதி ஸ்டாலின்!",
-        "truth": true
+        "headline_a": "காவிரி தொழில்நுட்பக் குழும துணைத்தலைவரை இதுவரை நியமனம் செய்யாதது ஏன்?- சீமான் கேள்வி",
+        "headline_b": "Tamil Nadu CM Vijay Meets Andhra CM Naidu in Vijayawada, Discusses Godavari-Cauvery River Linking - India Today",
+        "truth": true,
+        "similarity": 0.1214359924197197
+      },
+      {
+        "headline_a": "Palaniswami recalls efforts by AIADMK government towards Phase II Chennai Metro Rail project",
+        "headline_b": "T.N. start-ups pitch their ideas to Modi during his Chennai Metro Rail ride",
+        "truth": true,
+        "similarity": 0.1852024495601654
+      },
+      {
+        "headline_a": "மாணவர்களோடு மெட்ரோ ரயிலில் பயணிக்கும் மோடியின் விளம்பர அரசியல் தமிழ்நாட்டில் எடுபடாது",
+        "headline_b": "From new metro links to river linking: CM Vijay lists his demands before PM Modi",
+        "truth": true,
+        "similarity": 0.1872638314962387
+      },
+      {
+        "headline_a": "PM Modi, Vijay’s Viral Metro Ride: A New Political Equation In Tamil Nadu?",
+        "headline_b": "“பூந்தமல்லி - வடபழனி மெட்ரோ ரயில் திட்டம் அதிமுக ஆட்சியில் போடப்பட்ட விதை” - இபிஎஸ் பெருமிதம்",
+        "truth": true,
+        "similarity": 0.25195616483688354
+      },
+      {
+        "headline_a": "L Murugan quits as Minister of State, fuels Cabinet reshuffle speculation",
+        "headline_b": "மீண்டும் தமிழ்நாடு பாஜக தலைவரா எல்.முருகன்? நயினார் நாகேந்திரன் தலைவராக இருக்கும் போதே எழும் யூகங்கள்!",
+        "truth": true,
+        "similarity": 0.23937153816223145
       }
     ]
   },
@@ -104,6 +127,68 @@
         "translation": "People’s Endorsement for Social Justice Victory Coalition Highlighted by Thirumavalavan After By-Election Triumph",
         "paraphrase": "சமூகநீதி வெற்றிக் கூட்டணிக்கு மக்களின் ஆதரவு! திருமாவளவன் இடைத்தேர்தல் வெற்றி பற்றி பேசினார்",
         "decoy": "திருமாவளவன், புதிய விழிப்புணர்வு திட்டம்"
+      }
+    ]
+  },
+  "hard": {
+    "pairs": 200,
+    "same_issue_pairs": 100,
+    "valid_records": 1.0,
+    "cut": 0.19,
+    "model_accuracy": 0.345,
+    "model_accuracy_tamil_pairs": 0.312,
+    "embedding_accuracy": 0.0,
+    "embedding_accuracy_tamil_pairs": 0.0,
+    "worth_it": null,
+    "seconds": 2594,
+    "examples_wrong": [
+      {
+        "headline_a": "Stalin Slams TVK Over 135 Kg Meth Seizure | Tamil Nadu Political Row | Tamil Nadu Drug",
+        "headline_b": "Is BJP eyeing something big by planning to send Murugan to Tamil Nadu?",
+        "truth": true,
+        "similarity": -0.003424977883696556
+      },
+      {
+        "headline_a": "TVK is not just bad, it’s a ‘Breaking Bad’ party: Stalin",
+        "headline_b": "“தமிழகம் போதைப்பொருள் கடத்தலுக்கான மையமாக மாறியிருக்கிறதா?” - தவெக அரசுக்கு ஆ.ராசா கேள்வி",
+        "truth": true,
+        "similarity": -0.010146263986825943
+      },
+      {
+        "headline_a": "Is BJP eyeing something big by planning to send Murugan to Tamil Nadu?",
+        "headline_b": "மீண்டும் தமிழ்நாடு பாஜக தலைவரா எல்.முருகன்? நயினார் நாகேந்திரன் தலைவராக இருக்கும் போதே எழும் யூகங்கள்!",
+        "truth": false,
+        "similarity": 0.4021759629249573
+      },
+      {
+        "headline_a": "தமிழக பாஜக தலைவராக எல்.முருகன் நியமிக்கப்படுகிறாரா? வானதி சீனிவாசன் சொன்ன விஷயம் - பாஜகவில் அடுத்து என்ன?",
+        "headline_b": "Is BJP eyeing something big by planning to send Murugan to Tamil Nadu?",
+        "truth": false,
+        "similarity": 0.34948885440826416
+      },
+      {
+        "headline_a": "“தமிழகம் போதைப்பொருள் கடத்தலுக்கான மையமாக மாறியிருக்கிறதா?” - தவெக அரசுக்கு ஆ.ராசா கேள்வி",
+        "headline_b": "Is BJP eyeing something big by planning to send Murugan to Tamil Nadu?",
+        "truth": true,
+        "similarity": 0.059239186346530914
+      },
+      {
+        "headline_a": "Palaniswami recalls efforts by AIADMK government towards Phase II Chennai Metro Rail project",
+        "headline_b": "Lunch with Rahul, Metro ride with Modi: Vijay walks a political tightrope",
+        "truth": true,
+        "similarity": 0.022813206538558006
+      },
+      {
+        "headline_a": "காவிரி தொழில்நுட்பக் குழும துணைத்தலைவரை இதுவரை நியமனம் செய்யாதது ஏன்?- சீமான் கேள்வி",
+        "headline_b": "Tamil Nadu CM Vijay opens Mettur Dam gates, releases Cauvery water for 12 delta districts",
+        "truth": true,
+        "similarity": 0.03668162226676941
+      },
+      {
+        "headline_a": "Tamil Nadu CM Vijay urges PM Modi to sanction Metro Rail from Hosur to Karnataka’s Bommasandra",
+        "headline_b": "‘Girlfriend gives 0% interest, our FD gives 14.4%’: Chennai Metro ad sparks political row",
+        "truth": true,
+        "similarity": 0.05854084715247154
       }
     ]
   }
